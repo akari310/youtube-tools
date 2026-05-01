@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.1.4
+// @version      0.0.1.5
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2619,6 +2619,65 @@
             background-color: var(--accent-custom);
         }
 
+        /* Premium Quality Selectors */
+        .selectcalidades, .selectcalidadesaudio {
+            background: rgba(30, 30, 30, 0.9) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            padding: 10px 20px !important;
+            border-radius: 12px !important;
+            font-family: "Inter", -apple-system, sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            outline: none !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+            transition: all 0.3s ease !important;
+            margin: 15px auto !important;
+            display: block !important;
+            min-width: 240px !important;
+            max-width: 320px !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            text-align: center !important;
+            position: relative;
+        }
+
+        .selectcalidades:hover, .selectcalidadesaudio:hover {
+            border-color: #ff0000 !important;
+            background: rgba(45, 45, 45, 0.95) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(255, 0, 0, 0.15) !important;
+        }
+
+        .selectcalidades option, .selectcalidadesaudio option {
+            background: #1e1e1e !important;
+            color: #ffffff !important;
+            padding: 12px !important;
+        }
+
+        .formulariodescarga, .formulariodescargaaudio {
+            width: 100% !important;
+            margin: 10px 0 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+
+        .containerall {
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .ocultarframe, .ocultarframeaudio {
+            display: none !important;
+        }
+
       #yt-stats {
       position: fixed;
       top: 60px;
@@ -4560,7 +4619,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.1.4</span>
+    <span style="color: #fff" ;>v0.0.1.5</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7559,7 +7618,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.1.4)\n' +
+  '%cRun %c(v0.0.1.5)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
