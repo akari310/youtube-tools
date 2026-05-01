@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.3.3
+// @version      0.0.3.4
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2714,9 +2714,9 @@
             gap: 2px !important;
         }
 
-        /* Regular YouTube specific spacing (VIP - Responsive) */
+        /* Regular YouTube specific spacing (VIP) */
         ytd-watch-metadata .yt-tools-inner-container {
-            gap: clamp(6px, 1.2vw, 12px) !important;
+            gap: 10px !important;
         }
 
         ytd-watch-metadata .containerall {
@@ -2725,7 +2725,7 @@
         }
 
         ytd-watch-metadata .yt-tools-container {
-            margin-bottom: clamp(-10px, -0.8vw, -4px) !important;
+            margin-bottom: -8px !important;
         }
 
         ytd-watch-metadata .content_collapsible_colors {
@@ -2735,9 +2735,9 @@
         ytd-watch-metadata .download-container {
             width: 90% !important;
             max-width: 450px !important;
-            padding: clamp(5px, 0.8vw, 12px) !important;
+            padding: 7px !important;
             border-radius: 12px !important;
-            margin: clamp(5px, 1vw, 15px) auto !important;
+            margin: 5px auto !important;
             display: flex !important;
             flex-direction: column !important;
             transition: all 0.3s ease;
