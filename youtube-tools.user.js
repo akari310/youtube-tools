@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.3.6
+// @version      0.0.3.7
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
