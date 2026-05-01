@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.1.0
+// @version      0.0.1.1
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2108,6 +2108,20 @@
               --text-custom-secondary: #9e9e9e !important;
               --accent-custom: #ff4444 !important;
           }
+        #panel-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9998;
+            backdrop-filter: blur(2px);
+        }
+        #yt-enhancement-panel {
+            z-index: 9999 !important;
+        }
         body .container-mdcm {
               font-family: "Inter", -apple-system, sans-serif;
               color: var(--yt-enhance-menu-text, var(--text-custom));
@@ -4087,6 +4101,10 @@
 
   panel.id = 'yt-enhancement-panel';
 
+  const panelOverlay = $cl('div');
+  panelOverlay.id = 'panel-overlay';
+  $ap(panelOverlay);
+
   // Generate theme options HTML
   const themeOptionsHTML = themes
     .map(
@@ -4542,7 +4560,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.1.0</span>
+    <span style="color: #fff" ;>v0.0.1.1</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -4591,16 +4609,12 @@
   function toggleMenu() {
     openMenu = !openMenu;
     panel.style.display = openMenu ? 'block' : 'none';
+    panelOverlay.style.display = openMenu ? 'block' : 'none';
   }
 
-  // Close panel when clicking outside
-  document.addEventListener('click', (event) => {
-    const toggleButton = $id('toggle-button');
-    const path = event.composedPath();
-    const isClickInsidePanel = path.includes(panel);
-    const isClickOnToggleButton = toggleButton && toggleButton.contains(event.target);
-    
-    if (openMenu && !isClickInsidePanel && !isClickOnToggleButton) {
+  // Close panel when clicking the overlay
+  panelOverlay.addEventListener('click', () => {
+    if (openMenu) {
       toggleMenu();
     }
   });
@@ -7545,7 +7559,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.1.0)\n' +
+  '%cRun %c(v0.0.1.1)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
