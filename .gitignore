@@ -2,6 +2,7 @@
 *
 
 # Except for these files
-!youtube-tools.user.js
+!dist/
+!dist/youtube-tools.user.js
 !.gitignore
 !README.md
