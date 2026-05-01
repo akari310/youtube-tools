@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.2.2
+// @version      0.0.2.3
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2627,7 +2627,7 @@
             width: 100% !important;
             display: flex !important;
             justify-content: center !important;
-            margin: 4px 0 !important;
+            margin: 0 !important;
         }
 
         .yt-tools-inner-container {
@@ -2644,7 +2644,7 @@
             align-items: center !important;
             justify-content: center !important;
             width: 100% !important;
-            gap: 8px !important;
+            gap: 2px !important;
         }
 
         .containerButtons {
@@ -2673,7 +2673,7 @@
             outline: none !important;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
             transition: all 0.3s ease !important;
-            margin: 2px auto !important;
+            margin: 0 auto !important;
             display: block !important;
             min-width: 280px !important;
             max-width: 350px !important;
@@ -2700,7 +2700,7 @@
 
         .formulariodescarga, .formulariodescargaaudio {
             width: 100% !important;
-            margin: 4px 0 !important;
+            margin: 0 !important;
             display: none !important; /* Hidden by default */
             justify-content: center !important;
             align-items: center !important;
@@ -2711,7 +2711,7 @@
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
-            gap: 6px !important;
+            gap: 2px !important;
         }
 
       #yt-stats {
@@ -4659,7 +4659,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.2.2</span>
+    <span style="color: #fff" ;>v0.0.2.3</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7140,7 +7140,7 @@ function buildYTMToolbar() {
 
   const collapsible = document.createElement('div');
   collapsible.className = 'content_collapsible_colors';
-  collapsible.style.marginTop = '4px';
+  collapsible.style.marginTop = '2px';
   collapsible.appendChild(videoForm);
   collapsible.appendChild(audioForm);
 
@@ -7656,7 +7656,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.2.2)\n' +
+  '%cRun %c(v0.0.2.3)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
