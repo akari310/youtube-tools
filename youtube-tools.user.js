@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.2.4
+// @version      0.0.2.5
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -3705,7 +3705,7 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      padding: 8px 0 !important;
+      padding: 0 !important;
     }
 
     .tab-header-container {
@@ -3797,11 +3797,13 @@
       color: #fff !important;
       border: 1px solid rgba(255, 255, 255, 0.2) !important;
       border-radius: 6px !important;
-      padding: 5px 8px !important;
+      padding: 8px 8px 6px !important; /* Asymmetric padding for vertical centering */
       font-size: 12px !important;
       width: 100% !important;
       cursor: pointer !important;
       outline: none !important;
+      height: 32px !important;
+      line-height: normal !important;
     }
 
     ytmusic-app .download-container {
@@ -3814,7 +3816,14 @@
     }
 
     ytmusic-app .content_collapsible_colors {
-      margin-top: 6px !important;
+      margin-top: 2px !important;
+    }
+
+    .ytm-side-panel-divider {
+      margin: 2px 0 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      height: 0;
+      width: 100%;
     }
 
     ytmusic-app #toggle-button {
@@ -4659,7 +4668,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.2.4</span>
+    <span style="color: #fff" ;>v0.0.2.5</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7691,7 +7700,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.2.4)\n' +
+  '%cRun %c(v0.0.2.5)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
