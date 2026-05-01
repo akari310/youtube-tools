@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.2.3
+// @version      0.0.2.4
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -4659,7 +4659,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.2.3</span>
+    <span style="color: #fff" ;>v0.0.2.4</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -6954,6 +6954,27 @@ function buildYTMToolbar() {
     'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
     'M10 10l4 4m0 -4l-4 4'
   ]));
+  
+  if (!isYTMusic) {
+    // Add Bookmark
+    btnsDiv.appendChild(makeToolBtn('Add bookmark', 'yt-bookmark-add', '', [
+      'M0 0h24v24H0z',
+      'M7 4h10a2 2 0 0 1 2 2v14l-7 -4l-7 4v-14a2 2 0 0 1 2 -2z',
+      'M12 7v6', 'M9 10h6'
+    ]));
+    
+    // Show Bookmarks
+    btnsDiv.appendChild(makeToolBtn('Show bookmarks', 'yt-bookmark-toggle', '', [
+      'M0 0h24v24H0z',
+      'M9 6h11', 'M9 12h11', 'M9 18h11', 'M5 6h.01', 'M5 12h.01', 'M5 18h.01'
+    ]));
+    
+    // History (Continue Watching)
+    btnsDiv.appendChild(makeToolBtn('History', 'yt-cw-history-toggle', '', [
+      'M0 0h24v24H0z',
+      'M12 8v4l3 3', 'M3 12a9 9 0 1 0 3 -6.7', 'M3 4v4h4'
+    ]));
+  }
 
   // Picture-in-Picture
   btnsDiv.appendChild(makeToolBtn('Picture to picture', null, 'video_picture_to_picture', [
@@ -6972,6 +6993,20 @@ function buildYTMToolbar() {
   ]));
 
   form.appendChild(btnsDiv);
+
+  if (!isYTMusic) {
+    const bookmarksPanel = document.createElement('div');
+    bookmarksPanel.id = 'yt-bookmarks-panel';
+    bookmarksPanel.className = 'yt-bookmarks-panel';
+    bookmarksPanel.style.display = 'none';
+    form.appendChild(bookmarksPanel);
+
+    const historyPanel = document.createElement('div');
+    historyPanel.id = 'yt-continue-watching-panel';
+    historyPanel.className = 'yt-continue-watching-panel';
+    historyPanel.style.display = 'none';
+    form.appendChild(historyPanel);
+  }
 
   // Download video quality select
   const videoForm = document.createElement('form');
@@ -7656,7 +7691,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.2.3)\n' +
+  '%cRun %c(v0.0.2.4)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
