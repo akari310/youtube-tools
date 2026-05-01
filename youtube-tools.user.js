@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.1.7
+// @version      0.0.1.8
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2623,6 +2623,19 @@
             display: none !important;
         }
 
+        .yt-tools-container {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            margin: 10px 0 !important;
+        }
+
+        .yt-tools-inner-container {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+        }
+
         /* Layout & Alignment Fixes */
         .yt-tools-form {
             display: flex !important;
@@ -2687,7 +2700,7 @@
         .formulariodescarga, .formulariodescargaaudio {
             width: 100% !important;
             margin: 10px 0 !important;
-            display: flex !important;
+            display: none !important; /* Hidden by default */
             justify-content: center !important;
             align-items: center !important;
         }
@@ -4641,7 +4654,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.1.7</span>
+    <span style="color: #fff" ;>v0.0.1.8</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -6891,7 +6904,7 @@ function buildYTMToolbar() {
   main.className = 'yt-tools-container';
 
   const container = document.createElement('div');
-  container.className = 'container';
+  container.className = 'yt-tools-inner-container';
 
   const form = document.createElement('form');
   form.className = 'yt-tools-form';
@@ -7303,8 +7316,8 @@ function renderizarButtons() {
       }
 
       // Hide all forms
-      formulariodescarga?.classList.add('ocultarframe');
-      formulariodescargaaudio?.classList.add('ocultarframe');
+      if (formulariodescarga) formulariodescarga.style.setProperty('display', 'none', 'important');
+      if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'none', 'important');
 
       // Reset forms
       formulariodescarga?.reset();
@@ -7380,10 +7393,9 @@ function renderizarButtons() {
         audioContainer.removeAttribute('data-url-opened');
       }
 
-      // Show video form
-      formulariodescarga?.classList.remove('ocultarframe');
-      formulariodescarga.style.display = '';
-      formulariodescargaaudio?.classList.add('ocultarframe');
+      // Show video form, hide audio form
+      if (formulariodescarga) formulariodescarga.style.setProperty('display', 'flex', 'important');
+      if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'none', 'important');
 
       // Reset forms
       formulariodescarga?.reset();
@@ -7426,10 +7438,9 @@ function renderizarButtons() {
         audioContainer.removeAttribute('data-url-opened');
       }
 
-      // Show audio form
-      formulariodescargaaudio?.classList.remove('ocultarframe');
-      formulariodescargaaudio.style.display = '';
-      formulariodescarga?.classList.add('ocultarframe');
+      // Show audio form, hide video form
+      if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'flex', 'important');
+      if (formulariodescarga) formulariodescarga.style.setProperty('display', 'none', 'important');
 
       // Reset forms
       formulariodescargaaudio?.reset();
@@ -7641,7 +7652,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.1.7)\n' +
+  '%cRun %c(v0.0.1.8)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
