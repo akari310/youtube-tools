@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.1.8
+// @version      0.0.1.9
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2633,7 +2633,8 @@
         .yt-tools-inner-container {
             width: 100% !important;
             display: flex !important;
-            justify-content: center !important;
+            flex-direction: column !important;
+            align-items: center !important;
         }
 
         /* Layout & Alignment Fixes */
@@ -4654,7 +4655,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.1.8</span>
+    <span style="color: #fff" ;>v0.0.1.9</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7189,7 +7190,6 @@ function renderizarButtons() {
         sideWrapper.appendChild(addButton);
       }
     }
-  } else {
     // Regular YouTube
     const addButton = document.querySelector('.style-scope .ytd-watch-metadata');
     const addButton2 = document.querySelector('#contents');
@@ -7197,12 +7197,11 @@ function renderizarButtons() {
     if (addButton && validoBotones) {
       const isVisible = addButton.offsetParent !== null;
 
-      if (isVisible) {
+      if (isVisible || addButton2) {
         validoBotones = false;
-        addButton.insertAdjacentHTML('beforebegin', safeHTML(menuBotones));
-      } else if (addButton2) {
-        validoBotones = false;
-        addButton.insertAdjacentHTML('beforebegin', safeHTML(menuBotones));
+        const toolbar = buildYTMToolbar();
+        // Insert before metadata to be above descriptions/comments
+        addButton.parentNode.insertBefore(toolbar, addButton);
       }
     }
   }
@@ -7652,7 +7651,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.1.8)\n' +
+  '%cRun %c(v0.0.1.9)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
