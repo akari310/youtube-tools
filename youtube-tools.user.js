@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.2.7
+// @version      0.0.2.8
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2627,7 +2627,7 @@
             width: 100% !important;
             display: flex !important;
             justify-content: center !important;
-            margin: 0 0 -15px 0 !important;
+            margin: 0 0 -22px 0 !important;
         }
 
         .yt-tools-inner-container {
@@ -4677,7 +4677,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.2.7</span>
+    <span style="color: #fff" ;>v0.0.2.8</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7708,7 +7708,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.2.7)\n' +
+  '%cRun %c(v0.0.2.8)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
