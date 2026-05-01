@@ -1,0 +1,12 @@
+# Ignore everything
+*
+
+# Except for these files in ROOT
+!youtube-tools.user.js
+!.gitignore
+!README.md
+
+# Ignore the local dist folder
+dist/
+src/
+scripts/
