@@ -1,8 +1,0 @@
-# Ignore everything
-*
-
-# Except for these files
-!dist/
-!dist/youtube-tools.user.js
-!.gitignore
-!README.md
