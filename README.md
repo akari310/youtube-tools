@@ -3,6 +3,9 @@
 [![Greasy Fork](https://img.shields.io/greasyfork/v/576162?label=Greasy%20Fork&color=red)](https://greasyfork.org/scripts/576162)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+![YouTube Preview](assets/yt_preview.png)
+![YouTube Music Preview](assets/ytm_preview.png)
+
 A powerful, glassmorphic userscript designed to enhance your experience on **YouTube** and **YouTube Music**.
 
 ## ✨ Features

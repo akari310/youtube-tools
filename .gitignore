@@ -5,6 +5,7 @@
 !youtube-tools.user.js
 !.gitignore
 !README.md
+!assets/
 
 # Ignore the local dist folder
 dist/
