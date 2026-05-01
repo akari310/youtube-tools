@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.2.0
+// @version      0.0.2.1
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2662,9 +2662,9 @@
             -webkit-backdrop-filter: blur(12px) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             color: #ffffff !important;
-            padding: 0 20px !important; /* Vertical padding 0 for line-height centering */
-            height: 42px !important;
-            line-height: 42px !important;
+            padding: 0 20px !important; 
+            height: 45px !important;
+            line-height: 45px !important;
             border-radius: 12px !important;
             font-family: "Inter", -apple-system, sans-serif !important;
             font-size: 14px !important;
@@ -2675,8 +2675,8 @@
             transition: all 0.3s ease !important;
             margin: 5px auto !important;
             display: block !important;
-            min-width: 260px !important;
-            max-width: 320px !important;
+            min-width: 280px !important;
+            max-width: 350px !important;
             appearance: none !important;
             -webkit-appearance: none !important;
             text-align: center !important;
@@ -2961,11 +2961,15 @@
 
         /* Download Container Styles */
         .download-container {
-          width: 50%;
-          padding: 12px;
-          border-radius: 8px;
-          margin-top: 8px;
+          width: 90% !important;
+          max-width: 450px !important;
+          padding: 16px !important;
+          border-radius: 12px !important;
+          margin: 10px auto !important;
+          display: flex !important;
+          flex-direction: column !important;
           transition: all 0.3s ease;
+          position: relative;
         }
 
         .download-container.video {
@@ -4655,7 +4659,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.2.0</span>
+    <span style="color: #fff" ;>v0.0.2.1</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7652,7 +7656,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.2.0)\n' +
+  '%cRun %c(v0.0.2.1)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
