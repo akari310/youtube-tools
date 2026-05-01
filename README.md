@@ -30,6 +30,14 @@ A powerful, glassmorphic userscript designed to enhance your experience on **You
 2. Click the link below to install the script:
    👉 [**Install YouTube Ultimate Tools**](https://greasyfork.org/scripts/576162)
 
+### ⌨️ Manual Installation (Alternative)
+If you prefer to install manually or if Greasy Fork is down:
+1. Open the [**youtube-tools.user.js**](https://github.com/akari310/youtube-tools/blob/main/youtube-tools.user.js) file in this repository.
+2. Click the **"Raw"** button to see the code.
+3. Copy all the code (Ctrl+A, Ctrl+C).
+4. Open your userscript manager (Tampermonkey) and click **"Create a new script"**.
+5. Paste the code and **Save**.
+
 ## 🛠️ Usage
 Once installed, a **Gear Icon** ⚙️ will appear on the top right of YouTube and YouTube Music. Click it to open the settings panel and customize your experience.
 
