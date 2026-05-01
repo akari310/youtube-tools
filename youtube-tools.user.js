@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.1.6
+// @version      0.0.1.7
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -2619,29 +2619,54 @@
             background-color: var(--accent-custom);
         }
 
-        /* Premium Quality Selectors */
+        .ocultarframe, .ocultarframeaudio {
+            display: none !important;
+        }
+
+        /* Layout & Alignment Fixes */
+        .yt-tools-form {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            gap: 15px !important;
+        }
+
+        .containerButtons {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 12px !important;
+            width: 100% !important;
+            flex-wrap: wrap !important;
+        }
+
         .selectcalidades, .selectcalidadesaudio {
             background: rgba(30, 30, 30, 0.9) !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             color: #ffffff !important;
-            padding: 10px 20px !important;
+            padding: 0 20px !important; /* Vertical padding 0 for line-height centering */
+            height: 42px !important;
+            line-height: 42px !important;
             border-radius: 12px !important;
             font-family: "Inter", -apple-system, sans-serif !important;
             font-size: 14px !important;
-            font-weight: 500 !important;
+            font-weight: 600 !important;
             cursor: pointer !important;
             outline: none !important;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
             transition: all 0.3s ease !important;
-            margin: 15px auto !important;
+            margin: 5px auto !important;
             display: block !important;
-            min-width: 240px !important;
+            min-width: 260px !important;
             max-width: 320px !important;
             appearance: none !important;
             -webkit-appearance: none !important;
             text-align: center !important;
+            text-align-last: center !important; /* Support for some browsers */
             position: relative;
         }
 
@@ -2656,6 +2681,7 @@
             background: #1e1e1e !important;
             color: #ffffff !important;
             padding: 12px !important;
+            text-align: center !important;
         }
 
         .formulariodescarga, .formulariodescargaaudio {
@@ -2671,11 +2697,7 @@
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
-            gap: 10px !important;
-        }
-
-        .ocultarframe, .ocultarframeaudio {
-            display: none !important;
+            gap: 12px !important;
         }
 
       #yt-stats {
@@ -4619,7 +4641,7 @@
     <div class="developer-mdcm">
       Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
     </div>
-    <span style="color: #fff" ;>v0.0.1.6</span>
+    <span style="color: #fff" ;>v0.0.1.7</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -6872,6 +6894,7 @@ function buildYTMToolbar() {
   container.className = 'container';
 
   const form = document.createElement('form');
+  form.className = 'yt-tools-form';
   const btnsDiv = document.createElement('div');
   btnsDiv.className = 'containerButtons';
 
@@ -7618,7 +7641,7 @@ const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
   '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.1.6)\n' +
+  '%cRun %c(v0.0.1.7)\n' +
   'By: Akari.',
   HEADER_STYLE,
   CODE_STYLE,
