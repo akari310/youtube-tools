@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://github.com/akari310/
-// @version      0.0.3.9
+// @version      0.0.4.0
 // @author       Akari
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
@@ -133,6 +133,18 @@
     lockupCachedStatsIntervalId: null,
     updateShortsViewsButton: function () { },
     updateShortsRatingButton: function () { },
+    nonstopPlayback: {
+      enabled: false,
+      hiddenDescriptor: null,
+      visibilityStateDescriptor: null,
+      blockVisibilityEvent: null,
+      keepAliveTimer: null,
+    },
+    audioOnly: {
+      enabled: false,
+      lastArtUrl: '',
+      refreshTimer: null,
+    },
   };
 
   function setDynamicCss(cssText = '') {
@@ -585,6 +597,169 @@
     } catch (e) {
       console.error('writeJsonGM error:', e);
     }
+  }
+
+  const AUDIO_ONLY_TAB_OVERRIDE_KEY = 'ytToolsAudioOnlyTabOverrideMDCM';
+
+  // Feature source/inspiration:
+  // Nonstop & Audio Only for YouTube & YouTube Music
+  // Author: nvbangg / Nguyen Van Bang
+  // Repo: https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic
+  // Greasy Fork: https://greasyfork.org/scripts/546130
+  // Source license: GPL-3.0. This userscript implements an independent adaptation of the behavior.
+  function applyNonstopPlayback(enabled) {
+    const rt = __ytToolsRuntime.nonstopPlayback;
+    if (enabled && rt.enabled) return;
+    if (!enabled && !rt.enabled) return;
+
+    if (enabled) {
+      rt.enabled = true;
+      rt.hiddenDescriptor = Object.getOwnPropertyDescriptor(document, 'hidden') || null;
+      rt.visibilityStateDescriptor = Object.getOwnPropertyDescriptor(document, 'visibilityState') || null;
+      try {
+        Object.defineProperties(document, {
+          hidden: { configurable: true, get: () => false },
+          visibilityState: { configurable: true, get: () => 'visible' },
+        });
+      } catch (e) {
+        console.warn('[YT Tools] Could not override visibility state:', e);
+      }
+
+      rt.blockVisibilityEvent = (event) => {
+        event.stopImmediatePropagation();
+      };
+      document.addEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+      window.addEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+
+      const refreshActivity = () => {
+        try {
+          const pageWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+          if ('_lact' in pageWindow) pageWindow._lact = Date.now();
+        } catch (e) { }
+      };
+      refreshActivity();
+      rt.keepAliveTimer = setInterval(refreshActivity, 60000);
+      return;
+    }
+
+    rt.enabled = false;
+    if (rt.blockVisibilityEvent) {
+      document.removeEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+      window.removeEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+      rt.blockVisibilityEvent = null;
+    }
+    if (rt.keepAliveTimer) {
+      clearInterval(rt.keepAliveTimer);
+      rt.keepAliveTimer = null;
+    }
+    try {
+      if (rt.hiddenDescriptor) Object.defineProperty(document, 'hidden', rt.hiddenDescriptor);
+      else delete document.hidden;
+      if (rt.visibilityStateDescriptor) Object.defineProperty(document, 'visibilityState', rt.visibilityStateDescriptor);
+      else delete document.visibilityState;
+    } catch (e) { }
+    rt.hiddenDescriptor = null;
+    rt.visibilityStateDescriptor = null;
+  }
+
+  function getAudioOnlyTabOverride() {
+    const value = sessionStorage.getItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return null;
+  }
+
+  function setAudioOnlyTabOverride(enabled, defaultEnabled) {
+    if (!!enabled === !!defaultEnabled) {
+      sessionStorage.removeItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
+      return;
+    }
+    sessionStorage.setItem(AUDIO_ONLY_TAB_OVERRIDE_KEY, enabled ? 'true' : 'false');
+  }
+
+  function getEffectiveAudioOnly(settings) {
+    const override = getAudioOnlyTabOverride();
+    return override === null ? !!settings?.audioOnly : override;
+  }
+
+  function syncAudioOnlyTabCheckbox(settings) {
+    const tabToggle = $id('audio-only-tab-toggle');
+    if (!tabToggle) return;
+    tabToggle.checked = getEffectiveAudioOnly(settings);
+    tabToggle.title = getAudioOnlyTabOverride() === null ?
+      'Following the global Audio-only mode setting' :
+      'Audio-only override is active for this browser tab';
+  }
+
+  function getActiveAudioOnlyVideo() {
+    const videos = Array.from(document.querySelectorAll('video'));
+    if (isYTMusic) return videos[0] || null;
+    return videos.find((video) => {
+      const rect = video.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }) || videos[0] || null;
+  }
+
+  async function getAudioOnlyThumbnailUrl() {
+    try {
+      const moviePlayer = document.getElementById('movie_player');
+      if (moviePlayer && typeof moviePlayer.getVideoData === 'function') {
+        const data = moviePlayer.getVideoData();
+        if (data?.video_id) return `https://i.ytimg.com/vi/${data.video_id}/hqdefault.jpg`;
+      }
+    } catch (e) { }
+
+    const videoId = getCurrentVideoId() || paramsVideoURL();
+    if (!videoId) return '';
+    const host = isYTMusic ? 'i1.ytimg.com' : 'img.youtube.com';
+    return `https://${host}/vi/${videoId}/hqdefault.jpg`;
+  }
+
+  async function applyAudioOnlyMode(enabled) {
+    const rt = __ytToolsRuntime.audioOnly;
+    rt.enabled = !!enabled;
+    document.body.classList.toggle('yt-tools-audio-only-active', rt.enabled);
+
+    document.querySelectorAll('.yt-tools-audio-only-video').forEach((el) => el.classList.remove('yt-tools-audio-only-video'));
+    document.querySelectorAll('.yt-tools-audio-only-player').forEach((el) => el.classList.remove('yt-tools-audio-only-player'));
+
+    if (!rt.enabled) {
+      rt.lastArtUrl = '';
+      setAudioOnlyBackground('');
+      if (rt.refreshTimer) {
+        clearInterval(rt.refreshTimer);
+        rt.refreshTimer = null;
+      }
+      return;
+    }
+
+    const video = getActiveAudioOnlyVideo();
+    const player = video?.parentNode?.parentNode || video?.parentElement || null;
+    if (video) video.classList.add('yt-tools-audio-only-video');
+    if (player) player.classList.add('yt-tools-audio-only-player');
+
+    const artUrl = await getAudioOnlyThumbnailUrl();
+    if (artUrl && artUrl !== rt.lastArtUrl) {
+      rt.lastArtUrl = artUrl;
+      setAudioOnlyBackground(artUrl);
+    }
+
+    if (!rt.refreshTimer) {
+      rt.refreshTimer = setInterval(() => {
+        const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+        applyAudioOnlyMode(getEffectiveAudioOnly(settings));
+      }, 2500);
+    }
+  }
+
+  function setAudioOnlyBackground(url) {
+    let style = $id('yt-tools-audio-only-style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'yt-tools-audio-only-style';
+      document.documentElement.appendChild(style);
+    }
+    style.textContent = url ? `.yt-tools-audio-only-player{background-image:url("${url}")!important;}` : '';
   }
 
   function isVersionNewer(latestStr, currentStr) {
@@ -2416,6 +2591,17 @@
             width: 14px;
             height: 14px;
             accent-color: var(--yt-enhance-menu-accent, var(--primary-custom)) !important;
+        }
+
+        .yt-tools-audio-only-player {
+            background-color: #000 !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            background-size: contain !important;
+        }
+
+        .yt-tools-audio-only-video {
+            opacity: 0 !important;
         }
 
         label {
@@ -4395,6 +4581,21 @@
         </label>
         <label>
           <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" checked id="nonstop-playback-toggle"> Nonstop playback
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="audio-only-toggle"> Audio-only mode
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="audio-only-tab-toggle"> Audio-only this tab
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" id="themes-toggle"> Active Themes
           </div>
         </label>
@@ -4807,6 +5008,8 @@
       bookmarks: $id('bookmarks-toggle').checked,
       continueWatching: $id('continue-watching-toggle').checked,
       shortsChannelName: $id('shorts-channel-name-toggle').checked,
+      nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
+      audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
       themes: $id('themes-toggle').checked,
       translation: $id('translation-toggle').checked,
       avatars: $id('avatars-toggle').checked,
@@ -4869,6 +5072,9 @@
     $id('bookmarks-toggle').checked = settings.bookmarks || false;
     $id('continue-watching-toggle').checked = settings.continueWatching || false;
     $id('shorts-channel-name-toggle').checked = settings.shortsChannelName || false;
+    if ($id('nonstop-playback-toggle')) $id('nonstop-playback-toggle').checked = settings.nonstopPlayback !== false;
+    if ($id('audio-only-toggle')) $id('audio-only-toggle').checked = settings.audioOnly || false;
+    syncAudioOnlyTabCheckbox(settings);
     $id('themes-toggle').checked = settings.themes || false;
     $id('translation-toggle').checked = settings.translation || false;
     $id('avatars-toggle').checked = settings.avatars || false;
@@ -5505,6 +5711,8 @@ function applySettings() {
     bookmarks: $id('bookmarks-toggle').checked,
     continueWatching: $id('continue-watching-toggle').checked,
     shortsChannelName: $id('shorts-channel-name-toggle').checked,
+    nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
+    audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
     themes: $id('themes-toggle').checked,
     translation: $id('translation-toggle').checked,
     avatars: $id('avatars-toggle').checked,
@@ -5537,6 +5745,9 @@ function applySettings() {
   $sp('--yt-enhance-menu-accent', settings.menu_developermdcm.accent);
 
   renderizarButtons();
+  applyNonstopPlayback(settings.nonstopPlayback);
+  syncAudioOnlyTabCheckbox(settings);
+  applyAudioOnlyMode(getEffectiveAudioOnly(settings));
   
   // Handle Side Panel Style classes
   if (isYTMusic) {
@@ -7859,6 +8070,40 @@ if (checkActiveWave) {
         window.location.reload();
       }, 1000);
     }
+  });
+}
+
+const checkAudioOnlyTabToggle = $id('audio-only-tab-toggle');
+if (checkAudioOnlyTabToggle) {
+  checkAudioOnlyTabToggle.addEventListener('change', () => {
+    const defaultEnabled = $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false;
+    setAudioOnlyTabOverride(checkAudioOnlyTabToggle.checked, defaultEnabled);
+    const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+    syncAudioOnlyTabCheckbox({
+      ...settings,
+      audioOnly: defaultEnabled
+    });
+    Notify('success', checkAudioOnlyTabToggle.checked ? 'Audio-only enabled for this tab' : 'Audio-only disabled for this tab');
+    scheduleApplySettings();
+  });
+}
+
+const checkAudioOnlyToggle = $id('audio-only-toggle');
+if (checkAudioOnlyToggle) {
+  checkAudioOnlyToggle.addEventListener('change', () => {
+    const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+    syncAudioOnlyTabCheckbox({
+      ...settings,
+      audioOnly: checkAudioOnlyToggle.checked
+    });
+    Notify('success', checkAudioOnlyToggle.checked ? 'Audio-only mode enabled' : 'Audio-only mode disabled');
+  });
+}
+
+const checkNonstopPlaybackToggle = $id('nonstop-playback-toggle');
+if (checkNonstopPlaybackToggle) {
+  checkNonstopPlaybackToggle.addEventListener('change', () => {
+    Notify('success', checkNonstopPlaybackToggle.checked ? 'Nonstop playback enabled' : 'Nonstop playback disabled');
   });
 }
 
