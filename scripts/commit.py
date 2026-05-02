@@ -23,7 +23,7 @@ def run_git(args, repo_root, check=True):
 
 
 def read_version(repo_root):
-    candidates = [
+    candidates =[
         os.path.join(repo_root, 'youtube-tools.user.js'),
         os.path.join(repo_root, 'src', '00_meta.js'),
     ]
@@ -42,7 +42,8 @@ def has_staged_changes(repo_root):
     return result.returncode == 1
 
 
-def commit(message=None, push=False, bump=True, bump_type='build'):
+# Đổi mặc định push=True
+def commit(message=None, push=True, bump=True, bump_type='build'):
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
     if bump:
@@ -62,11 +63,11 @@ def commit(message=None, push=False, bump=True, bump_type='build'):
 
     if push:
         run_git(['push'], repo_root)
-        print('Pushed current branch.')
+        print('Pushed current branch to GitHub.')
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Stage and commit repository changes.')
+    parser = argparse.ArgumentParser(description='Stage, commit and push repository changes.')
     parser.add_argument('-m', '--message', help='Commit message. Defaults to Update v<version>.')
     parser.add_argument(
         '--bump-type',
@@ -75,13 +76,16 @@ def main():
         help='Version bump type to run before commit. Defaults to build.',
     )
     parser.add_argument('--no-bump', action='store_true', help='Commit without bumping version or rebuilding.')
-    parser.add_argument('--push', action='store_true', help='Push after committing.')
+    
+    # Sửa --push thành --no-push
+    parser.add_argument('--no-push', action='store_true', help='Do NOT push to GitHub after committing (Push is default now).')
+    
     args = parser.parse_args()
 
     try:
         commit(
             message=args.message,
-            push=args.push,
+            push=not args.no_push,  # Đảo ngược logic: Nếu không có cờ --no-push thì push=True
             bump=not args.no_bump,
             bump_type=args.bump_type,
         )
