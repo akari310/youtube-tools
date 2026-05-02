@@ -35,7 +35,7 @@ A powerful, glassmorphic userscript designed to enhance your experience on **You
 
 ### ⌨️ Manual Installation (Alternative)
 If you prefer to install manually or if Greasy Fork is down:
-1. Open the [**dist/youtube-tools.user.js**](https://github.com/akari310/youtube-tools/blob/main/dist/youtube-tools.user.js) file in this repository.
+1. Open the [**youtube-tools.user.js**](https://github.com/akari310/youtube-tools/blob/main/youtube-tools.user.js) file in this repository.
 2. Click the **"Raw"** button to see the code.
 3. Copy all the code (Ctrl+A, Ctrl+C).
 4. Open your userscript manager (Tampermonkey) and click **"Create a new script"**.
