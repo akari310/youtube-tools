@@ -2,13 +2,12 @@
 *
 
 # Except for these files in ROOT
+!youtube-tools.user.js
 !.gitignore
 !README.md
 !assets/
 !assets/**
 
-# Publish built userscript from dist
-!dist/
-!dist/youtube-tools.user.js
+dist/
 src/
 scripts/
