@@ -22,6 +22,12 @@ A powerful, glassmorphic userscript designed to enhance your experience on **You
 - **Ambient Mode**: Dynamic background colors based on the current album art.
 - **Audio Quality Control**: Choose your preferred audio format for downloads.
 
+### Nonstop / Audio-only Features
+- **No more "Video Paused. Continue watching?" popups**.
+- **Keeps videos and music playing nonstop**, even when switching to another tab or app.
+- **Audio-only mode** hides video and keeps the sound/music focused.
+- **Per-tab Audio-only control** lets you enable or disable Audio-only mode for the current tab.
+
 ### 🎨 Customization
 - **Themes**: Choose from various built-in themes (Royal Purple, Neon, Cherry Blossom, etc.).
 - **Dynamic Styling**: Adjust player size, colors, and visualizer effects.
@@ -46,6 +52,13 @@ Once installed, a **Gear Icon** ⚙️ will appear on the top right of YouTube a
 
 ## 📜 Credits
 Developed with ❤️ by [**Akari**](https://github.com/akari310).
+
+### Feature Sources / Attribution
+- Nonstop playback and Audio-only behavior are independently adapted from **Nonstop & Audio Only for YouTube & YouTube Music** by **nvbangg / Nguyen Van Bang**.
+- Source repository: https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic
+- Greasy Fork userscript source: https://greasyfork.org/scripts/546130
+- Chrome Web Store extension: https://chromewebstore.google.com/detail/bobdimbkbnkabpfhdfbddjoppiohcodi
+- Original source project license: GPL-3.0.
 
 ---
 *Disclaimer: This tool is for personal use only. Please respect the copyright of content creators.*

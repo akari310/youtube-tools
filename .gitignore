@@ -9,5 +9,7 @@
 !assets/**
 
 dist/
-src/
-scripts/
+!src/
+!src/*.js
+!scripts/
+!scripts/*.py
