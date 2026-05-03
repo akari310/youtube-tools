@@ -4917,10 +4917,10 @@
   </div>
   <div class="actions-mdcm">
     <div class="developer-mdcm">
-      <div style="font-size: 11px; opacity: 0.8; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-        Developed by <a href="https://github.com/akari310" target="_blank" style="color: #ff4444;">Akari</a>. 
-        Base by <a href="https://github.com/DeveloperMDCM" target="_blank" style="color: #aaa;">MDCM</a>. 
-        Features from <a href="https://github.com/nvbangg" target="_blank" style="color: #aaa;">nvbangg</a>.
+      <div style="font-size: 11px; opacity: 0.9; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; line-height: 1.6;">
+        Developed by <a href="https://github.com/akari310" target="_blank" style="color: #ff4444; text-decoration: none;"><i class="fa-brands fa-github"></i> Akari</a>. 
+        Base by <a href="https://github.com/DeveloperMDCM" target="_blank" style="color: #00aaff; text-decoration: none;"><i class="fa-brands fa-github"></i> MDCM</a>. 
+        Features from <a href="https://github.com/nvbangg" target="_blank" style="color: #00ffaa; text-decoration: none;"><i class="fa-brands fa-github"></i> nvbangg</a>.
       </div>
     </div>
     <span style="color: #fff" ;>v0.0.4.7</span>
