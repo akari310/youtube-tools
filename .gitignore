@@ -4,3 +4,9 @@ scripts/
 node_modules/
 .DS_Store
 *.log
+_backup_*
+replace.js
+build.py
+bump_version.py
+commit.py
+split.py

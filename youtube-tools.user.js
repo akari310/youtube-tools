@@ -4231,6 +4231,7 @@
       <option value="480">480p MP4</option>
       <option value="720">720p HD MP4 Default</option>
       <option value="1080">1080p FULL HD MP4</option>
+      <option value="1440">1440p 2K WEBM</option>
       <option value="4k">2160p 4K WEBM</option>
       <option value="8k">4320p 8K WEBM</option>
       </select>
@@ -7315,7 +7316,7 @@ function buildYTMToolbar() {
   [['', 'Video Quality', true],
   ['144', '144p MP4'], ['240', '240p MP4'], ['360', '360p MP4'],
   ['480', '480p MP4'], ['720', '720p HD MP4 Default'],
-  ['1080', '1080p FULL HD MP4'], ['4k', '2160p 4K WEBM'], ['8k', '4320p 8K WEBM']
+  ['1080', '1080p FULL HD MP4'], ['1440', '1440p 2K WEBM'], ['4k', '2160p 4K WEBM'], ['8k', '4320p 8K WEBM']
   ].forEach(([val, text, dis]) => {
     const opt = document.createElement('option');
     opt.value = val;
