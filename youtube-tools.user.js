@@ -4687,6 +4687,7 @@
                 <option value="1080">1080</option>
                 <option value="1440">1440</option>
                 <option value="2160">2160</option>
+                <option value="4320">4320</option>
               </select>
             </label>
           </div>
