@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'youtube-tools.user.js' # Only trigger when the main script changes
+      - 'youtube-tools.user.js'
+  workflow_dispatch: # Allow manual trigger
 
 permissions:
   contents: write
