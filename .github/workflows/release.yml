@@ -1,0 +1,36 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'youtube-tools.user.js' # Only trigger when the main script changes
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 "@version" youtube-tools.user.js | awk '{print $NF}')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ steps.get_version.outputs.VERSION }}
+          name: Release v${{ steps.get_version.outputs.VERSION }}
+          artifacts: "youtube-tools.user.js"
+          allowUpdates: true
+          makeLatest: true
+          body: "Automatic release for version ${{ steps.get_version.outputs.VERSION }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
