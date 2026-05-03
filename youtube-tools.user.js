@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.4.6
+// @version      0.0.4.7
 // @author       Akari, DeveloperMDCM
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
