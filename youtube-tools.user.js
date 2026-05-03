@@ -24,7 +24,7 @@
 // @description:ko 고품질 비디오/오디오 다운로드, 싫어요 표시, YouTube 및 YouTube Music을 위한 더 많은 VIP 기능.
 // @description:it Scarica video/audio di alta qualità, ripristina i dislike e altre funzioni VIP per YouTube e YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.5.2
+// @version      0.0.5.3
 // @author       Akari, DeveloperMDCM
 // @contributor  nvbangg
 // @match        *://www.youtube.com/*
@@ -6106,10 +6106,20 @@
           }
           html, body { 
             background-color: #0f0f0f !important;
-            background-image: ${localStorage.getItem('backgroundImage') ? 'url("' + localStorage.getItem('backgroundImage') + '")' : selectedTheme.gradient} !important;
-            background-size: cover !important;
-            background-position: center !important;
-            background-attachment: fixed !important;
+          }
+          /* Apply background image with theme overlay if exists */
+          if (localStorage.getItem('backgroundImage')) {
+            applyPageBackground(localStorage.getItem('backgroundImage'), selectedTheme.gradient);
+          } else {
+            // Apply only theme gradient
+            addDynamicCss(`
+              html, body {
+                background-image: ${selectedTheme.gradient} !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-attachment: fixed !important;
+              }
+            `);
           }
 
           /* Minimal transparency to allow background to show */
@@ -8659,7 +8669,7 @@
     observer.observe(navBar, { attributes: true, attributeFilter: ['opened'] });
   }
 
-  function applyPageBackground(url) {
+  function applyPageBackground(url, themeColor = null) {
     const isYTMusic = window.location.hostname === 'music.youtube.com';
     const selector = isYTMusic ? 'body, ytmusic-app' : 'ytd-app, body';
     const styleId = 'yt-tools-page-background';
@@ -8672,6 +8682,7 @@
     }
 
     if (url) {
+      const overlayColor = themeColor || 'rgba(0,0,0,0.5)';
       styleEl.textContent = `
       ${selector} {
         background-image: url("${url}") !important;
@@ -8680,6 +8691,20 @@
         background-position: center !important;
         background-attachment: fixed !important;
         background-repeat: no-repeat !important;
+      }
+      /* Blur overlay layer */
+      body::before {
+        content: "" !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: ${overlayColor} !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        z-index: -1 !important;
+        pointer-events: none !important;
       }
       #content.ytmusic-app, 
       #page-manager.ytd-app,
