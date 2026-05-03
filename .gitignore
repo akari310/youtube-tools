@@ -1,15 +1,6 @@
-# Ignore everything
-*
-
-# Except for these files in ROOT
-!youtube-tools.user.js
-!.gitignore
-!README.md
-!assets/
-!assets/**
-
-dist/
-!src/
-!src/*.js
-!scripts/
-!scripts/*.py
+src/
+scripts/
+.gemini/
+node_modules/
+.DS_Store
+*.log

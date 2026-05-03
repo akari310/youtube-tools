@@ -3,9 +3,9 @@
 // @name:vi      Bộ Công Cụ YouTube Tối Ưu
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
-// @homepage     https://github.com/akari310/
-// @version      0.0.4.3
-// @author       Akari
+// @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
+// @version      0.0.4.6
+// @author       Akari, DeveloperMDCM
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
 // @match        *://*.music.youtube.com/*
@@ -23,8 +23,8 @@
 // @compatible   opera
 // @compatible   safari
 // @compatible   edge
-// @license      MIT
-// @namespace    https://github.com/akari310/
+// @license      GPL-3.0
+// @namespace    https://greasyfork.org/users/1597067-nguyen-ngocanh
 // @keywords     youtube, download, mp3, mp4, high quality, return dislikes, tools
 // @downloadURL  https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.user.js
 // @updateURL    https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.meta.js
@@ -746,9 +746,10 @@
 
     if (!rt.refreshTimer) {
       rt.refreshTimer = setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
         const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
         applyAudioOnlyMode(getEffectiveAudioOnly(settings));
-      }, 2500);
+      }, 3000);
     }
   }
 
@@ -2597,7 +2598,7 @@
             background-color: #000 !important;
             background-repeat: no-repeat !important;
             background-position: center !important;
-            background-size: contain !important;
+            background-size: cover !important;
         }
 
         .yt-tools-audio-only-video {
@@ -3851,6 +3852,7 @@
 
     ytmusic-player-page #side-panel {
       margin-left: 16px !important;
+      margin-bottom: 24px !important;
       padding: 0 !important;
       background: transparent !important;
       border: none !important;
@@ -3950,6 +3952,7 @@
       width: 100% !important;
       box-sizing: border-box !important;
       padding: 12px 0 12px 12px !important;
+      margin-bottom: 12px !important;
     }
 
     /* Make the YTM Search Box premium and glassmorphic (Feature requested by user) */
@@ -5557,18 +5560,19 @@ if (isYTMusic) {
   function startAmbientWatcher() {
     if (_ambientWatcherId) return;
     _ambientWatcherId = setInterval(() => {
-      const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-      if (!settings.cinematicLighting) {
+      if (document.visibilityState !== 'visible') return;
+      const s = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+      const onWatch = window.location.href.includes('/watch');
+      if (!s.cinematicLighting) {
         if (ytmAmbientMode.active) ytmAmbientMode.hide();
         return;
       }
-      const onWatch = window.location.href.includes('/watch');
       if (onWatch && !ytmAmbientMode.active) {
         ytmAmbientMode.show();
       } else if (!onWatch && ytmAmbientMode.active) {
         ytmAmbientMode.hide();
       }
-    }, 800); // Fast polling for snappy response
+    }, 1500); // Reduced frequency from 800ms to 1500ms
   }
   setTimeout(startAmbientWatcher, 1500);
 
@@ -6452,14 +6456,20 @@ function applySettings() {
 
   // === CODE TỐI ƯU MỚI THAY THẾ CHO SCROLL EVENT === (YT only)
   if (!isYTMusic) {
+    let _commentIO = null;
+    let _commentMO = null;
     function initSmartCommentObserver() {
       const commentsContainer = document.querySelector('#comments');
       if (!commentsContainer) return;
 
-      const io = new IntersectionObserver((entries) => {
+      // Disconnect previous observers to avoid duplicates
+      if (_commentIO) { try { _commentIO.disconnect(); } catch(e){} _commentIO = null; }
+      if (_commentMO) { try { _commentMO.disconnect(); } catch(e){} _commentMO = null; }
+
+      _commentIO = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
 
-          const commentObserver = new MutationObserver((mutations) => {
+          _commentMO = new MutationObserver((mutations) => {
             let shouldUpdate = false;
             for (let m of mutations) {
               if (m.addedNodes.length > 0) {
@@ -6478,17 +6488,17 @@ function applySettings() {
 
           const commentContents = document.querySelector('ytd-comments #contents');
           if (commentContents) {
-            commentObserver.observe(commentContents, {
+            _commentMO.observe(commentContents, {
               childList: true,
               subtree: true
             });
           }
 
-          io.disconnect();
+          _commentIO.disconnect();
         }
       });
 
-      io.observe(commentsContainer);
+      _commentIO.observe(commentsContainer);
     }
 
     if (!window.__ytToolsCommentNavBound) {
@@ -6503,12 +6513,17 @@ function applySettings() {
   // === KẾT THÚC CODE TỐI ƯU ===
 
 
-  // Shorts DOM observer (YT only)
+  // Shorts DOM observer (YT only) – guarded via __ytToolsRuntime.shortsObserver
   if (!isYTMusic) {
     const contentScrollable = $e('.anchored-panel.style-scope.ytd-shorts #contents.style-scope.ytd-item-section-renderer.style-scope.ytd-item-section-renderer');
     if (contentScrollable) {
+      // Disconnect previous Shorts observer if it exists
+      if (__ytToolsRuntime.shortsObserver) {
+        try { __ytToolsRuntime.shortsObserver.disconnect(); } catch(e){}
+        __ytToolsRuntime.shortsObserver = null;
+      }
       let domTimeout;
-      const observer = new MutationObserver(() => {
+      __ytToolsRuntime.shortsObserver = new MutationObserver(() => {
         if (domTimeout) clearTimeout(domTimeout);
         domTimeout = setTimeout(() => {
           insertButtons();
@@ -6516,7 +6531,7 @@ function applySettings() {
         }, 300);
       });
 
-      observer.observe(contentScrollable, { childList: true, subtree: true });
+      __ytToolsRuntime.shortsObserver.observe(contentScrollable, { childList: true, subtree: true });
     }
   } // end if (!isYTMusic) shorts observer
 
@@ -6783,6 +6798,19 @@ function applySettings() {
     return null;
   }
 
+  function updateCanvasSize() {
+    if (canvas) {
+      canvas.width = window.innerWidth;
+      canvas.height = canvasHeight;
+    }
+  }
+
+  function onWaveStyleChange(e) {
+    waveStyle = e.target.value;
+    const selectAppend = $id('select-wave-visualizer-select');
+    if (selectAppend) selectAppend.value = e.target.value;
+    saveSettings();
+  }
 
   function cleanup(fullCleanup = false) {
     if (fullCleanup && animationId) {
@@ -6807,20 +6835,24 @@ function applySettings() {
       if (source) {
         try {
           source.disconnect();
+          // Reconnect source directly to destination to keep audio playing
+          // (createMediaElementSource routes ALL audio through Web Audio API)
+          if (audioCtx && audioCtx.state !== 'closed') {
+            source.connect(audioCtx.destination);
+          }
         } catch (err) { }
-        source = null;
+        // Don't null source — cached on video.__ytToolsAudioSource for reuse
       }
-      if (audioCtx) {
-        try {
-          audioCtx.close();
-        } catch (err) { }
-        audioCtx = null;
-      }
+      // Keep audioCtx running — source is connected to destination for audio passthrough
       if (currentVideo && currentVideo[PROCESSED_FLAG]) {
         delete currentVideo[PROCESSED_FLAG];
       }
       currentVideo = null;
       isSetup = false;
+
+      window.removeEventListener('resize', updateCanvasSize);
+      const selectAppend = $id('select-wave-visualizer-select');
+      if (selectAppend) selectAppend.removeEventListener('change', onWaveStyleChange);
     } else {
       if (canvas) canvas.style.opacity = '0';
       if (controlPanel) controlPanel.style.opacity = '0';
@@ -6859,12 +6891,10 @@ function applySettings() {
     const selectAppend = $id('select-wave-visualizer-select');
     waveStyle = settings.waveVisualizerSelected;
 
-    selectAppend.addEventListener('change', (e) => {
-      waveStyle = e.target.value;
-      selectAppend.value = e.target.value;
-      saveSettings();
-    });
-
+    if (selectAppend) {
+      selectAppend.removeEventListener('change', onWaveStyleChange);
+      selectAppend.addEventListener('change', onWaveStyleChange);
+    }
   }
 
 
@@ -6878,14 +6908,13 @@ function applySettings() {
     createCanvasOverlay();
     createControlPanelWave();
 
-    if (audioCtx) {
-      try {
-        audioCtx.close();
-      } catch (e) { }
-      audioCtx = null;
+    // Reuse existing AudioContext if possible (suspend/resume pattern)
+    if (!audioCtx || audioCtx.state === 'closed') {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+    } else if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
     }
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContext();
 
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 2048;
@@ -6895,7 +6924,14 @@ function applySettings() {
     smoothedData = new Array(bufferLength).fill(128);
 
     try {
-      source = audioCtx.createMediaElementSource(video);
+      // Reuse cached source if video already has one (createMediaElementSource is one-shot per element)
+      if (video.__ytToolsAudioSource) {
+        source = video.__ytToolsAudioSource;
+        try { source.disconnect(); } catch(e) {}
+      } else {
+        source = audioCtx.createMediaElementSource(video);
+        video.__ytToolsAudioSource = source;
+      }
       source.connect(analyser);
       analyser.connect(audioCtx.destination);
     } catch (e) {
@@ -6911,13 +6947,6 @@ function applySettings() {
     video.addEventListener('play', showCanvas);
     video.addEventListener('pause', hideCanvas);
     video.addEventListener('ended', hideCanvas);
-
-    const updateCanvasSize = () => {
-      if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = canvasHeight;
-      }
-    };
 
     window.removeEventListener('resize', updateCanvasSize);
     window.addEventListener('resize', updateCanvasSize);
@@ -7072,16 +7101,19 @@ function applySettings() {
       const now = Date.now();
       const delta = (now - lastUpdate) / 1000;
 
-      if (document.visibilityState === 'visible') {
+      const isVisible = document.visibilityState === 'visible';
+      if (isVisible) {
         usageTime += delta;
       }
 
-      // Tối ưu việc tìm video đang chạy
-      const activeVideoEl = document.querySelector('video.video-stream');
-      if (activeVideoEl && !activeVideoEl.paused && !activeVideoEl.ended) {
-        const type = window.location.pathname.startsWith('/shorts') ? 'shorts' : 'video';
-        if (type === 'video') videoTime += delta;
-        else shortsTime += delta;
+      // Only do DOM query when tab is visible
+      if (isVisible) {
+        const activeVideoEl = document.querySelector('video.video-stream');
+        if (activeVideoEl && !activeVideoEl.paused && !activeVideoEl.ended) {
+          const type = window.location.pathname.startsWith('/shorts') ? 'shorts' : 'video';
+          if (type === 'video') videoTime += delta;
+          else shortsTime += delta;
+        }
       }
 
       lastUpdate = now;
@@ -7092,8 +7124,8 @@ function applySettings() {
         GM_setValue(STORAGE.VIDEO, videoTime);
         GM_setValue(STORAGE.SHORTS, shortsTime);
       }
-      if ($id('stats')?.classList?.contains('active')) updateUI();
-    }, UPDATE_INTERVAL);
+      if (isVisible && $id('stats')?.classList?.contains('active')) updateUI();
+    }, 2000); // Reduced from 1s to 2s — UI still feels responsive
     // Lưu ngay khi user rời trang
     window.addEventListener('pagehide', () => {
       GM_setValue(STORAGE.USAGE, usageTime);
@@ -8063,12 +8095,18 @@ if (checkActiveWave) {
     const waveVisualizer = $e('#wave-visualizer-toggle');
     if (waveVisualizer.checked) {
       Notify('success', 'Wave visualizer enabled');
+      saveSettings();
+      scheduleApplySettings();
     } else {
+      // Soft cleanup: hide canvas + stop animation, but keep AudioContext alive
+      // (createMediaElementSource can only bind once per video element)
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
       hideCanvas();
-      Notify('success', 'Wave visualizer disabled realod page');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      saveSettings();
+      Notify('success', 'Wave visualizer disabled');
     }
   });
 }

@@ -1,7 +1,7 @@
 # YouTube Ultimate Tools 🚀
 
 [![Greasy Fork](https://img.shields.io/greasyfork/v/576162?label=Greasy%20Fork&color=red)](https://greasyfork.org/scripts/576162)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ![YouTube Preview](assets/yt_preview.png)
 ![YouTube Music Preview](assets/ytm_preview.png)
@@ -51,14 +51,16 @@ If you prefer to install manually or if Greasy Fork is down:
 Once installed, a **Gear Icon** ⚙️ will appear on the top right of YouTube and YouTube Music. Click it to open the settings panel and customize your experience.
 
 ## 📜 Credits
-Developed with ❤️ by [**Akari**](https://github.com/akari310).
+Developed with ❤️ by [**Akari**](https://greasyfork.org/users/1597067-nguyen-ngocanh).
 
 ### Feature Sources / Attribution
 - Nonstop playback and Audio-only behavior are independently adapted from **Nonstop & Audio Only for YouTube & YouTube Music** by **nvbangg / Nguyen Van Bang**.
-- Source repository: https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic
-- Greasy Fork userscript source: https://greasyfork.org/scripts/546130
-- Chrome Web Store extension: https://chromewebstore.google.com/detail/bobdimbkbnkabpfhdfbddjoppiohcodi
+- Base project and core features adapted from **Youtube Tools Extension** by [**DeveloperMDCM**](https://github.com/DeveloperMDCM/Youtube-tools-extension) ([Greasy Fork](https://greasyfork.org/users/994711-mdcm)).
+- Greasy Fork userscript source (nvbangg): https://greasyfork.org/scripts/546130
 - Original source project license: GPL-3.0.
+
+## 📄 License
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
 
 ---
 *Disclaimer: This tool is for personal use only. Please respect the copyright of content creators.*
