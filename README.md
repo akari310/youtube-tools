@@ -35,17 +35,24 @@ A powerful, glassmorphic userscript designed to enhance your experience on **You
 
 ## 🚀 Installation
 
-1. Install a userscript manager like **Tampermonkey** or **Violentmonkey**.
-2. Click the link below to install the script:
-   👉 [**Install YouTube Ultimate Tools**](https://greasyfork.org/scripts/576162)
+Follow these simple steps to get started:
 
-### ⌨️ Manual Installation (Alternative)
-If you prefer to install manually or if Greasy Fork is down:
-1. Open the [**youtube-tools.user.js**](https://github.com/akari310/youtube-tools/blob/main/youtube-tools.user.js) file in this repository.
-2. Click the **"Raw"** button to see the code.
-3. Copy all the code (Ctrl+A, Ctrl+C).
-4. Open your userscript manager (Tampermonkey) and click **"Create a new script"**.
-5. Paste the code and **Save**.
+### Step 1: Install a Userscript Manager
+You need a browser extension to run this script. Choose one for your browser:
+- **Tampermonkey** (Recommended): [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/) | [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobogogocnfkclakjfggl)
+- **Violentmonkey**: [Chrome](https://chromewebstore.google.com/detail/violentmonkey/jinjacbljjnnnndkhlebbnbiomkhpnih) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)
+
+### Step 2: Install the Script
+Choose one of the following methods:
+
+#### **Option A: Automatic Installation (Best)**
+Click the button below to install directly via Greasy Fork:
+[![Install Script](https://img.shields.io/badge/Install-YouTube_Ultimate_Tools-red?style=for-the-badge&logo=tampermonkey)](https://greasyfork.org/scripts/576162/code/YouTube%20Ultimate%20Tools.user.js)
+
+#### **Option B: Manual Installation (GitHub)**
+1. Open the [youtube-tools.user.js](https://github.com/akari310/youtube-tools/raw/main/youtube-tools.user.js) file.
+2. Your userscript manager will automatically detect the script and ask for installation.
+3. If it doesn't, click the **"Raw"** button at the top-right of the file view, copy the entire code, and paste it into a **"New Script"** in Tampermonkey.
 
 ## 🛠️ Usage
 Once installed, a **Gear Icon** ⚙️ will appear on the top right of YouTube and YouTube Music. Click it to open the settings panel and customize your experience.
