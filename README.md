@@ -47,7 +47,7 @@ Choose one of the following methods:
 
 #### **Option A: Automatic Installation (Best)**
 Click the button below to install directly via Greasy Fork:
-[![Install Script](https://img.shields.io/badge/Install-YouTube_Ultimate_Tools-red?style=for-the-badge&logo=tampermonkey)](https://greasyfork.org/scripts/576162/code/YouTube%20Ultimate%20Tools.user.js)
+[![Install Script](https://img.shields.io/badge/Install-YouTube_Ultimate_Tools-red?style=flat-square&logo=tampermonkey)](https://greasyfork.org/scripts/576162/code/YouTube%20Ultimate%20Tools.user.js)
 
 #### **Option B: Manual Installation (GitHub)**
 1. Open the [youtube-tools.user.js](https://github.com/akari310/youtube-tools/raw/main/youtube-tools.user.js) file.
