@@ -6,6 +6,7 @@
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
 // @version      0.0.4.7
 // @author       Akari, DeveloperMDCM
+// @contributor  nvbangg
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
 // @match        *://*.music.youtube.com/*
@@ -4916,9 +4917,13 @@
   </div>
   <div class="actions-mdcm">
     <div class="developer-mdcm">
-      Developed by <a href="https://github.com/akari310" target="_blank"> <i class="fa-brands fa-github"></i> Akari</a>
+      <div style="font-size: 11px; opacity: 0.8; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+        Developed by <a href="https://github.com/akari310" target="_blank" style="color: #ff4444;">Akari</a>. 
+        Base by <a href="https://github.com/DeveloperMDCM" target="_blank" style="color: #aaa;">MDCM</a>. 
+        Features from <a href="https://github.com/nvbangg" target="_blank" style="color: #aaa;">nvbangg</a>.
+      </div>
     </div>
-    <span style="color: #fff" ;>v0.0.2.6</span>
+    <span style="color: #fff" ;>v0.0.4.7</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7988,17 +7993,17 @@ const MESSAGE_STYLE = 'color: #00aaff; font-size: 16px; font-family: sans-serif;
 const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
-  '%cYoutube Tools Extension NEW UI\n' +
-  '%cRun %c(v0.0.2.6)\n' +
-  'By: Akari.',
+  '%cYoutube Ultimate Tools (v0.0.4.7)\n' +
+  '%cDeveloped by Akari\n' +
+  '%c(Based on MDCM & nvbangg)',
   HEADER_STYLE,
   CODE_STYLE,
   MESSAGE_STYLE
 );
 
-if (!localStorage.getItem('notification-Akari')) {
-  Notify('info', 'Youtube Tools by: Akari :)');
-  localStorage.setItem('notification-Akari', true);
+if (!localStorage.getItem('notification-Akari-v0.0.4.7')) {
+  Notify('info', 'Youtube Ultimate Tools by: Akari (v0.0.4.7)');
+  localStorage.setItem('notification-Akari-v0.0.4.7', true);
 }
 
 
