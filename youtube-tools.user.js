@@ -8379,6 +8379,41 @@ GM_registerMenuCommand('Update Script by: Akari', function () {
 // https://video-download-api.com
 // 4kdownload
 
+function applyPageBackground(url) {
+  const isYTMusic = window.location.hostname === 'music.youtube.com';
+  const selector = isYTMusic ? 'ytmusic-app' : 'ytd-app, body';
+  const styleId = 'yt-tools-page-background';
+  let styleEl = $id(styleId);
+
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = styleId;
+    document.head.appendChild(styleEl);
+  }
+
+  if (url) {
+    styleEl.textContent = `
+      ${selector} {
+        background-image: url("${url}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
+        background-repeat: no-repeat !important;
+      }
+      #content.ytmusic-app, 
+      #page-manager.ytd-app,
+      #columns.ytd-watch-flexy,
+      ytd-browse,
+      ytmusic-browse-response,
+      ytmusic-player-page {
+        background: transparent !important;
+      }
+    `;
+  } else {
+    styleEl.textContent = '';
+  }
+}
+
 // --- Background Image Customization ---
 const inputFile = $id('background_image');
 const preview = $id('background-image-preview');
@@ -8391,10 +8426,12 @@ if (inputFile && preview) {
     preview.style.backgroundImage = `url(${storedImage})`;
     preview.classList.add('has-image');
     if (removeBtn) removeBtn.style.display = 'flex';
+    applyPageBackground(storedImage);
   } else {
     preview.style.backgroundImage = '';
     preview.classList.remove('has-image');
     if (removeBtn) removeBtn.style.display = 'none';
+    applyPageBackground(null);
   }
 
 
@@ -8414,6 +8451,7 @@ if (inputFile && preview) {
       preview.classList.add('has-image');
       localStorage.setItem('backgroundImage', dataUrl);
       if (removeBtn) removeBtn.style.display = 'flex';
+      applyPageBackground(dataUrl);
     };
     reader.readAsDataURL(file);
   });
@@ -8430,6 +8468,7 @@ if (inputFile && preview) {
       preview.classList.remove('has-image');
       localStorage.removeItem('backgroundImage');
       removeBtn.style.display = 'none';
+      applyPageBackground(null);
     });
   }
 }
