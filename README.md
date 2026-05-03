@@ -61,9 +61,9 @@ Once installed, a **Gear Icon** ⚙️ will appear on the top right of YouTube a
 Developed with ❤️ by [**Akari**](https://greasyfork.org/users/1597067-nguyen-ngocanh).
 
 ### Feature Sources / Attribution
-- **Nonstop & Audio Only behavior**: Adapted from [nvbangg/Nonstop_Audio_Only](https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic) ([Greasy Fork](https://greasyfork.org/scripts/546130)).
-- **Base Project & Core Features**: Adapted from [Youtube Tools Extension](https://github.com/DeveloperMDCM/Youtube-tools-extension) by [DeveloperMDCM](https://greasyfork.org/users/994711-mdcm).
-- **License**: Both source projects use GPL-3.0.
+- **Nonstop & Audio Only behavior**: Adapted from [Nonstop_Audio_Only](https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic) ([Greasy Fork](https://greasyfork.org/scripts/546130)) by [nvbangg](https://greasyfork.org/users/1209797-nvbangg).
+- **Base Project & Core Features**: Adapted from [Youtube Tools Extension](https://github.com/DeveloperMDCM/Youtube-tools-extension) ([Greasy Fork](https://greasyfork.org/users/994711-mdcm)) by [DeveloperMDCM](https://github.com/DeveloperMDCM).
+- **License**: Both source projects are licensed under GPL-3.0.
 
 ## 📄 License
 This project is licensed under the [GNU General Public License v3.0](LICENSE).
