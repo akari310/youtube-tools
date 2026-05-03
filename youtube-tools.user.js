@@ -4,7 +4,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.4.7
+// @version      0.0.4.8
 // @author       Akari, DeveloperMDCM
 // @contributor  nvbangg
 // @match        *://www.youtube.com/*
@@ -4923,7 +4923,7 @@
         Features from <a href="https://github.com/nvbangg" target="_blank" style="color: #00ffaa; text-decoration: none;"><i class="fa-brands fa-github"></i> nvbangg</a>.
       </div>
     </div>
-    <span style="color: #fff" ;>v0.0.4.7</span>
+    <span style="color: #fff" ;>v${GM_info.script.version}</span>
   </div>
   `;
   panel.innerHTML = safeHTML(menuHTML);
@@ -7993,7 +7993,7 @@ const MESSAGE_STYLE = 'color: #00aaff; font-size: 16px; font-family: sans-serif;
 const CODE_STYLE = 'font-size: 14px; font-family: monospace;';
 
 console.log(
-  '%cYoutube Ultimate Tools (v0.0.4.7)\n' +
+  `%cYoutube Ultimate Tools (v${GM_info.script.version})\n` +
   '%cDeveloped by Akari\n' +
   '%c(Based on MDCM & nvbangg)',
   HEADER_STYLE,
@@ -8001,9 +8001,10 @@ console.log(
   MESSAGE_STYLE
 );
 
-if (!localStorage.getItem('notification-Akari-v0.0.4.7')) {
-  Notify('info', 'Youtube Ultimate Tools by: Akari (v0.0.4.7)');
-  localStorage.setItem('notification-Akari-v0.0.4.7', true);
+const currentVersion = GM_info.script.version;
+if (!localStorage.getItem('notification-Akari-' + currentVersion)) {
+  Notify('info', 'Youtube Ultimate Tools by: Akari (v' + currentVersion + ')');
+  localStorage.setItem('notification-Akari-' + currentVersion, true);
 }
 
 
