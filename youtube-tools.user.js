@@ -6049,6 +6049,11 @@
                user-select: none;
              }
                `);
+            if (localStorage.getItem('backgroundImage')) {
+              applyPageBackground(localStorage.getItem('backgroundImage'), null);
+            } else {
+              applyPageBackground(null);
+            }
             return;
           }
 
@@ -6107,6 +6112,8 @@
           html, body { 
             background-color: #0f0f0f !important;
           }
+          `);
+
           /* Apply background image with theme overlay if exists */
           if (localStorage.getItem('backgroundImage')) {
             applyPageBackground(localStorage.getItem('backgroundImage'), selectedTheme.gradient);
@@ -6123,6 +6130,7 @@
           }
 
           /* Minimal transparency to allow background to show */
+          addDynamicCss(`
           ytd-app, 
           #content.ytd-app, 
           #page-manager.ytd-app, 
@@ -6532,6 +6540,11 @@
         }
 
       } else {
+        if (localStorage.getItem('backgroundImage')) {
+          applyPageBackground(localStorage.getItem('backgroundImage'), null);
+        } else {
+          applyPageBackground(null);
+        }
         // Cleanup theme vars when toggled off to fix stuck colors on side-panel
         const props = [
           '--ytmusic-general-background', '--ytmusic-background', '--ytmusic-color-white1', '--ytmusic-color-white2',
@@ -8728,15 +8741,18 @@
         background-color: #212121 !important;
       }
       /* Search button - restore default YT gray */
-      .ytSearchboxComponentSearchButton,
-      .ytSearchboxComponentSearchButtonDark {
+      ytd-searchbox #search-icon-legacy,
+      button.ytSearchboxComponentSearchButton,
+      button.ytSearchboxComponentSearchButtonDark {
         background-color: #222222 !important;
+        border: none !important;
       }
       /* Voice search button - add blur backdrop for visibility */
-      #voice-search-button .ytSpecButtonShapeNextHost {
-        background: rgba(255, 255, 255, 0.1) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
+      #voice-search-button .ytSpecButtonShapeNextHost,
+      #voice-search-button button {
+        background: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
         border-radius: 50% !important;
       }
       /* Hide Shorts cinematic black blocks */
@@ -8746,6 +8762,14 @@
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
+      }
+      /* Remove dark gradient overlays from Shorts */
+      .overlay.ytd-reel-video-renderer,
+      ytd-reel-player-overlay-renderer,
+      ytd-reel-player-overlay-renderer #overlay,
+      .overlay-container.ytd-reel-player-overlay-renderer {
+        background: transparent !important;
+        background-image: none !important;
       }
     `;
     } else {
@@ -8822,7 +8846,7 @@
     // 1. Remove from regular DOM
     const selector = '#cinematic-container.ytd-reel-video-renderer, #shorts-cinematic-container, #cinematic-shorts-scrim';
     document.querySelectorAll(selector).forEach(el => el.remove());
-    
+
     // 2. Remove from Shadow DOMs of all reel renderers
     document.querySelectorAll('ytd-reel-video-renderer').forEach(reel => {
       if (reel.shadowRoot) {
