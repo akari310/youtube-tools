@@ -1,6 +1,6 @@
 (function () {
     'use strict';
-    let validoUrl = document.location.href;
+    let currentUrl = document.location.href;
     const isYTMusic = location.hostname === 'music.youtube.com';
     const SETTINGS_KEY = isYTMusic ? 'ytmSettingsMDCM' : 'ytSettingsMDCM';
     const $e = (el) => document.querySelector(el); // any element

@@ -42,7 +42,7 @@
         $sp('--yt-enhance-menu-text', settings.menu_developermdcm.color);
         $sp('--yt-enhance-menu-accent', settings.menu_developermdcm.accent);
 
-        renderizarButtons();
+        renderButtons();
         if (typeof applyNonstopPlayback === 'function') applyNonstopPlayback(settings.nonstopPlayback);
         if (typeof applyAudioOnlyMode === 'function') applyAudioOnlyMode(settings.audioOnly);
         
@@ -86,7 +86,7 @@
 
         checkForVideo(settings);
         downloadDescriptionVideo();
-        traductor();
+        applyTranslator();
     }
 
     function applyAutoplaySubtitleToggles(settings) {

@@ -94,11 +94,11 @@
     //   Dislikes video
     async function videoDislike() {
         if (isYTMusic) return;
-        validoUrl = document.location.href;
+        let currentUrl = document.location.href;
 
-        const validoVentana = $e('#below > ytd-watch-metadata > div');
-        if (validoVentana != undefined && document.location.href.split('?v=')[0].includes('youtube.com/watch')) {
-            validoUrl = paramsVideoURL();
+        const validWindowEl = $e('#below > ytd-watch-metadata > div');
+        if (validWindowEl != undefined && document.location.href.split('?v=')[0].includes('youtube.com/watch')) {
+            currentUrl = paramsVideoURL();
             const data = await ensureDislikesForCurrentVideo();
             if (!data || data.dislikes == null) return;
 
@@ -139,7 +139,7 @@
                 if (!dislikes_btn.dataset.observerInitialized) {
                     dislikes_btn.dataset.observerInitialized = 'true';
                     
-                    const videoId = validoUrl;
+                    const videoId = currentUrl;
                     const sessionKey = `yt-dislike-initial-${videoId}`;
 
                     // Delay capturing initial state to ensure YouTube's UI has stabilized
@@ -202,38 +202,38 @@
 
     // dislikes shorts + views button (viewCount from Return YouTube Dislike API)
     async function shortDislike() {
-        validoUrl = document.location.href;
-        const validoVentanaShort = $m(
+        currentUrl = document.location.href;
+        const validShortEls = $m(
             "#button-bar > reel-action-bar-view-model > dislike-button-view-model > toggle-button-view-model > button-view-model > label > div > span"
         );
 
-        if (validoVentanaShort != undefined && document.location.href.split('/')[3] === 'shorts') {
-            validoUrl = document.location.href.split('/')[4];
+        if (validShortEls != undefined && document.location.href.split('/')[3] === 'shorts') {
+        let currentUrl = document.location.href.split('/')[4];
             let dislikes = null;
             let viewCount = null;
             let rating = null;
-            const persisted = getLikesDislikesFromPersistedCache(validoUrl);
+            const persisted = getLikesDislikesFromPersistedCache(currentUrl);
             if (persisted && persisted.dislikes != null) {
                 dislikes = persisted.dislikes;
                 viewCount = persisted.viewCount ?? null;
                 rating = persisted.rating ?? null;
             } else {
-                const urlShorts = `${apiDislikes}${validoUrl}`;
+                const urlShorts = `${apiDislikes}${currentUrl}`;
                 try {
                     const respuesta = await fetch(urlShorts);
                     const datosShort = await respuesta.json();
                     dislikes = Number(datosShort?.dislikes);
                     viewCount = Number(datosShort?.viewCount);
                     rating = Number(datosShort?.rating);
-                    if (Number.isFinite(dislikes)) setLikesDislikesToPersistedCache(validoUrl, undefined, dislikes, Number.isFinite(viewCount) ? viewCount : undefined, (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined);
+                    if (Number.isFinite(dislikes)) setLikesDislikesToPersistedCache(currentUrl, undefined, dislikes, Number.isFinite(viewCount) ? viewCount : undefined, (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined);
                 } catch (error) {
                     console.log(error);
                 }
             }
             if (dislikes != null) {
                 const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-                for (let i = 0; i < validoVentanaShort.length; i++) {
-                    const el = validoVentanaShort[i];
+                for (let i = 0; i < validShortEls.length; i++) {
+                    const el = validShortEls[i];
                     if (settings.dislikes) {
                         if (!el.dataset.originalLabel) el.dataset.originalLabel = el.textContent;
                         el.textContent = `${FormatterNumber(dislikes, 0)}`;
@@ -245,8 +245,8 @@
                     }
                 }
             }
-            if (__ytToolsRuntime.updateShortsViewsButton) __ytToolsRuntime.updateShortsViewsButton(validoUrl, viewCount);
-            if (__ytToolsRuntime.updateShortsRatingButton) __ytToolsRuntime.updateShortsRatingButton(validoUrl, rating);
+            if (__ytToolsRuntime.updateShortsViewsButton) __ytToolsRuntime.updateShortsViewsButton(currentUrl, viewCount);
+            if (__ytToolsRuntime.updateShortsRatingButton) __ytToolsRuntime.updateShortsRatingButton(currentUrl, rating);
         }
     }
 

@@ -19,8 +19,8 @@
                         }
                         if (shouldUpdate) {
                             window.requestAnimationFrame(() => {
-                                if (settings.avatars) agregarBotonesDescarga(settings);
-                                if (settings.translation) traductor();
+                                if (settings.avatars) addAvatarDownloadButtons(settings);
+                                if (settings.translation) applyTranslator();
                             });
                         }
                     });

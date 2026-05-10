@@ -83,9 +83,9 @@
 
     function getVideoIdFromShortsLockup(item) {
         if (item.dataset.ytToolsShortsVideoId) return item.dataset.ytToolsShortsVideoId;
-        var a = item.querySelector('a[href^="/shorts/"]');
+        const a = item.querySelector('a[href^="/shorts/"]');
         if (!a) return null;
-        var m = (a.getAttribute('href') || '').match(/\/shorts\/([^/?]+)/);
+        const m = (a.getAttribute('href') || '').match(/\/shorts\/([^/?]+)/);
         return m ? m[1] : null;
     }
 
@@ -94,30 +94,30 @@
         // Process inner lockup (has metadata); v2 wraps it and would duplicate
         document.querySelectorAll('ytm-shorts-lockup-view-model').forEach(function (item) {
             if (item.hasAttribute('data-yt-tools-shorts-stats')) return;
-            var videoId = getVideoIdFromShortsLockup(item);
+            const videoId = getVideoIdFromShortsLockup(item);
             if (!videoId) return;
-            var cached = getLikesDislikesFromPersistedCache(videoId);
+            const cached = getLikesDislikesFromPersistedCache(videoId);
             if (!cached) return;
-            var hasLikes = cached.likes != null;
-            var hasDislikes = cached.dislikes != null;
+            const hasLikes = cached.likes != null;
+            const hasDislikes = cached.dislikes != null;
             if (!hasLikes && !hasDislikes) return;
-            var subhead = item.querySelector(
+            const subhead = item.querySelector(
                 '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
                 '.shortsLockupViewModelHostOutsideMetadataSubhead,' +
                 '.ShortsLockupViewModelHostMetadataSubhead,' +
                 '.shortsLockupViewModelHostMetadataSubhead'
             );
             if (!subhead || !subhead.parentElement) return;
-            var wrap = document.createElement('span');
+            const wrap = document.createElement('span');
             wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color yt-tools-shorts-stats-row';
             wrap.setAttribute('dir', 'auto');
             wrap.setAttribute('role', 'text');
             wrap.setAttribute('style', 'color: #aaa !important;');
-            var sep = function () {
+            const sep = function () {
                 return document.createTextNode(' \u00b7 ');
             };
             if (hasLikes) {
-                var likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 12);
+                const likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 12);
                 if (likeIcon) {
                     likeIcon.style.setProperty('color', '#aaa', 'important');
                     wrap.appendChild(likeIcon);
@@ -126,14 +126,14 @@
                 if (hasDislikes) wrap.appendChild(sep());
             }
             if (hasDislikes) {
-                var dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 12);
+                const dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 12);
                 if (dislikeIcon) {
                     dislikeIcon.style.setProperty('color', '#aaa', 'important');
                     wrap.appendChild(dislikeIcon);
                 }
                 wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
             }
-            var row = document.createElement('div');
+            const row = document.createElement('div');
             row.className = 'yt-tools-shorts-stats-wrap';
             row.setAttribute('style', 'color: #aaa !important;');
             row.appendChild(wrap);
@@ -143,9 +143,9 @@
     }
 
     function createLockupStatsObserver(target) {
-        var lockupStatsDebounceT = null;
-        var lockupStatsScheduled = false;
-        var obs = new MutationObserver(function () {
+        let lockupStatsDebounceT = null;
+        let lockupStatsScheduled = false;
+        const obs = new MutationObserver(function () {
             if (lockupStatsScheduled) return;
             lockupStatsScheduled = true;
             clearTimeout(lockupStatsDebounceT);
@@ -172,10 +172,10 @@
 
     function retargetLockupStatsObserverIfNeeded() {
         if (!window.location.href.includes('youtube.com/watch')) return;
-        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
+        const secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
         if (!secondary || !secondary.parentNode) return;
         if (__ytToolsRuntime.lockupCachedStatsObserveTarget === secondary) return;
-        var obs = __ytToolsRuntime.lockupCachedStatsObserver;
+        const obs = __ytToolsRuntime.lockupCachedStatsObserver;
         if (!obs) return;
         obs.disconnect();
         __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(secondary);
@@ -183,8 +183,8 @@
     }
 
     function hasUnprocessedLockups() {
-        var normal = document.querySelectorAll('yt-lockup-view-model:not([data-yt-tools-lockup-stats])').length > 0;
-        var shorts = document.querySelectorAll('ytm-shorts-lockup-view-model:not([data-yt-tools-shorts-stats])').length > 0;
+        const normal = document.querySelectorAll('yt-lockup-view-model:not([data-yt-tools-lockup-stats])').length > 0;
+        const shorts = document.querySelectorAll('ytm-shorts-lockup-view-model:not([data-yt-tools-shorts-stats])').length > 0;
         return normal || shorts;
     }
 
@@ -200,8 +200,8 @@
         if (!window.location.href.includes('youtube.com')) return;
         injectLockupCachedStats();
         injectShortsLockupCachedStats();
-        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
-        var observeTarget = secondary && secondary.parentNode ? secondary : document.body;
+        const secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
+        const observeTarget = secondary && secondary.parentNode ? secondary : document.body;
         if (__ytToolsRuntime.lockupCachedStatsObserver) {
             if (observeTarget !== __ytToolsRuntime.lockupCachedStatsObserveTarget) {
                 __ytToolsRuntime.lockupCachedStatsObserver.disconnect();

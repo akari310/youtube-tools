@@ -619,7 +619,7 @@
             languagesComments: $id('select-languages-comments-select').value,
             // menuBgColor: $id('menu-bg-color-picker').value,
             // menuTextColor: $id('menu-text-color-picker').value,
-            menu_akari: {
+            menu_developermdcm: {
                 bg: selectedBgColor,
                 color: selectedTextColor,
                 accent: selectedBgAccentColor

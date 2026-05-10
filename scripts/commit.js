@@ -25,7 +25,7 @@ async function commit(message, options = {}) {
         // 4. Git push
         if (!options.noPush) {
             console.log('Pushing to GitHub...');
-            execSync('git push origin main --force', { cwd: repoRoot, stdio: 'inherit' });
+            execSync('git push origin main', { cwd: repoRoot, stdio: 'inherit' });
         }
         
         console.log('Done!');

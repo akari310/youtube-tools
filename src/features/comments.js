@@ -1,5 +1,5 @@
 
-        function agregarBotonesDescarga(settings) {
+        function addAvatarDownloadButtons(settings) {
             const avatars = $m('#author-thumbnail-button #img.style-scope.yt-img-shadow');
 
             avatars.forEach((img) => {
@@ -81,7 +81,7 @@
         }
 
         let translatorEventBound = false;
-        function traductor() {
+        function applyTranslator() {
             const texts = document.querySelectorAll('#content-text:not([data-translated])');
             if (texts.length === 0) return;
 
