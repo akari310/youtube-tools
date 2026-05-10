@@ -14,7 +14,7 @@
 // @description  Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.
 // @description:vi Tải video/audio chất lượng cao, hiện nút dislike, và nhiều tính năng VIP khác cho YouTube và YouTube Music.
 // @description:es Descarga videos/audio de alta calidad, recupera dislikes y más funciones VIP para YouTube và YouTube Music.
-// @description:fr Téléchargez des vidéos/audio de haute qualité, récupérez les dislikes et plus de fonctionnalités VIP pour YouTube và YouTube Music.
+// @description:fr Téléchargez des vidéos/audio de haute qualità, récupérez les dislikes et plus de fonctionnalités VIP pour YouTube và YouTube Music.
 // @description:de Laden Sie hochwertige Videos/Audio herunter, stellen Sie Dislikes wieder her und weitere VIP-Funktionen für YouTube và YouTube Music.
 // @description:pt Baixe vídeos/áudio de alta qualidade, recupere dislikes e mais recursos VIP para YouTube và YouTube Music.
 // @description:ru Скачивайте видео/аудио высокого качества, возвращайте дизлайки и другие VIP-функции для YouTube и YouTube Music.
@@ -47,6 +47,6 @@
 // @license      GPL-3.0
 // @namespace    https://greasyfork.org/users/1597067-nguyen-ngocanh
 // @keywords     youtube, download, mp3, mp4, high quality, return dislikes, tools
-// @downloadURL  https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.user.js
-// @updateURL    https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.meta.js
+// @downloadURL https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.user.js
+// @updateURL https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.meta.js
 // ==/UserScript==

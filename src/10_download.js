@@ -1,3 +1,180 @@
+    GM_addStyle(`
+       @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
+      @import url("https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css");
+      :root {
+              --primary-custom: #ff0000 !important;
+              --bg-dark-custom: #1a1a1a !important;
+              --bg-card-custom: #252525 !important;
+              --text-custom: #ffffff !important;
+              --text-custom-secondary: #9e9e9e !important;
+              --accent-custom: #ff4444 !important;
+          }
+        #panel-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9998;
+            backdrop-filter: blur(2px);
+        }
+        #yt-enhancement-panel {
+            z-index: 9999 !important;
+        }
+        body .container-mdcm {
+              font-family: "Inter", -apple-system, sans-serif;
+              color: var(--yt-enhance-menu-text, var(--text-custom));
+        }
+        #toggle-button:hover {
+          background-color: rgba(255,255,255,0.1);
+          border-radius: 50%;
+          opacity: 1 !important;
+          }
+        .container-mdcm {
+            width: 420px;
+            max-width: 420px;
+            background: rgba(30, 30, 30, 0.6) !important;
+            border-radius: 16px 16px 0 0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            max-height: 80vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: auto;
+        }
+
+        #shareDropdown {
+        display: none;
+        position: absolute;
+        top: 50px;
+        right: 100px;
+        background-color: var(--yt-enhance-menu-bg, #252525);
+        border-radius: 6px;
+        padding: 10px;
+        box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 12px;
+        z-index: 11;
+        }
+        #shareDropdown a {
+        color: var(--text-custom);
+        text-decoration: none;
+        line-height: 2;
+        font-size: 14px;
+        }
+        #shareDropdown a:hover {
+        color: var(--primary-custom);
+        }
+        .header-mdcm {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            background-color: var(--yt-enhance-menu-bg, #252525);
+            border-radius: 16px 16px 0 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-mdcm h1 {
+            font-size: 16px;
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+
+        .header-mdcm i {
+         color: var(--primary-custom)
+        }
+
+
+        .icons-mdcm {
+            display: flex;
+            gap: 4px;
+        }
+        .icons-mdcm i {
+          color: var(--yt-enhance-menu-accent, var(--text-custom));
+        }
+
+
+        .icon-btn-mdcm {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: var(--text-custom);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .icon-btn-mdcm:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .icon-btn-mdcm i {
+         color: var(--text-custom);
+         outline: none;
+         text-decoration: none;
+        }
+
+        .tabs-mdcm {
+            padding: 10px 12px;
+            margin: 10px 0;
+            position: sticky;
+            top: 50px;
+            background-color: var(--yt-enhance-menu-bg, #252525);
+            z-index: 10;
+            display: flex;
+            gap: 8px;
+            -ms-overflow-style: none;
+            padding-bottom: 8px;
+        }
+
+
+
+        .tabs-mdcm::-webkit-scrollbar {
+            height: 0px;
+            background-color: transparent;
+        }
+
+        .tabs-mdcm:hover::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .tabs-mdcm::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 0, 0, 0.5);
+            border-radius: 3px;
+        }
+
+        .tabs-mdcm::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        .tab-mdcm {
+            padding: 6px 10px;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-custom-secondary);
+            border-radius: 6px;
+            transition: all 0.3s;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
             justify-content: center;
             white-space: nowrap;
         }
@@ -1620,9 +1797,9 @@
     `);
 
 
-  // botons bottom video player
+    // botons bottom video player
 
-  const thumbnailVideo = `
+    const thumbnailVideo = `
   <button title="Image video" class="botones_div" type="button" id="imagen">
 
   <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo-down" width="24"
@@ -1639,7 +1816,7 @@
 </button>
   `;
 
-  const repeatVideo = `
+    const repeatVideo = `
   <button title="Repeat video" class="botones_div" type="button" id="repeatvideo">
 
   <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-repeat" width="24"
@@ -1652,7 +1829,7 @@
 </button>
   `;
 
-  const downloadMP4Mp3 = `
+    const downloadMP4Mp3 = `
   <button title="MP4" type="button" class="btn1 botones_div">
   <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-file-download"
     width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
@@ -1687,21 +1864,21 @@
 </button>
   `;
 
-  const pictureToPicture = `
+    const pictureToPicture = `
   <button title="Picture to picture" type="button" class="video_picture_to_picture botones_div">
 
   <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11 19h-6a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4" /><path d="M14 14m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z" /></svg>
 </button>
 
   `;
-  const screenShot = `
+    const screenShot = `
   <button title="Screenshot video" type="button" class="screenshot_video botones_div">
   <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 8h.01" /><path d="M6 13l2.644 -2.644a1.21 1.21 0 0 1 1.712 0l3.644 3.644" /><path d="M13 13l1.644 -1.644a1.21 1.21 0 0 1 1.712 0l1.644 1.644" /><path d="M4 8v-2a2 2 0 0 1 2 -2h2" /><path d="M4 16v2a2 2 0 0 0 2 2h2" /><path d="M16 4h2a2 2 0 0 1 2 2v2" /><path d="M16 20h2a2 2 0 0 0 2 -2v-2" /></svg>
 </button>
 
   `;
 
-  const bookmarkAddBtn = `
+    const bookmarkAddBtn = `
   <button title="Add bookmark" type="button" id="yt-bookmark-add" class="botones_div">
     <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -1712,7 +1889,7 @@
   </button>
   `;
 
-  const bookmarkToggleBtn = `
+    const bookmarkToggleBtn = `
   <button title="Show bookmarks" type="button" id="yt-bookmark-toggle" class="botones_div">
     <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -1726,7 +1903,7 @@
   </button>
   `;
 
-  const continueWatchingHistoryBtn = `
+    const continueWatchingHistoryBtn = `
   <button title="History" type="button" id="yt-cw-history-toggle" class="botones_div" style="display:none;">
     <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -1737,7 +1914,7 @@
   </button>
   `;
 
-  const menuBotones = `
+    const menuBotones = `
     <main class="yt-tools-container">
     <div class="container">
     <form>
@@ -1849,3 +2026,7 @@
     </form>
       </main>
   `;
+
+
+
+    // Define themes
