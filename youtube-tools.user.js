@@ -181,6 +181,13 @@
         },
     };
 
+    // UI Elements
+    const panel = $cl('div');
+    panel.id = 'yt-enhancement-panel';
+
+    const panelOverlay = $cl('div');
+    panelOverlay.id = 'panel-overlay';
+
     function setDynamicCss(cssText = '') {
         if (!__ytToolsRuntime.dynamicStyleEl) {
             const style = document.createElement('style');
@@ -2126,6 +2133,7 @@
         });
 
         setupHeaderObserver();
+    }
 
     let addIconTimer = null;
     function scheduleAddIcon() {
@@ -2134,7 +2142,6 @@
         if (!$id('icon-menu-settings')) {
             addIconTimer = setTimeout(scheduleAddIcon, 500);
         }
-    }
     }
 
     let openMenu = false;
@@ -2727,13 +2734,6 @@
         textLogo: '#f00',
     },];
 
-    // Create our enhancement panel
-    const panel = $cl('div');
-
-    panel.id = 'yt-enhancement-panel';
-
-    const panelOverlay = $cl('div');
-    panelOverlay.id = 'panel-overlay';
     $ap(panelOverlay);
 
     // Generate theme options HTML

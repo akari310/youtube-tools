@@ -509,15 +509,16 @@
         });
 
         setupHeaderObserver();
+    }
 
     let addIconTimer = null;
     function scheduleAddIcon() {
         if ($id('icon-menu-settings') && document.body.contains($id('icon-menu-settings'))) return;
         addIcon();
         if (!$id('icon-menu-settings')) {
+            if (addIconTimer) clearTimeout(addIconTimer);
             addIconTimer = setTimeout(scheduleAddIcon, 500);
         }
-    }
     }
 
     let openMenu = false;
