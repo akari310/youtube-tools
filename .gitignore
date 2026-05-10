@@ -10,7 +10,8 @@ HTML_ANALYSIS.md
 FOUND_BUG.md
 truncate_fix.py
 __pycache__/
-scripts/
+scripts/*.py
+scripts/*.pyc
 dist/
 build/
-*.pyc
+*.min.user.js
