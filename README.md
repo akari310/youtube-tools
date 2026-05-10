@@ -3,69 +3,74 @@
 [![Greasy Fork](https://img.shields.io/greasyfork/v/576162?label=Greasy%20Fork&color=red)](https://greasyfork.org/scripts/576162)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-![YouTube Preview](assets/yt_preview.png)
-![YouTube Music Preview](assets/ytm_preview.png)
+A powerful, modular, and glassmorphic userscript designed to enhance your experience on **YouTube** and **YouTube Music**.
 
-A powerful, glassmorphic userscript designed to enhance your experience on **YouTube** and **YouTube Music**.
+---
 
 ## ✨ Features
 
 ### 📺 YouTube Features
-- **High-Quality Downloads**: Download videos in MP4 (up to 4K/8K) and audio in MP3/FLAC.
-- **Return YouTube Dislikes**: Bring back the dislike count visibility.
-- **Cinema Mode & Ambient Mode**: Enhanced visual experience with dynamic backgrounds.
-- **Picture-in-Picture**: Watch videos while browsing other tabs.
-- **Screenshots**: Capture high-quality frames from any video.
+- **High-Quality Downloads**: MP4 (up to 4K/8K) and audio in MP3/FLAC.
+- **Return YouTube Dislikes**: Real-time dislike count synchronization.
+- **Cinema & Ambient Mode**: Dynamic background effects.
+- **Picture-in-Picture & Screenshots**: Modern tools for modern viewers.
+- **Translate Comments**: Google Translate integration directly in the comment section.
 
 ### 🎵 YouTube Music (YTM) Features
-- **Glassmorphic UI**: Beautifully redesigned side panel with blur effects.
-- **Ambient Mode**: Dynamic background colors based on the current album art.
-- **Audio Quality Control**: Choose your preferred audio format for downloads.
+- **Glassmorphic UI**: Beautifully redesigned interface with blur effects.
+- **Advanced Ambient Mode**: Dynamic aura based on album art colors.
+- **Nonstop Playback**: No more "Continue watching?" interruptions.
+- **Audio-only Mode**: Focus on the music, save bandwidth.
 
-### Nonstop / Audio-only Features
-- **No more "Video Paused. Continue watching?" popups**.
-- **Keeps videos and music playing nonstop**, even when switching to another tab or app.
-- **Audio-only mode** hides video and keeps the sound/music focused.
-- **Per-tab Audio-only control** lets you enable or disable Audio-only mode for the current tab.
+---
 
-### 🎨 Customization
-- **Themes**: Choose from various built-in themes (Royal Purple, Neon, Cherry Blossom, etc.).
-- **Dynamic Styling**: Adjust player size, colors, and visualizer effects.
-- **Glassmorphism**: Modern UI with transparency and blur effects.
+## 🛠️ Development (For Contributors)
+
+This project has been modernized with a **Node.js** workflow and a **Modular Structure**.
+
+### Project Structure
+- `src/core/`: Metadata, Initialization, and State management.
+- `src/utils/`: Helper functions and API parsers.
+- `src/ui/`: Themes, Styles, and Menu components.
+- `src/features/`: Specialized modules (Dislikes, Downloads, Visualizer, etc.).
+- `src/main/`: Core logic manager and DOM observers.
+
+### Getting Started
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Build the project:
+   ```bash
+   npm run build
+   ```
+   *This generates `youtube-tools.user.js` and a minified version.*
+
+4. Commit changes (Auto-bump & Build):
+   ```bash
+   npm run commit -- -m "your commit message"
+   ```
+
+---
 
 ## 🚀 Installation
 
-Follow these simple steps to get started:
-
 ### Step 1: Install a Userscript Manager
-You need a browser extension to run this script. Choose one for your browser:
-- **Tampermonkey** (Recommended): [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/) | [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobogogocnfkclakjfggl)
-- **Violentmonkey**: [Chrome](https://chromewebstore.google.com/detail/violentmonkey/jinjacbljjnnnndkhlebbnbiomkhpnih) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)
+- **Tampermonkey** (Recommended): [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
+- **Violentmonkey**: [Chrome](https://chromewebstore.google.com/detail/violentmonkey/jinjacbljjnnnndkhlebbnbiomkhpnih)
 
 ### Step 2: Install the Script
-Choose one of the following methods:
-
-#### **Option A: Automatic Installation (Best)**
-Click the button below to install directly via Greasy Fork:
 [![Install Script](https://img.shields.io/badge/Install-YouTube_Ultimate_Tools-red?style=flat-square&logo=tampermonkey)](https://greasyfork.org/scripts/576162/code/YouTube%20Ultimate%20Tools.user.js)
 
-#### **Option B: Manual Installation (GitHub)**
-1. Open the [youtube-tools.user.js](https://github.com/akari310/youtube-tools/raw/main/youtube-tools.user.js) file.
-2. Your userscript manager will automatically detect the script and ask for installation.
-3. If it doesn't, click the **"Raw"** button at the top-right of the file view, copy the entire code, and paste it into a **"New Script"** in Tampermonkey.
-
-## 🛠️ Usage
-Once installed, a **Gear Icon** ⚙️ will appear on the top right of YouTube and YouTube Music. Click it to open the settings panel and customize your experience.
+---
 
 ## 📜 Credits
-Developed with ❤️ by [**Akari**](https://greasyfork.org/users/1597067-nguyen-ngocanh).
 
-### Feature Sources / Attribution
-- **Nonstop & Audio Only behavior**: Adapted from [Nonstop_Audio_Only](https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic) ([Greasy Fork](https://greasyfork.org/scripts/546130)) by [nvbangg](https://github.com/nvbangg).
-- **Base Project & Core Features**: Adapted from [Youtube Tools Extension](https://github.com/DeveloperMDCM/Youtube-tools-extension) ([Greasy Fork](https://greasyfork.org/scripts/460680)) by [DeveloperMDCM](https://github.com/DeveloperMDCM).
+Developed with ❤️ by:
+- [**Akari**](https://github.com/akari310) (Lead Developer)
+- [**DeveloperMDCM**](https://github.com/DeveloperMDCM) (Base Project & Core)
+- [**nvbangg**](https://github.com/nvbangg) (Nonstop & Audio Features)
 
 ## 📄 License
 This project is licensed under the [GNU General Public License v3.0](LICENSE).
-
----
-*Disclaimer: This tool is for personal use only. Please respect the copyright of content creators.*

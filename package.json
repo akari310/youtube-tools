@@ -1,6 +1,6 @@
 {
   "name": "youtube-ultimate-tools",
-  "version": "0.0.5.7",
+  "version": "0.0.5.8",
   "description": "Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.",
   "main": "youtube-tools.user.js",
   "scripts": {
