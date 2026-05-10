@@ -5,6 +5,8 @@ async function bumpVersion(type = 'auto') {
     const repoRoot = path.resolve(__dirname, '..');
     const metaPath = path.join(repoRoot, 'src/00_core/00_meta.js');
     const filesToSync = [
+        path.join(repoRoot, 'package.json'),
+        path.join(repoRoot, 'src/02_ui/12_ambient_mode.js'),
         path.join(repoRoot, 'src/02_ui/12b_ytm_ambient.js'),
         path.join(repoRoot, 'src/01_utils/08_parse_count.js')
     ];

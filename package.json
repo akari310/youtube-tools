@@ -16,7 +16,7 @@
     "download",
     "dislikes"
   ],
-  "author": "Akari, DeveloperMDCM",
+  "author": "Akari, DeveloperMDCM, nvbangg",
   "license": "GPL-3.0",
   "devDependencies": {
     "eslint": "^8.56.0",

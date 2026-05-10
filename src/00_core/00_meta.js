@@ -25,7 +25,7 @@
 // @description:it Scarica video/audio di alta qualità, ripristina i dislike e altre funzioni VIP per YouTube e YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
 // @version      0.0.5.6
-// @author       Akari, DeveloperMDCM
+// @author       Akari, DeveloperMDCM, nvbangg
 // @contributor  nvbangg
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
