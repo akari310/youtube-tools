@@ -67,7 +67,7 @@ This project has been modernized with a **Node.js** workflow and a **Modular Str
 ## 📜 Credits
 
 Developed with ❤️ by:
-- [**Random dev on the planet**](https://github.com/akari310)
+- [**Akari**](https://github.com/akari310) (Optimization & Enhancements)
 - [**DeveloperMDCM**](https://github.com/DeveloperMDCM) (Base Project & Core)
 - [**nvbangg**](https://github.com/nvbangg) (Nonstop & Audio Features)
 
