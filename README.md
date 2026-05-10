@@ -58,10 +58,9 @@ This project has been modernized with a **Node.js** workflow and a **Modular Str
    ```
    *This generates `youtube-tools.user.js` and a minified version.*
 
-4. Commit changes (Auto-bump & Build):
-   ```bash
-   npm run commit -- -m "your commit message"
-   ```
+4. Submit a Pull Request:
+   - Create a new branch for your feature.
+   - Push your changes and open a PR on GitHub for review.
 
 ---
 
