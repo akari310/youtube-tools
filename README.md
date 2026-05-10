@@ -12,7 +12,7 @@ A powerful, modular, and glassmorphic userscript designed to enhance your experi
 ### 📺 YouTube Features
 - **High-Quality Downloads**: MP4 (up to 4K/8K) and audio in MP3/FLAC.
 - **Return YouTube Dislikes**: Real-time dislike count synchronization.
-- **Cinema & Ambient Mode**: Dynamic background effects.
+- **Cinema & Ambient Mode**: Enhanced visual experience with dynamic backgrounds.
 - **Picture-in-Picture & Screenshots**: Modern tools for modern viewers.
 - **Translate Comments**: Google Translate integration directly in the comment section.
 
@@ -21,6 +21,17 @@ A powerful, modular, and glassmorphic userscript designed to enhance your experi
 - **Advanced Ambient Mode**: Dynamic aura based on album art colors.
 - **Nonstop Playback**: No more "Continue watching?" interruptions.
 - **Audio-only Mode**: Focus on the music, save bandwidth.
+
+---
+
+## 🚀 Installation
+
+### Step 1: Install a Userscript Manager
+- **Tampermonkey** (Recommended): [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
+- **Violentmonkey**: [Chrome](https://chromewebstore.google.com/detail/violentmonkey/jinjacbljjnnnndkhlebbnbiomkhpnih)
+
+### Step 2: Install the Script
+[![Install Script](https://img.shields.io/badge/Install-YouTube_Ultimate_Tools-red?style=flat-square&logo=tampermonkey)](https://greasyfork.org/scripts/576162/code/YouTube%20Ultimate%20Tools.user.js)
 
 ---
 
@@ -54,21 +65,10 @@ This project has been modernized with a **Node.js** workflow and a **Modular Str
 
 ---
 
-## 🚀 Installation
-
-### Step 1: Install a Userscript Manager
-- **Tampermonkey** (Recommended): [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
-- **Violentmonkey**: [Chrome](https://chromewebstore.google.com/detail/violentmonkey/jinjacbljjnnnndkhlebbnbiomkhpnih)
-
-### Step 2: Install the Script
-[![Install Script](https://img.shields.io/badge/Install-YouTube_Ultimate_Tools-red?style=flat-square&logo=tampermonkey)](https://greasyfork.org/scripts/576162/code/YouTube%20Ultimate%20Tools.user.js)
-
----
-
 ## 📜 Credits
 
 Developed with ❤️ by:
-- [**Akari**](https://github.com/akari310) (Lead Developer)
+- [**Random dev on the planet**](https://github.com/akari310)
 - [**DeveloperMDCM**](https://github.com/DeveloperMDCM) (Base Project & Core)
 - [**nvbangg**](https://github.com/nvbangg) (Nonstop & Audio Features)
 
