@@ -1,4 +1,4 @@
-    GM_addStyle(`
+﻿    GM_addStyle(`
        @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
       @import url("https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css");
       :root {
@@ -1548,7 +1548,7 @@
         text-align: center;
         margin-top: 10px;
         }
-        /* === FIX: Căn giữa thanh công cụ khi bật Cinematic Mode === */
+        /* === FIX: CÄƒn giá»¯a thanh cÃ´ng cá»¥ khi báº­t Cinematic Mode === */
     ytd-watch-flexy[cinematic-container-initialized] #primary-inner {
       display: flex;
       flex-direction: column;
@@ -1556,7 +1556,7 @@
     }
 
     ytd-watch-flexy[cinematic-container-initialized] .yt-tools-container {
-      /* Đảm bảo thanh công cụ không bị quá rộng so với video */
+      /* Äáº£m báº£o thanh cÃ´ng cá»¥ khÃ´ng bá»‹ quÃ¡ rá»™ng so vá»›i video */
       width: 100%;
       max-width: var(--ytd-watch-flexy-max-player-width, 1280px);
     }
@@ -1689,7 +1689,7 @@
       background: transparent !important;
     }
 
-    /* Tab headers — rounded corners & spacing */
+    /* Tab headers â€” rounded corners & spacing */
     ytmusic-app #side-panel > .tab-header-container {
       border-radius: 16px !important;
       overflow: hidden !important;
@@ -2031,172 +2031,3 @@
 
     // Define themes
 
-    let validoBotones = true;
-
-    function renderButtons() {
-        if (isYTMusic) {
-            const sidePanel = document.querySelector('#player-page #side-panel');
-            const tabHeaders = sidePanel && sidePanel.querySelector('.tab-header-container');
-            const addButton = tabHeaders || document.querySelector('#tab-renderer');
-
-            if (!addButton && validoBotones) {
-                if (!renderButtons._ytmRetries) renderButtons._ytmRetries = 0;
-                if (renderButtons._ytmRetries < 30) {
-                    renderButtons._ytmRetries++;
-                    setTimeout(renderButtons, 500);
-                }
-                return;
-            }
-            renderButtons._ytmRetries = 0;
-
-            if (addButton && validoBotones) {
-                validoBotones = false;
-
-                const sidePanelEl = document.querySelector('ytmusic-player-page #side-panel');
-                if (sidePanelEl) {
-                    let sideWrapper = $id('ytm-side-panel-wrapper');
-                    if (!sideWrapper) {
-                        sideWrapper = document.createElement('div');
-                        sideWrapper.id = 'ytm-side-panel-wrapper';
-                        sidePanelEl.insertBefore(sideWrapper, addButton);
-                    }
-
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = safeHTML(menuBotones);
-                    while (tempDiv.firstChild) sideWrapper.appendChild(tempDiv.firstChild);
-
-                    const line = document.createElement('div');
-                    line.className = 'ytm-side-panel-divider';
-                    sideWrapper.appendChild(line);
-                    sideWrapper.appendChild(addButton);
-                }
-            }
-        } else {
-            const addButton = document.querySelector('.style-scope .ytd-watch-metadata');
-            const addButton2 = document.querySelector('#contents');
-
-            if (addButton && validoBotones) {
-                const isVisible = addButton.offsetParent !== null;
-                if (isVisible || addButton2) {
-                    validoBotones = false;
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = safeHTML(menuBotones);
-                    const toolbar = tempDiv.firstElementChild;
-                    if (toolbar) addButton.parentNode.insertBefore(toolbar, addButton);
-                }
-            }
-        }
-
-        const selectcalidades = $e('.selectcalidades');
-        const selectcalidadesaudio = $e('.selectcalidadesaudio');
-        const btn3cancel = $e('.btn3');
-
-        if (selectcalidades && selectcalidades.dataset.ytToolsBound !== '1') {
-            selectcalidades.dataset.ytToolsBound = '1';
-            selectcalidades.addEventListener('change', e => {
-                const quality = e.target.value;
-                if (!quality) return;
-                const downloadContainer = $id('descargando');
-                if (!downloadContainer) return;
-                const downloadText = downloadContainer.querySelector('.download-text');
-                const downloadQuality = downloadContainer.querySelector('.download-quality');
-                const downloadBtn = downloadContainer.querySelector('.download-btn');
-                const retryBtn = downloadContainer.querySelector('.retry-btn');
-                const progressContainer = downloadContainer.querySelector('.progress-container');
-                downloadContainer.classList.add('video');
-                downloadContainer.classList.remove('ocultarframe');
-                if (downloadText) downloadText.textContent = 'Download ' + quality.toUpperCase() + ' And Please Wait...';
-                if (downloadQuality) downloadQuality.textContent = quality + 'p';
-                if (downloadBtn) downloadBtn.style.display = 'block';
-                if (retryBtn) retryBtn.style.display = 'none';
-                if (progressContainer) progressContainer.style.display = 'none';
-                downloadContainer.dataset.quality = quality;
-                downloadContainer.dataset.type = 'video';
-            });
-        }
-
-        if (selectcalidadesaudio && selectcalidadesaudio.dataset.ytToolsBound !== '1') {
-            selectcalidadesaudio.dataset.ytToolsBound = '1';
-            selectcalidadesaudio.addEventListener('change', e => {
-                const format = e.target.value;
-                if (!format) return;
-                const downloadContainer = $id('descargandomp3');
-                if (!downloadContainer) return;
-                const downloadText = downloadContainer.querySelector('.download-text');
-                const downloadQuality = downloadContainer.querySelector('.download-quality');
-                const downloadBtn = downloadContainer.querySelector('.download-btn');
-                const retryBtn = downloadContainer.querySelector('.retry-btn');
-                const progressContainer = downloadContainer.querySelector('.progress-container');
-                downloadContainer.classList.add('audio');
-                downloadContainer.classList.remove('ocultarframeaudio');
-                if (downloadText) downloadText.textContent = 'Download ' + format.toUpperCase() + ' And Please Wait...';
-                if (downloadQuality) downloadQuality.textContent = format.toUpperCase();
-                if (downloadBtn) downloadBtn.style.display = 'block';
-                if (retryBtn) retryBtn.style.display = 'none';
-                if (progressContainer) progressContainer.style.display = 'none';
-                downloadContainer.dataset.quality = format;
-                downloadContainer.dataset.type = 'audio';
-            });
-        }
-
-        if (btn3cancel && btn3cancel.dataset.ytToolsBound !== '1') {
-            btn3cancel.dataset.ytToolsBound = '1';
-            btn3cancel.addEventListener('click', () => {
-                selectcalidades?.classList.add('ocultarframe');
-                selectcalidadesaudio?.classList.add('ocultarframeaudio');
-                const videoContainer = $id('descargando');
-                const audioContainer = $id('descargandomp3');
-                [videoContainer, audioContainer].forEach(c => {
-                    if (!c) return;
-                    c.classList.add(c === videoContainer ? 'ocultarframe' : 'ocultarframeaudio');
-                    c.classList.remove('video', 'audio', 'completed');
-                    c.removeAttribute('data-quality');
-                    c.removeAttribute('data-type');
-                    c.removeAttribute('data-downloading');
-                    c.removeAttribute('data-url-opened');
-                    c.removeAttribute('data-last-download-url');
-                    const againBtn = c.querySelector('.download-again-btn');
-                    if (againBtn) againBtn.style.display = 'none';
-                });
-                const formulariodescarga = $e('.formulariodescarga');
-                const formulariodescargaaudio = $e('.formulariodescargaaudio');
-                if (formulariodescarga) formulariodescarga.style.setProperty('display', 'none', 'important');
-                if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'none', 'important');
-                formulariodescarga?.reset();
-                formulariodescargaaudio?.reset();
-            });
-        }
-
-        if (!__ytToolsRuntime.downloadClickHandlerInitialized) {
-            __ytToolsRuntime.downloadClickHandlerInitialized = true;
-            document.addEventListener('click', (e) => {
-                const target = e.target;
-                if (!(target instanceof Element)) return;
-                const clicked = target.closest('.download-btn') || target.closest('.retry-btn') || target.closest('.progress-retry-btn') || target.closest('.download-again-btn');
-                if (!clicked) return;
-                const container = clicked.closest('.download-container');
-                if (!container) return;
-                const quality = container.dataset.quality;
-                const type = container.dataset.type;
-                if (clicked.classList.contains('download-again-btn')) {
-                    const url = container.dataset.lastDownloadUrl;
-                    if (url) window.open(url);
-                    return;
-                }
-                if (!quality || !type) return;
-                if (clicked.classList.contains('progress-retry-btn')) {
-                    container.dataset.downloading = 'false';
-                }
-                startDownloadVideoOrAudio(quality, container);
-            });
-        }
-
-        const formulariodescarga = $e('.formulariodescarga');
-        const formulariodescargaaudio = $e('.formulariodescargaaudio');
-        [formulariodescarga, formulariodescargaaudio].forEach(form => {
-            if (!form) return;
-            if (form.dataset.ytToolsPreventDefault === '1') return;
-            form.addEventListener('click', e => e.preventDefault());
-            form.dataset.ytToolsPreventDefault = '1';
-        });
-    }

@@ -1,6 +1,8 @@
 
     setupHeaderObserver();
     scheduleAddIcon();
+    validoBotones = true;
+    renderButtons();
 
     if (!isYTMusic) {
         const insertButtons = () => { insertReelBarButtons(); };
@@ -25,6 +27,9 @@
         }
         scheduleApplySettings();
         retryWaveSetupAfterNav();
+        
+        validoBotones = true;
+        setTimeout(() => renderButtons(), 500);
 
         if (!document.location.href.includes('youtube.com')) return;
 

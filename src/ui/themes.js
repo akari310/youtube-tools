@@ -122,13 +122,6 @@
         textLogo: '#f00',
     },];
 
-    // Create our enhancement panel
-    const panel = $cl('div');
-
-    panel.id = 'yt-enhancement-panel';
-
-    const panelOverlay = $cl('div');
-    panelOverlay.id = 'panel-overlay';
     $ap(panelOverlay);
 
     // Generate theme options HTML
