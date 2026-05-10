@@ -16,3 +16,8 @@ dist/
 build/
 *.min.user.js
 package-lock.json
+
+scripts/
+*.py
+*.pyc
+__pycache__/
