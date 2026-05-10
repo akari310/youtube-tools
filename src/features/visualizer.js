@@ -214,3 +214,38 @@
                 }
             }
         }
+
+    function retryWaveSetupAfterNav() {
+        const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+        if (!settings.waveVisualizer) return;
+        if (!document.location.href.includes('watch')) return;
+
+        let waveRetries = 0;
+        const maxWaveRetries = 20;
+        const waveRetryInterval = setInterval(() => {
+            waveRetries++;
+            const video = $e('video');
+            if (video && !video.paused) {
+                clearInterval(waveRetryInterval);
+                if (video !== currentVideo || !isSetup) {
+                    scheduleApplySettings();
+                }
+                return;
+            }
+            if (video && video.paused) {
+                const onPlay = () => {
+                    video.removeEventListener('play', onPlay);
+                    clearInterval(waveRetryInterval);
+                    if (video !== currentVideo || !isSetup) {
+                        scheduleApplySettings();
+                    }
+                };
+                video.addEventListener('play', onPlay, { once: true });
+                clearInterval(waveRetryInterval);
+                return;
+            }
+            if (waveRetries >= maxWaveRetries) {
+                clearInterval(waveRetryInterval);
+            }
+        }, 500);
+    }

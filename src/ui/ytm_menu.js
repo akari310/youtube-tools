@@ -326,3 +326,70 @@
     }
 
     // Cinematic Lighting Control Functions
+
+    let ytmScrollListenerInited = false;
+    let ytmScrollInitAttempts = 0;
+
+    function applyYTMThemeVars(bgColor, textColor, secondaryText, menuBg, iconColor, raisedBg, progressColor, progressSecondary) {
+        $sp('--ytmusic-general-background', bgColor);
+        $sp('--ytmusic-background', bgColor);
+        $sp('--ytmusic-color-white1', textColor);
+        $sp('--ytmusic-color-white2', secondaryText || textColor);
+        $sp('--ytmusic-color-white3', secondaryText || textColor);
+        $sp('--ytmusic-color-white4', secondaryText || textColor);
+        $sp('--ytmusic-player-bar-background', raisedBg || bgColor);
+        $sp('--ytmusic-nav-bar-background', bgColor);
+        $sp('--ytmusic-search-background', menuBg || bgColor);
+        $sp('--yt-spec-general-background-a', bgColor);
+        $sp('--yt-spec-general-background-b', bgColor);
+        $sp('--yt-spec-general-background-c', bgColor);
+        if (progressColor) {
+            $sp('--paper-slider-active-color', progressColor);
+            $sp('--paper-slider-knob-color', progressColor);
+            $sp('--paper-progress-active-color', progressColor);
+        }
+        if (progressSecondary) {
+            $sp('--paper-slider-secondary-color', progressSecondary);
+            $sp('--paper-progress-secondary-color', progressSecondary);
+        }
+    }
+
+    function initYTMHeaderScroll() {
+        if (!isYTMusic || ytmScrollListenerInited) return;
+        const navBar = document.querySelector('ytmusic-nav-bar');
+        if (!navBar) {
+            if (ytmScrollInitAttempts < 10) {
+                ytmScrollInitAttempts++;
+                setTimeout(initYTMHeaderScroll, 500);
+            }
+            return;
+        }
+        ytmScrollListenerInited = true;
+
+        const updateHeader = () => {
+            const isScrolled = window.scrollY > 10;
+            const isWatchPage = window.location.pathname.startsWith('/watch');
+            const isPlayerOpen = document.body.hasAttribute('player-page-open') ||
+                navBar.hasAttribute('opened') ||
+                isWatchPage;
+
+            const navBarBg = document.querySelector('#nav-bar-background');
+            if (isScrolled || isPlayerOpen) {
+                navBar.classList.add('scrolled');
+                if (navBarBg) navBarBg.classList.add('scrolled');
+            } else {
+                navBar.classList.remove('scrolled');
+                if (navBarBg) navBarBg.classList.remove('scrolled');
+            }
+        };
+
+        window.addEventListener('scroll', updateHeader, { passive: true });
+        window.addEventListener('popstate', updateHeader);
+        updateHeader();
+        setTimeout(updateHeader, 500);
+        setTimeout(updateHeader, 2000);
+
+        const observer = new MutationObserver(updateHeader);
+        observer.observe(document.body, { attributes: true, attributeFilter: ['player-page-open'] });
+        observer.observe(navBar, { attributes: true, attributeFilter: ['opened'] });
+    }

@@ -851,3 +851,40 @@
 
     // Persistent check to ensure the gear icon survives YouTube's dynamic UI updates
     // setupHeaderObserver() is now called inside addIcon()
+
+    function bindSelectOnce(id) {
+        const el = $id(id);
+        if (!el) return;
+        if (el.dataset.ytToolsBound === '1') return;
+        el.dataset.ytToolsBound = '1';
+        el.addEventListener('change', () => {
+            try { saveSettings(); } catch (e) {}
+            scheduleApplySettings();
+        });
+    }
+
+    bindSelectOnce('select-video-qualitys-select');
+    bindSelectOnce('select-languages-comments-select');
+    bindSelectOnce('select-wave-visualizer-select');
+
+    function applyPageBackground(url, themeColor = null) {
+        const selector = isYTMusic ? 'body, ytmusic-app' : 'ytd-app, body';
+        const styleId = 'yt-tools-page-background';
+        let styleEl = $id(styleId);
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            document.head.appendChild(styleEl);
+        }
+        if (url) {
+            styleEl.textContent = `
+      ${selector} { background: transparent !important; background-color: transparent !important; }
+      body::before { content: "" !important; position: fixed !important; top: -10px !important; left: -10px !important; width: calc(100% + 20px) !important; height: calc(100% + 20px) !important; background-image: url("${url}") !important; background-size: cover !important; background-position: center !important; background-attachment: fixed !important; background-repeat: no-repeat !important; filter: blur(8px) brightness(0.8) !important; z-index: -3 !important; pointer-events: none !important; }
+      body::after { content: "" !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; background: ${themeColor || 'rgba(0,0,0,0.5)'} !important; opacity: ${themeColor ? '0.6' : '1'} !important; z-index: -2 !important; pointer-events: none !important; }
+      ytd-app, body, ytmusic-app { position: relative !important; z-index: 3 !important; }
+      #content.ytmusic-app, #page-manager.ytd-app, #columns.ytd-watch-flexy, ytd-browse, ytmusic-browse-response, ytmusic-section-list-renderer, ytmusic-shelf-renderer, ytmusic-grid-renderer, ytmusic-player-page, ytmusic-app-layout, ytmusic-guide-renderer, tp-yt-app-drawer, tp-yt-app-drawer #contentContainer, #mini-guide, #mini-guide-renderer, #guide-wrapper, #guide-content, #guide-spacer, #guide-renderer, #sections.ytmusic-guide-renderer, ytmusic-guide-section-renderer, ytmusic-guide-entry-renderer, tp-yt-paper-item.ytmusic-guide-entry-renderer, #items.ytmusic-guide-section-renderer, #divider.ytmusic-guide-section-renderer, ytmusic-app-layout.content-scrolled, ytmusic-app-layout #background, ytmusic-app-layout #guide-background, ytmusic-app-layout #player-bar-background, ytmusic-app-layout #nav-bar-background, #contents.ytmusic-section-list-renderer, #header.ytmusic-browse-response, #guide-wrapper.ytmusic-guide-renderer, ytmusic-responsive-header-renderer, .background-gradient.ytmusic-browse-response, #content-wrapper.ytmusic-browse-response, ytmusic-carousel-shelf-renderer, .ytmusic-shelf, ytmusic-chip-cloud-renderer, ytmusic-carousel-shelf-basic-header-renderer, ytmusic-header-renderer, ytmusic-tabbed-browse-renderer, ytmusic-detail-header-renderer, ytmusic-item-section-renderer, ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer { background: transparent !important; background-color: transparent !important; background-image: none !important; --ytmusic-background: transparent !important; --ytmusic-general-background: transparent !important; --ytmusic-guide-background: transparent !important; --iron-drawer-background-color: transparent !important; --yt-spec-general-background-a: transparent !important; --yt-spec-general-background-b: transparent !important; --yt-spec-general-background-c: transparent !important; --yt-spec-menu-background: transparent !important; }
+      #nav-bar-background.ytmusic-app-layout { background: transparent !important; }`;
+        } else {
+            styleEl.textContent = '';
+        }
+    }
