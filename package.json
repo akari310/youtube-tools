@@ -1,0 +1,27 @@
+{
+  "name": "youtube-ultimate-tools",
+  "version": "0.0.5.6",
+  "description": "Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.",
+  "main": "youtube-tools.user.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "bump": "node scripts/bump.js",
+    "commit": "node scripts/commit.js",
+    "dev": "node scripts/build.js --watch",
+    "lint": "eslint src/**/*.js"
+  },
+  "keywords": [
+    "youtube",
+    "userscript",
+    "download",
+    "dislikes"
+  ],
+  "author": "Akari, DeveloperMDCM",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10",
+    "uglify-js": "^3.17.4"
+  }
+}
