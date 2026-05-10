@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node scripts/build.js",
     "bump": "node scripts/bump.js",
-    "commit": "node scripts/commit.js",
+    "release": "node scripts/commit.js",
+    "push": "node scripts/commit.js --no-bump",
     "dev": "node scripts/build.js --watch",
     "lint": "eslint src/**/*.js"
   },
