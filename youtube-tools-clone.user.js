@@ -4814,19 +4814,6 @@
             <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Sync Ambient Mode YT
           </div>
         </label>
-        <div class="quality-selector-mdcm" style="grid-column: span 2; ${isYTMusic ? 'display:none' : ''}">
-          <div class="select-wrapper-mdcm">
-            <label>Playlist Panel Style (YT):
-              <select class="tab-button-active" id="playlist-style-select">
-                <option value="blur">Blur Glass</option>
-                <option value="liquid">Liquid Glass</option>
-                <option value="transparent">Transparent</option>
-              </select>
-            </label>
-          </div>
-        </div>
-          </div>
-        </label>
         <div class="quality-selector-mdcm" style="grid-column: span 2;">
           <div class="select-wrapper-mdcm">
             <label>Effect wave visualizer:
@@ -5254,7 +5241,6 @@
             cinematicLighting: $id('cinematic-lighting-toggle').checked,
             syncCinematic: $id('sync-cinematic-toggle') ? $id('sync-cinematic-toggle').checked : false, // NUEVO SETTING
             sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'normal',
-            playlistStyle: $id('playlist-style-select') ? $id('playlist-style-select').value : 'blur',
             customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
             disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
             // fontSize: $id('font-size-slider').value,
@@ -5320,7 +5306,6 @@
         $id('cinematic-lighting-toggle').checked = settings.cinematicLighting || false;
         if ($id('sync-cinematic-toggle')) $id('sync-cinematic-toggle').checked = settings.syncCinematic || false;
         if ($id('side-panel-style-select')) $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
-        if ($id('playlist-style-select')) $id('playlist-style-select').value = settings.playlistStyle || 'blur';
         if ($id('custom-timeline-color-toggle')) $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
         if ($id('subtitles-toggle')) $id('subtitles-toggle').checked = settings.disableSubtitles || false;
         $id('player-size-slider').value = settings.playerSize || 100;
@@ -6001,8 +5986,6 @@
 
 
         // Initialize header buttons
-        
-        if (!isYTMusic && typeof applyPlaylistRedesign === 'function') applyPlaylistRedesign();
         initializeHeaderButtons();
 
 
@@ -9457,51 +9440,4 @@
             }
         }, 1500);
     }
-    // ---------------------------------------------------------
-    function applyPlaylistRedesign() {
-        if (isYTMusic) return;
-        const rawSettings = GM_getValue('ytSettingsMDCM', '{}');
-        let settings = {};
-        try { settings = JSON.parse(rawSettings); } catch(e) {}
-        const style = settings.playlistStyle || 'blur';
-        
-        const panel = document.querySelector('ytd-playlist-panel-renderer');
-        if (!panel) return;
-
-        panel.classList.remove('yt-playlist-style-blur', 'yt-playlist-style-liquid', 'yt-playlist-style-transparent');
-        panel.classList.add(`yt-playlist-style-${style}`);
-
-        if (!document.getElementById('yt-playlist-redesign-css')) {
-            const css = `
-                ytd-playlist-panel-renderer.yt-playlist-style-blur {
-                    background: rgba(15, 15, 15, 0.7) !important;
-                    backdrop-filter: blur(25px) saturate(160%) !important;
-                    -webkit-backdrop-filter: blur(25px) saturate(160%) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                    border-radius: 12px !important;
-                }
-                ytd-playlist-panel-renderer.yt-playlist-style-liquid {
-                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)) !important;
-                    backdrop-filter: blur(40px) brightness(1.1) !important;
-                    -webkit-backdrop-filter: blur(40px) brightness(1.1) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
-                    border-radius: 16px !important;
-                }
-                ytd-playlist-panel-renderer.yt-playlist-style-transparent {
-                    background: transparent !important;
-                    border: none !important;
-                }
-                ytd-playlist-panel-renderer[class*="yt-playlist-style-"] #container,
-                ytd-playlist-panel-renderer[class*="yt-playlist-style-"] #items-container {
-                    background: transparent !important;
-                }
-            `;
-            const styleEl = document.createElement('style');
-            styleEl.id = 'yt-playlist-redesign-css';
-            styleEl.textContent = css;
-            document.head.appendChild(styleEl);
-        }
-    }
-
 })();
