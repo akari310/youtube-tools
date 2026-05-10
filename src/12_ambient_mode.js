@@ -1,9 +1,25 @@
+    function checkDarkModeActive() {
+        // YTM is always dark mode
+        if (isYTMusic) return 'dark';
 
-  let isDarkModeActive = checkDarkModeActive();
+        const prefCookie = document.cookie.split('; ').find(c => c.startsWith('PREF='));
+        if (!prefCookie) return 'light';
+
+        const prefValue = prefCookie.substring(5);
+        const params = new URLSearchParams(prefValue);
+
+        const f6Value = params.get('f6');
+        const darkModes = ['400', '4000000', '40000400', '40000000'];
+
+        return darkModes.includes(f6Value) ? 'dark' : 'light';
+    }
 
 
-  // Use Trusted Types to set innerHTML
-  const menuHTML = `
+    let isDarkModeActive = checkDarkModeActive();
+
+
+    // Use Trusted Types to set innerHTML
+    const menuHTML = `
    <div class="container-mdcm">
     <div class="header-mdcm">
       <h1> <i class="fa-brands fa-youtube"></i> YouTube Tools</h1>
@@ -435,377 +451,403 @@
     <span style="color: #fff" ;>v${GM_info.script.version}</span>
   </div>
   `;
-  panel.innerHTML = safeHTML(menuHTML);
+    panel.innerHTML = safeHTML(menuHTML);
 
-  $ap(panel);
-
-
-  let headerObserver = null;
-  function setupHeaderObserver() {
-    if (headerObserver) return;
-    const target = $e('#masthead-container') || $e('ytd-masthead') || document.body;
-    headerObserver = new MutationObserver(() => {
-      const icon = $id('icon-menu-settings');
-      if (!icon || !document.body.contains(icon)) {
-        addIcon();
-      }
-    });
-    headerObserver.observe(target, { childList: true, subtree: true });
-  }
-
-  function addIcon() {
-    const existing = $id('icon-menu-settings');
-    if (existing && document.body.contains(existing)) return;
-    if (existing) existing.closest('#toggle-button')?.remove();
-
-    let anchor;
-    if (isYTMusic) {
-      anchor = $e('#right-content');
-    } else {
-      anchor = $e('ytd-topbar-menu-button-renderer') || $e('#buttons') || $e('#end');
-    }
-    if (!anchor) return;
-
-    const toggleButton = $cl('div');
-    toggleButton.id = 'toggle-button';
-    toggleButton.style.display = 'flex';
-    toggleButton.style.alignItems = 'center';
-    toggleButton.style.justifyContent = 'center';
-    toggleButton.style.cursor = 'pointer';
-    toggleButton.style.marginRight = '8px';
-
-    const icon = $cl('i');
-    icon.id = 'icon-menu-settings';
-    icon.classList.add('fa-solid', 'fa-gear');
-    icon.style.fontSize = '20px';
-
-    toggleButton.appendChild(icon);
-
-    if (isYTMusic) {
-      anchor.insertBefore(toggleButton, anchor.firstChild);
-    } else {
-      anchor.parentElement.insertBefore(toggleButton, anchor);
-    }
-
-    toggleButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleMenu();
-    });
-
-    // Start observing to ensure persistence
-    setupHeaderObserver();
-  }
-
-  let openMenu = false;
-  function toggleMenu() {
-    openMenu = !openMenu;
-    panel.style.display = openMenu ? 'block' : 'none';
-    panelOverlay.style.display = openMenu ? 'block' : 'none';
-  }
-
-  // Close panel when clicking the overlay
-  panelOverlay.addEventListener('click', () => {
-    if (openMenu) {
-      toggleMenu();
-    }
-  });
+    $ap(panel);
 
 
-  addIcon();
-  const close_menu_settings = $e('.close_menu_settings');
-  if (close_menu_settings) {
-    close_menu_settings.addEventListener('click', () => {
-      toggleMenu();
-    });
-  }
-
-  // $ap(toggleButton);
-
-
-
-  // Tab functionality
-  const tabButtons = $m('.tab-mdcm');
-  const tabContents = $m('.tab-content');
-
-  tabButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const tabName = button.getAttribute('data-tab');
-      tabButtons.forEach((btn) => btn.classList.remove('active'));
-      tabContents.forEach((content) => content.classList.remove('active'));
-      button.classList.add('active');
-      $id(tabName).classList.add('active');
-    });
-  });
-
-  // Function to save settings
-  function saveSettings() {
-    const settings = {
-      theme: $e('input[name="theme"]:checked').value,
-      bgColorPicker: $id('bg-color-picker').value,
-      progressbarColorPicker: $id('progressbar-color-picker').value,
-      primaryColorPicker: $id('primary-color-picker').value,
-      secondaryColorPicker: $id('secondary-color-picker').value,
-      headerColorPicker: $id('header-color-picker').value,
-      iconsColorPicker: $id('icons-color-picker').value,
-      menuColorPicker: $id('menu-color-picker').value,
-      lineColorPicker: $id('line-color-picker').value,
-      timeColorPicker: $id('time-color-picker').value,
-      dislikes: $id('dislikes-toggle').checked,
-      likeDislikeBar: $id('like-dislike-bar-toggle').checked,
-      bookmarks: $id('bookmarks-toggle').checked,
-      continueWatching: $id('continue-watching-toggle').checked,
-      shortsChannelName: $id('shorts-channel-name-toggle').checked,
-      nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
-      audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
-      themes: $id('themes-toggle').checked,
-      translation: $id('translation-toggle').checked,
-      avatars: $id('avatars-toggle').checked,
-      reverseMode: $id('reverse-mode-toggle').checked,
-      waveVisualizer: $id('wave-visualizer-toggle').checked,
-      waveVisualizerSelected: $id('select-wave-visualizer-select').value,
-      hideComments: $id('hide-comments-toggle').checked,
-      hideSidebar: $id('hide-sidebar-toggle').checked,
-      disableAutoplay: $id('autoplay-toggle').checked,
-      cinematicLighting: $id('cinematic-lighting-toggle').checked,
-      syncCinematic: $id('sync-cinematic-toggle') ? $id('sync-cinematic-toggle').checked : false, // NUEVO SETTING
-      sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'normal',
-      customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
-      disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
-      // fontSize: $id('font-size-slider').value,
-      playerSize: $id('player-size-slider').value,
-      selectVideoQuality: $id('select-video-qualitys-select').value,
-      languagesComments: $id('select-languages-comments-select').value,
-      // menuBgColor: $id('menu-bg-color-picker').value,
-      // menuTextColor: $id('menu-text-color-picker').value,
-      menu_akari: {
-        bg: selectedBgColor,
-        color: selectedTextColor,
-        accent: selectedBgAccentColor
-      }
-      // menuFontSize: $id('menu-font-size-slider').value,
-    };
-
-    GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
-  }
-
-
-
-  // Function to load settings
-  function loadSettings() {
-    const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-    // Mark as loaded early so applySettings/saveSettings don't overwrite persisted values with defaults.
-    __ytToolsRuntime.settingsLoaded = true;
-
-    if (settings.theme) {
-      $e(`input[name="theme"][value="${settings.theme}"]`).checked = true;
-    }
-    const menuData = settings.menu_akari || settings.menu_developermdcm || {
-      bg: "#252525",
-      color: "#ffffff",
-      accent: "#ff0000"
-    };
-
-    $id('bg-color-picker').value = settings.bgColorPicker || '#000000';
-    $id('progressbar-color-picker').value = settings.progressbarColorPicker || '#ff0000';
-    $id('primary-color-picker').value = settings.primaryColorPicker || '#ffffff';
-    $id('secondary-color-picker').value = settings.secondaryColorPicker || '#ffffff';
-    $id('header-color-picker').value = settings.headerColorPicker || '#000';
-    $id('icons-color-picker').value = settings.iconsColorPicker || '#ffffff';
-    $id('menu-color-picker').value = settings.menuColorPicker || '#000';
-    $id('line-color-picker').value = settings.lineColorPicker || '#ff0000';
-    $id('time-color-picker').value = settings.timeColorPicker || '#ffffff';
-    $id('dislikes-toggle').checked = settings.dislikes || false;
-    $id('like-dislike-bar-toggle').checked = settings.likeDislikeBar || false;
-    $id('bookmarks-toggle').checked = settings.bookmarks || false;
-    $id('continue-watching-toggle').checked = settings.continueWatching || false;
-    $id('shorts-channel-name-toggle').checked = settings.shortsChannelName || false;
-    if ($id('nonstop-playback-toggle')) $id('nonstop-playback-toggle').checked = settings.nonstopPlayback !== false;
-    if ($id('audio-only-toggle')) $id('audio-only-toggle').checked = settings.audioOnly || false;
-    syncAudioOnlyTabCheckbox(settings);
-    $id('themes-toggle').checked = settings.themes || false;
-    $id('translation-toggle').checked = settings.translation || false;
-    $id('avatars-toggle').checked = settings.avatars || false;
-    $id('reverse-mode-toggle').checked = settings.reverseMode || false;
-    $id('wave-visualizer-toggle').checked = settings.waveVisualizer || false;
-    $id('select-wave-visualizer-select').value = settings.waveVisualizerSelected || 'dinamica';
-    $id('hide-comments-toggle').checked = settings.hideComments || false;
-    $id('hide-sidebar-toggle').checked = settings.hideSidebar || false;
-    $id('autoplay-toggle').checked = settings.disableAutoplay || false;
-    $id('cinematic-lighting-toggle').checked = settings.cinematicLighting || false;
-    if ($id('sync-cinematic-toggle')) $id('sync-cinematic-toggle').checked = settings.syncCinematic || false;
-    if ($id('side-panel-style-select')) $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
-    if ($id('custom-timeline-color-toggle')) $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
-    if ($id('subtitles-toggle')) $id('subtitles-toggle').checked = settings.disableSubtitles || false;
-    $id('player-size-slider').value = settings.playerSize || 100;
-    $id('select-video-qualitys-select').value = settings.selectVideoQuality || 'user';
-    $id('select-languages-comments-select').value = settings.languagesComments || 'en';
-
-    selectedBgColor = menuData.bg;
-    selectedTextColor = menuData.color;
-    selectedBgAccentColor = menuData.accent;
-
-
-    $m('#bg-color-options .color-box').forEach(el => {
-      el.classList.toggle('selected', el.dataset.value === selectedBgColor);
-    });
-
-    $m('#text-color-options .color-box').forEach(el => {
-      el.classList.toggle('selected', el.dataset.value === selectedTextColor);
-    });
-
-    $m('#bg-accent-color-options .color-box').forEach(el => {
-      el.classList.toggle('selected', el.dataset.value === selectedBgAccentColor);
-    });
-
-    // Apply menu colors
-    $sp('--yt-enhance-menu-bg', selectedBgColor);
-    $sp('--yt-enhance-menu-text', selectedTextColor);
-    $sp('--yt-enhance-menu-accent', selectedBgAccentColor);
-    updateSliderValues();
-
-    setTimeout(() => {
-      applySettings();
-      if (settings.dislikes && !isYTMusic) {
-        videoDislike();
-        shortDislike();
-        showDislikes = true;
-      }
-
-      if (!isYTMusic && window.location.href.includes('youtube.com/watch?v=')) {
-        detectInitialCinematicState();
-      }
-    }, 500);
-  }
-
-  // Check if the video is in cinematic mode
-  async function detectInitialCinematicState() {
-    return new Promise((resolve) => {
-      const waitForVideo = () => {
-        const video = $e('video');
-        const cinematicDiv = $id('cinematics');
-
-        if (!video || !cinematicDiv || isNaN(video.duration) || video.duration === 0) {
-          setTimeout(waitForVideo, 500);
-          return;
-        }
-
-        const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-        if (!settings.syncCinematic) {
-          // apply cinematic toggle
-          const cinematicToggle = $id('cinematic-lighting-toggle');
-          if (cinematicToggle && cinematicDiv) {
-            cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
-          }
-          resolve(false);
-          return;
-        }
-
-        const startTime = video.currentTime;
-        const checkPlayback = () => {
-          if (video.currentTime >= startTime + 1) {
-            const isActive = isCinematicActive();
-
-            const cinematicToggle = $id('cinematic-lighting-toggle');
-            if (cinematicToggle && cinematicToggle.checked !== isActive) {
-              cinematicToggle.checked = isActive;
-              saveSettings();
+    let headerObserver = null;
+    function setupHeaderObserver() {
+        if (headerObserver) return;
+        const target = $e('#masthead-container') || $e('ytd-masthead') || document.body;
+        headerObserver = new MutationObserver(() => {
+            const icon = $id('icon-menu-settings');
+            if (!icon || !document.body.contains(icon)) {
+                addIcon();
             }
+        });
+        headerObserver.observe(target, { childList: true, subtree: true });
+    }
 
-            resolve(isActive);
-          } else {
-            setTimeout(checkPlayback, 300);
-          }
+    function addIcon() {
+        const existing = $id('icon-menu-settings');
+        if (existing && document.body.contains(existing)) return;
+        if (existing) existing.closest('#toggle-button')?.remove();
+
+        let anchor;
+        if (isYTMusic) {
+            anchor = $e('#right-content');
+        } else {
+            anchor = $e('ytd-topbar-menu-button-renderer') || $e('#buttons') || $e('#end');
+        }
+        if (!anchor) return;
+
+        const toggleButton = $cl('div');
+        toggleButton.id = 'toggle-button';
+        toggleButton.style.display = 'flex';
+        toggleButton.style.alignItems = 'center';
+        toggleButton.style.justifyContent = 'center';
+        toggleButton.style.cursor = 'pointer';
+        toggleButton.style.marginRight = '8px';
+
+        const icon = $cl('i');
+        icon.id = 'icon-menu-settings';
+        icon.classList.add('fa-solid', 'fa-gear');
+        icon.style.fontSize = '20px';
+
+        toggleButton.appendChild(icon);
+
+        if (isYTMusic) {
+            anchor.insertBefore(toggleButton, anchor.firstChild);
+        } else {
+            anchor.parentElement.insertBefore(toggleButton, anchor);
+        }
+
+        toggleButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMenu();
+        });
+
+        setupHeaderObserver();
+    }
+
+    let openMenu = false;
+    function toggleMenu() {
+        openMenu = !openMenu;
+        panel.style.display = openMenu ? 'block' : 'none';
+        panelOverlay.style.display = openMenu ? 'block' : 'none';
+    }
+
+    // Close panel when clicking the overlay
+    panelOverlay.addEventListener('click', () => {
+        if (openMenu) {
+            toggleMenu();
+        }
+    });
+
+
+    addIcon();
+    const close_menu_settings = $e('.close_menu_settings');
+    if (close_menu_settings) {
+        close_menu_settings.addEventListener('click', () => {
+            toggleMenu();
+        });
+    }
+
+    // $ap(toggleButton);
+    
+    // Add change listener to the entire panel to save/apply settings immediately
+    panel.addEventListener('change', (e) => {
+        if (e.target.classList.contains('checkbox-mdcm') || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') {
+            saveSettings();
+            if (typeof applySettings === 'function') {
+                applySettings();
+            }
+        }
+    });
+
+    // Specific listeners for live updates of certain features
+    $id('dislikes-toggle')?.addEventListener('change', () => {
+        const st = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+        if (!st.dislikes) {
+            // Hide dislikes if turned off
+            const dislikes_content = $e('#top-level-buttons-computed > segmented-like-dislike-button-view-model > yt-smartimation > div > div > dislike-button-view-model > toggle-button-view-model > button-view-model > button');
+            if (dislikes_content) {
+                // We don't have the original SVG easily, but we can at least hide our custom one or clear it
+                // For now, let's just trigger a reload message or try to refresh the component
+                // Actually, the user just wants it to go away.
+                dislikes_content.style.width = '';
+                // We'll let applySettings handle the bar, but for the button, we might need a refresh or more complex logic.
+                // But let's try to at least call applySettings.
+            }
+        }
+    });
+
+
+
+    // Tab functionality
+    const tabButtons = $m('.tab-mdcm');
+    const tabContents = $m('.tab-content');
+
+    tabButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const tabName = button.getAttribute('data-tab');
+            tabButtons.forEach((btn) => btn.classList.remove('active'));
+            tabContents.forEach((content) => content.classList.remove('active'));
+            button.classList.add('active');
+            $id(tabName).classList.add('active');
+        });
+    });
+
+    // Function to save settings
+    function saveSettings() {
+        const settings = {
+            theme: $e('input[name="theme"]:checked').value,
+            bgColorPicker: $id('bg-color-picker').value,
+            progressbarColorPicker: $id('progressbar-color-picker').value,
+            primaryColorPicker: $id('primary-color-picker').value,
+            secondaryColorPicker: $id('secondary-color-picker').value,
+            headerColorPicker: $id('header-color-picker').value,
+            iconsColorPicker: $id('icons-color-picker').value,
+            menuColorPicker: $id('menu-color-picker').value,
+            lineColorPicker: $id('line-color-picker').value,
+            timeColorPicker: $id('time-color-picker').value,
+            dislikes: $id('dislikes-toggle').checked,
+            likeDislikeBar: $id('like-dislike-bar-toggle').checked,
+            bookmarks: $id('bookmarks-toggle').checked,
+            continueWatching: $id('continue-watching-toggle').checked,
+            shortsChannelName: $id('shorts-channel-name-toggle').checked,
+            nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
+            audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
+            themes: $id('themes-toggle').checked,
+            translation: $id('translation-toggle').checked,
+            avatars: $id('avatars-toggle').checked,
+            reverseMode: $id('reverse-mode-toggle').checked,
+            waveVisualizer: $id('wave-visualizer-toggle').checked,
+            waveVisualizerSelected: $id('select-wave-visualizer-select').value,
+            hideComments: $id('hide-comments-toggle').checked,
+            hideSidebar: $id('hide-sidebar-toggle').checked,
+            disableAutoplay: $id('autoplay-toggle').checked,
+            cinematicLighting: $id('cinematic-lighting-toggle').checked,
+            syncCinematic: $id('sync-cinematic-toggle') ? $id('sync-cinematic-toggle').checked : false, // NUEVO SETTING
+            sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'normal',
+            customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
+            disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
+            // fontSize: $id('font-size-slider').value,
+            playerSize: $id('player-size-slider').value,
+            selectVideoQuality: $id('select-video-qualitys-select').value,
+            languagesComments: $id('select-languages-comments-select').value,
+            // menuBgColor: $id('menu-bg-color-picker').value,
+            // menuTextColor: $id('menu-text-color-picker').value,
+            menu_akari: {
+                bg: selectedBgColor,
+                color: selectedTextColor,
+                accent: selectedBgAccentColor
+            }
+            // menuFontSize: $id('menu-font-size-slider').value,
         };
 
-        checkPlayback();
-      };
+        GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+    }
 
-      waitForVideo();
-    });
-  }
 
-  $m('.color-box').forEach(box => {
-    box.addEventListener('click', () => {
-      const type = box.dataset.type;
-      const value = box.dataset.value;
 
-      if (type === 'bg') {
-        selectedBgColor = value;
-        $sp('--yt-enhance-menu-bg', value);
+    // Function to load settings
+    function loadSettings() {
+        const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+        // Mark as loaded early so applySettings/saveSettings don't overwrite persisted values with defaults.
+        __ytToolsRuntime.settingsLoaded = true;
+
+        if (settings.theme) {
+            $e(`input[name="theme"][value="${settings.theme}"]`).checked = true;
+        }
+        const menuData = settings.menu_akari || settings.menu_developermdcm || {
+            bg: "#252525",
+            color: "#ffffff",
+            accent: "#ff0000"
+        };
+
+        $id('bg-color-picker').value = settings.bgColorPicker || '#000000';
+        $id('progressbar-color-picker').value = settings.progressbarColorPicker || '#ff0000';
+        $id('primary-color-picker').value = settings.primaryColorPicker || '#ffffff';
+        $id('secondary-color-picker').value = settings.secondaryColorPicker || '#ffffff';
+        $id('header-color-picker').value = settings.headerColorPicker || '#000';
+        $id('icons-color-picker').value = settings.iconsColorPicker || '#ffffff';
+        $id('menu-color-picker').value = settings.menuColorPicker || '#000';
+        $id('line-color-picker').value = settings.lineColorPicker || '#ff0000';
+        $id('time-color-picker').value = settings.timeColorPicker || '#ffffff';
+        $id('dislikes-toggle').checked = settings.dislikes || false;
+        $id('like-dislike-bar-toggle').checked = settings.likeDislikeBar || false;
+        $id('bookmarks-toggle').checked = settings.bookmarks || false;
+        $id('continue-watching-toggle').checked = settings.continueWatching || false;
+        $id('shorts-channel-name-toggle').checked = settings.shortsChannelName || false;
+        if ($id('nonstop-playback-toggle')) $id('nonstop-playback-toggle').checked = settings.nonstopPlayback !== false;
+        if ($id('audio-only-toggle')) $id('audio-only-toggle').checked = settings.audioOnly || false;
+        syncAudioOnlyTabCheckbox(settings);
+        $id('themes-toggle').checked = settings.themes || false;
+        $id('translation-toggle').checked = settings.translation || false;
+        $id('avatars-toggle').checked = settings.avatars || false;
+        $id('reverse-mode-toggle').checked = settings.reverseMode || false;
+        $id('wave-visualizer-toggle').checked = settings.waveVisualizer || false;
+        $id('select-wave-visualizer-select').value = settings.waveVisualizerSelected || 'dinamica';
+        $id('hide-comments-toggle').checked = settings.hideComments || false;
+        $id('hide-sidebar-toggle').checked = settings.hideSidebar || false;
+        $id('autoplay-toggle').checked = settings.disableAutoplay || false;
+        $id('cinematic-lighting-toggle').checked = settings.cinematicLighting || false;
+        if ($id('sync-cinematic-toggle')) $id('sync-cinematic-toggle').checked = settings.syncCinematic || false;
+        if ($id('side-panel-style-select')) $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
+        if ($id('custom-timeline-color-toggle')) $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
+        if ($id('subtitles-toggle')) $id('subtitles-toggle').checked = settings.disableSubtitles || false;
+        $id('player-size-slider').value = settings.playerSize || 100;
+        $id('select-video-qualitys-select').value = settings.selectVideoQuality || 'user';
+        $id('select-languages-comments-select').value = settings.languagesComments || 'en';
+
+        selectedBgColor = menuData.bg;
+        selectedTextColor = menuData.color;
+        selectedBgAccentColor = menuData.accent;
+
+
         $m('#bg-color-options .color-box').forEach(el => {
-          el.classList.remove('selected');
+            el.classList.toggle('selected', el.dataset.value === selectedBgColor);
         });
-        box.classList.add('selected');
-      } else if (type === 'color') {
-        selectedTextColor = value;
-        $sp('--yt-enhance-menu-text', value);
+
         $m('#text-color-options .color-box').forEach(el => {
-          el.classList.remove('selected');
+            el.classList.toggle('selected', el.dataset.value === selectedTextColor);
         });
-        box.classList.add('selected');
-      } else if (type === 'accent') {
-        selectedBgAccentColor = value;
-        $sp('--yt-enhance-menu-accent', value);
+
         $m('#bg-accent-color-options .color-box').forEach(el => {
-          el.classList.remove('selected');
+            el.classList.toggle('selected', el.dataset.value === selectedBgAccentColor);
         });
-        box.classList.add('selected');
-      }
-      saveSettings();
+
+        // Apply menu colors
+        $sp('--yt-enhance-menu-bg', selectedBgColor);
+        $sp('--yt-enhance-menu-text', selectedTextColor);
+        $sp('--yt-enhance-menu-accent', selectedBgAccentColor);
+        updateSliderValues();
+
+        setTimeout(() => {
+            applySettings();
+            if (settings.dislikes && !isYTMusic) {
+                videoDislike();
+                shortDislike();
+                showDislikes = true;
+            }
+
+            if (!isYTMusic && window.location.href.includes('youtube.com/watch?v=')) {
+                detectInitialCinematicState();
+            }
+        }, 500);
+    }
+
+    // Check if the video is in cinematic mode
+    async function detectInitialCinematicState() {
+        return new Promise((resolve) => {
+            const waitForVideo = () => {
+                const video = $e('video');
+                const cinematicDiv = $id('cinematics');
+
+                if (!video || !cinematicDiv || isNaN(video.duration) || video.duration === 0) {
+                    setTimeout(waitForVideo, 500);
+                    return;
+                }
+
+                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+                if (!settings.syncCinematic) {
+                    // apply cinematic toggle
+                    const cinematicToggle = $id('cinematic-lighting-toggle');
+                    if (cinematicToggle && cinematicDiv) {
+                        cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
+                    }
+                    resolve(false);
+                    return;
+                }
+
+                const startTime = video.currentTime;
+                const checkPlayback = () => {
+                    if (video.currentTime >= startTime + 1) {
+                        const isActive = isCinematicActive();
+
+                        const cinematicToggle = $id('cinematic-lighting-toggle');
+                        if (cinematicToggle && cinematicToggle.checked !== isActive) {
+                            cinematicToggle.checked = isActive;
+                            saveSettings();
+                        }
+
+                        resolve(isActive);
+                    } else {
+                        setTimeout(checkPlayback, 300);
+                    }
+                };
+
+                checkPlayback();
+            };
+
+            waitForVideo();
+        });
+    }
+
+    $m('.color-box').forEach(box => {
+        box.addEventListener('click', () => {
+            const type = box.dataset.type;
+            const value = box.dataset.value;
+
+            if (type === 'bg') {
+                selectedBgColor = value;
+                $sp('--yt-enhance-menu-bg', value);
+                $m('#bg-color-options .color-box').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                box.classList.add('selected');
+            } else if (type === 'color') {
+                selectedTextColor = value;
+                $sp('--yt-enhance-menu-text', value);
+                $m('#text-color-options .color-box').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                box.classList.add('selected');
+            } else if (type === 'accent') {
+                selectedBgAccentColor = value;
+                $sp('--yt-enhance-menu-accent', value);
+                $m('#bg-accent-color-options .color-box').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                box.classList.add('selected');
+            }
+            saveSettings();
+        });
     });
-  });
 
 
-  function updateSliderValues() {
-    $id('player-size-value').textContent = $id('player-size-slider').value;
+    function updateSliderValues() {
+        $id('player-size-value').textContent = $id('player-size-slider').value;
 
-  }
-
-  $id('reset-player-size').addEventListener('click', () => {
-    $id('player-size-slider').value = 100;
-    updateSliderValues();
-    applySettings();
-  });
-
-  // Initialize header buttons once
-  function initializeHeaderButtons() {
-    const shareBtn = $id('shareBtn-mdcm');
-    const importExportBtn = $id('importExportBtn');
-    const closeImportExportBtn = $id('closeImportExportBtn');
-
-    if (shareBtn && !shareBtn.dataset.initialized) {
-      shareBtn.dataset.initialized = 'true';
-      shareBtn.addEventListener('click', function (event) {
-        event.stopPropagation();
-        const dropdown = $id('shareDropdown');
-        if (dropdown) {
-          dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        }
-      });
     }
 
-    if (importExportBtn && !importExportBtn.dataset.initialized) {
-      importExportBtn.dataset.initialized = 'true';
-      importExportBtn.addEventListener('click', function () {
-        const importExportArea = $id('importExportArea');
-        if (importExportArea) {
-          importExportArea.classList.toggle('active');
+    $id('reset-player-size').addEventListener('click', () => {
+        $id('player-size-slider').value = 100;
+        updateSliderValues();
+        applySettings();
+    });
+
+    // Initialize header buttons once
+    function initializeHeaderButtons() {
+        const shareBtn = $id('shareBtn-mdcm');
+        const importExportBtn = $id('importExportBtn');
+        const closeImportExportBtn = $id('closeImportExportBtn');
+
+        if (shareBtn && !shareBtn.dataset.initialized) {
+            shareBtn.dataset.initialized = 'true';
+            shareBtn.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const dropdown = $id('shareDropdown');
+                if (dropdown) {
+                    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                }
+            });
         }
-      });
+
+        if (importExportBtn && !importExportBtn.dataset.initialized) {
+            importExportBtn.dataset.initialized = 'true';
+            importExportBtn.addEventListener('click', function () {
+                const importExportArea = $id('importExportArea');
+                if (importExportArea) {
+                    importExportArea.classList.toggle('active');
+                }
+            });
+        }
+
+        if (closeImportExportBtn && !closeImportExportBtn.dataset.initialized) {
+            closeImportExportBtn.dataset.initialized = 'true';
+            closeImportExportBtn.addEventListener('click', function () {
+                const importExportArea = $id('importExportArea');
+                if (importExportArea) {
+                    importExportArea.classList.remove('active');
+                }
+            });
+        }
     }
 
-    if (closeImportExportBtn && !closeImportExportBtn.dataset.initialized) {
-      closeImportExportBtn.dataset.initialized = 'true';
-      closeImportExportBtn.addEventListener('click', function () {
-        const importExportArea = $id('importExportArea');
-        if (importExportArea) {
-          importExportArea.classList.remove('active');
-        }
-      });
-    }
-  }
 
-  
 
-  // Persistent check to ensure the gear icon survives YouTube's dynamic UI updates
-  setInterval(addIcon, 2000);
+    // Persistent check to ensure the gear icon survives YouTube's dynamic UI updates
+    // setupHeaderObserver() is now called inside addIcon()
