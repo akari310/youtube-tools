@@ -1,6 +1,6 @@
 
     setupHeaderObserver();
-    addIcon();
+    scheduleAddIcon();
 
     if (!isYTMusic) {
         const insertButtons = () => { insertReelBarButtons(); };
@@ -18,7 +18,7 @@
 
     document.addEventListener('yt-navigate-finish', () => {
         if (typeof addIcon === 'function') {
-            addIcon();
+            scheduleAddIcon();
         }
         if (!document.location.href.includes('watch')) {
             hideCanvas();

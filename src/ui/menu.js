@@ -509,6 +509,15 @@
         });
 
         setupHeaderObserver();
+
+    let addIconTimer = null;
+    function scheduleAddIcon() {
+        if ($id('icon-menu-settings') && document.body.contains($id('icon-menu-settings'))) return;
+        addIcon();
+        if (!$id('icon-menu-settings')) {
+            addIconTimer = setTimeout(scheduleAddIcon, 500);
+        }
+    }
     }
 
     let openMenu = false;
@@ -526,7 +535,7 @@
     });
 
 
-    addIcon();
+    scheduleAddIcon();
     const close_menu_settings = $e('.close_menu_settings');
     if (close_menu_settings) {
         close_menu_settings.addEventListener('click', () => {
