@@ -887,6 +887,99 @@
 
 
     // ------------------------------
+    // Feature: Like vs Dislike bar
+
+    // ------------------------------
+    function parseCountText(text) {
+        if (!text) return null;
+        const s0 = String(text).trim().toLowerCase();
+        if (!s0) return null;
+        let mult = 1;
+        let s = s0.replace(/\s+/g, '');
+        if (s.includes('mil')) {
+            mult = 1000;
+            s = s.replace('mil', '');
+        } else if (s.includes('k')) {
+            mult = 1000;
+            s = s.replace('k', '');
+        } else if (s.includes('m')) {
+            mult = 1000000;
+            s = s.replace('m', '');
+        }
+        // normalize decimal separators
+        s = s.replace(/[^\d.,]/g, '');
+        if (!s) return null;
+        // If both separators exist, assume last is decimal
+        const lastDot = s.lastIndexOf('.');
+        const lastComma = s.lastIndexOf(',');
+        let nStr = s;
+        if (lastDot !== -1 && lastComma !== -1) {
+            const dec = Math.max(lastDot, lastComma);
+            const intPart = s.slice(0, dec).replace(/[.,]/g, '');
+            const decPart = s.slice(dec + 1);
+            nStr = `${intPart}.${decPart}`;
+        } else {
+            // Use dot as decimal
+            nStr = s.replace(',', '.');
+        }
+        const num = Number.parseFloat(nStr);
+        if (!Number.isFinite(num)) return null;
+        return Math.round(num * mult);
+    }
+
+    async function ensureDislikesForCurrentVideo() {
+        const videoId = getCurrentVideoId();
+        if (!videoId) return null;
+        const now = Date.now();
+        if (__ytToolsRuntime.dislikesCache.videoId === videoId && __ytToolsRuntime.dislikesCache.dislikes != null && (now - __ytToolsRuntime.dislikesCache.ts) < 10 * 60 * 1000) {
+            return __ytToolsRuntime.dislikesCache;
+        }
+        const persisted = getLikesDislikesFromPersistedCache(videoId);
+        if (persisted && persisted.dislikes != null) {
+            __ytToolsRuntime.dislikesCache = {
+                videoId,
+                likes: persisted.likes,
+                dislikes: persisted.dislikes,
+                viewCount: persisted.viewCount,
+                rating: persisted.rating,
+                ts: now
+            };
+            return __ytToolsRuntime.dislikesCache;
+        }
+        try {
+            const res = await fetch(`${apiDislikes}${videoId}`);
+            const data = await res.json();
+            const dislikes = Number(data?.dislikes);
+            const likes = Number(data?.likes);
+            const viewCount = Number(data?.viewCount);
+            const rating = Number(data?.rating);
+            const now = Date.now();
+
+            if (Number.isFinite(dislikes)) {
+                __ytToolsRuntime.dislikesCache = {
+                    videoId,
+                    likes: Number.isFinite(likes) ? likes : getLikesFromDom(),
+                    dislikes,
+                    viewCount,
+                    rating,
+                    ts: now
+                };
+                setLikesDislikesToPersistedCache(
+                    videoId,
+                    __ytToolsRuntime.dislikesCache.likes,
+                    dislikes,
+                    Number.isFinite(viewCount) ? viewCount : undefined,
+                    (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined
+                );
+                return __ytToolsRuntime.dislikesCache;
+            }
+        } catch (e) {
+            console.error('[YT Tools] Error fetching dislikes:', e);
+        }
+        return null;
+    }
+
+    // ------------------------------
     // Feature: History / Continue watching (per video)
 
     // ------------------------------
@@ -1467,258 +1560,6 @@
         updateContinueWatchingButton();
         updateContinueWatchingHistoryUi();
     }
-
-
-
-    // ------------------------------
-    // Feature: Like vs Dislike bar
-
-    // ------------------------------
-    function parseCountText(text) {
-        if (!text) return null;
-        const s0 = String(text).trim().toLowerCase();
-        if (!s0) return null;
-        let mult = 1;
-        let s = s0.replace(/\s+/g, '');
-        if (s.includes('mil')) {
-            mult = 1000;
-            s = s.replace('mil', '');
-        } else if (s.includes('k')) {
-            mult = 1000;
-            s = s.replace('k', '');
-        } else if (s.includes('m')) {
-            mult = 1000000;
-            s = s.replace('m', '');
-        }
-        // normalize decimal separators
-        s = s.replace(/[^\d.,]/g, '');
-        if (!s) return null;
-        // If both separators exist, assume last is decimal
-        const lastDot = s.lastIndexOf('.');
-        const lastComma = s.lastIndexOf(',');
-        let nStr = s;
-        if (lastDot !== -1 && lastComma !== -1) {
-            const dec = Math.max(lastDot, lastComma);
-            const intPart = s.slice(0, dec).replace(/[.,]/g, '');
-            const decPart = s.slice(dec + 1);
-            nStr = `${intPart}.${decPart}`;
-        } else {
-            // Use dot as decimal
-            nStr = s.replace(',', '.');
-        }
-        const num = Number.parseFloat(nStr);
-        if (!Number.isFinite(num)) return null;
-        return Math.round(num * mult);
-    }
-
-    async function ensureDislikesForCurrentVideo() {
-        const videoId = getCurrentVideoId();
-        if (!videoId) return null;
-        const now = Date.now();
-        if (__ytToolsRuntime.dislikesCache.videoId === videoId && __ytToolsRuntime.dislikesCache.dislikes != null && (now - __ytToolsRuntime.dislikesCache.ts) < 10 * 60 * 1000) {
-            return __ytToolsRuntime.dislikesCache;
-        }
-        const persisted = getLikesDislikesFromPersistedCache(videoId);
-        if (persisted && persisted.dislikes != null) {
-            __ytToolsRuntime.dislikesCache = {
-                videoId,
-                likes: persisted.likes,
-                dislikes: persisted.dislikes,
-                viewCount: persisted.viewCount,
-                rating: persisted.rating,
-                ts: now
-            };
-            return __ytToolsRuntime.dislikesCache;
-        }
-        try {
-            const res = await fetch(`${apiDislikes}${videoId}`);
-            const data = await res.json();
-            const dislikes = Number(data?.dislikes);
-            const likes = Number(data?.likes);
-            const viewCount = Number(data?.viewCount);
-            const rating = Number(data?.rating);
-            const now = Date.now();
-
-            if (Number.isFinite(dislikes)) {
-                __ytToolsRuntime.dislikesCache = {
-                    videoId,
-                    likes: Number.isFinite(likes) ? likes : getLikesFromDom(),
-                    dislikes,
-                    viewCount,
-                    rating,
-                    ts: now
-                };
-                setLikesDislikesToPersistedCache(
-                    videoId,
-                    __ytToolsRuntime.dislikesCache.likes,
-                    dislikes,
-                    Number.isFinite(viewCount) ? viewCount : undefined,
-                    (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined
-                );
-                return __ytToolsRuntime.dislikesCache;
-            }
-        } catch (e) {
-            console.error('[YT Tools] Error fetching dislikes:', e);
-        }
-        return null;
-    }
-
-    const themes = [{
-        name: 'Default / Reload',
-        gradient: '',
-        textColor: '',
-        raised: '',
-        btnTranslate: '',
-        CurrentProgressVideo: '',
-        videoDuration: '',
-        colorIcons: '',
-        textLogo: '',
-        primaryColor: '',
-        secondaryColor: '',
-    }, {
-        name: 'Midnight Blue',
-        gradient: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
-        textColor: '#ffffff',
-        raised: '#f00',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Forest Green',
-        gradient: 'linear-gradient(135deg, #14532d, #22c55e)',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Sunset Orange',
-        gradient: 'linear-gradient(135deg, #7c2d12, #f97316)',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Royal Purple',
-        gradient: 'linear-gradient(135deg, #2e1065, #4c1d95)',
-        textColor: '#ffffff',
-        raised: '#4c1d95',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Cherry Blossom',
-        gradient: 'linear-gradient(135deg, #a9005c, #fc008f)',
-        textColor: '#ffffff',
-        raised: '#fc008f',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Red Dark',
-        gradient: 'linear-gradient(135deg, #790909, #f70131)',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Raind ',
-        gradient: 'linear-gradient(90deg, #3f5efb 0%, #fc466b) 100%',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Neon',
-        gradient: 'linear-gradient(273deg, #ee49fd 0%, #6175ff 100%)',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Azure',
-        gradient: 'linear-gradient(273deg, #0172af 0%, #74febd 100%)',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Butterfly',
-        gradient: 'linear-gradient(273deg, #ff4060 0%, #fff16a 100%)',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    }, {
-        name: 'Colombia',
-        gradient: 'linear-gradient(174deg, #fbf63f  0%, #0000bb 45%, #ff0000 99%)',
-        textColor: '#ffffff',
-        raised: '#303131',
-        btnTranslate: '#000',
-        CurrentProgressVideo: '#0f0',
-        videoDuration: '#fff',
-        colorIcons: '#fff',
-        textLogo: '#f00',
-    },];
-
-    // Create our enhancement panel
-    const panel = $cl('div');
-
-    panel.id = 'yt-enhancement-panel';
-
-    const panelOverlay = $cl('div');
-    panelOverlay.id = 'panel-overlay';
-    $ap(panelOverlay);
-
-    // Generate theme options HTML
-    const themeOptionsHTML = themes
-        .map(
-            (theme, index) => `
-        <label >
-          <div class="theme-option">
-          <div class="theme-preview" style="background: ${theme.gradient};"></div>
-          <input type="radio" name="theme" value="${index}" ${index === 0 ? 'checked' : ''
-                }>
-              <span style="${theme.name === 'Default / Reload Page' ? 'color: red; ' : ''}" class="theme-name">${theme.name}</span>
-              </div>
-        </label>
-    `
-        )
-        .join('');
-
-    const languageOptionsHTML = Object.entries(languagesTranslate)
-        .map(([code, name]) => {
-            const selected = code === 'en' ? 'selected' : '';
-            return `<option value="${code}" ${selected}>${name}</option>`;
-        })
-        .join('');
-
 
 
 
@@ -2576,6 +2417,253 @@
     // Persistent check to ensure the gear icon survives YouTube's dynamic UI updates
     // setupHeaderObserver() is now called inside addIcon()
 
+
+    function getDynamicThemeCss(settings, selectedTheme) {
+        let css = `
+            .botones_div {
+                background-color: transparent;
+                border: none;
+                color: #999999;
+                user-select: none;
+            }
+            .ytp-menuitem[aria-checked=true] .ytp-menuitem-toggle-checkbox {
+                background: ${selectedTheme.gradient} !important;
+            }
+            #background.ytd-masthead { background: ${selectedTheme.gradient} !important; }
+            .ytp-swatch-background-color {
+                background: ${selectedTheme.gradient} !important;
+            }
+            html, body { 
+                background-color: #0f0f0f !important;
+            }
+            ytd-app, #content.ytd-app, #page-manager.ytd-app, ytd-browse, ytd-watch-flexy,
+            ytd-two-column-browse-results-renderer, #primary.ytd-two-column-browse-results-renderer,
+            #secondary.ytd-two-column-browse-results-renderer, ytd-rich-grid-renderer,
+            #contents.ytd-rich-grid-renderer, ytd-item-section-renderer,
+            ytd-comments-header-renderer, ytd-comment-simplebox-renderer,
+            ytd-comment-thread-renderer, ytd-comment-renderer, #header.ytd-item-section-renderer,
+            #body.ytd-comment-renderer, #author-thumbnail.ytd-comment-simplebox-renderer,
+            #cinematic-shorts-scrim.ytd-shorts, ytd-comment-view-model,
+            ytd-comment-engagement-bar, ytd-comment-replies-renderer, #anchored-panel.ytd-shorts,
+            #cinematic-container.ytd-reel-video-renderer, #shorts-cinematic-container,
+            .short-video-container.ytd-reel-video-renderer, ytd-reel-video-renderer,
+            .navigation-container.ytd-shorts, .navigation-button.ytd-shorts { 
+                background: transparent !important; 
+            }
+            #cinematic-container.ytd-reel-video-renderer, #shorts-cinematic-container, #cinematic-shorts-scrim.ytd-shorts {
+                display: none !important; opacity: 0 !important; visibility: hidden !important;
+            }
+            #masthead-container.ytd-app, #background.ytd-masthead { 
+                background: ${selectedTheme.gradient} !important;
+            }
+            #header.ytd-rich-grid-renderer, ytd-feed-filter-chip-bar-renderer, #chips-wrapper.ytd-feed-filter-chip-bar-renderer {
+                background: transparent !important;
+            }
+            .navigation-container.ytd-shorts {
+                display: flex !important; flex-direction: column !important; justify-content: center !important;
+                gap: 12px !important; height: 100% !important; top: 0 !important; bottom: 0 !important;
+                margin: 0 !important; background: transparent !important; background-color: transparent !important;
+            }
+            #navigation-button-up[aria-hidden="true"], #navigation-button-up[aria-hidden=""], #navigation-button-up[hidden],
+            #navigation-button-down[aria-hidden="true"], #navigation-button-down[aria-hidden=""], #navigation-button-down[hidden] {
+                display: none !important;
+            }
+            #frosted-glass.ytd-app {
+                background: ${selectedTheme.gradient} !important; opacity: 0.8 !important;
+            }
+            ytd-engagement-panel-section-list-renderer { background: ${selectedTheme.gradient} !important; backdrop-filter: blur(12px) !important; }
+            ytd-engagement-panel-title-header-renderer[shorts-panel] #header.ytd-engagement-panel-title-header-renderer {
+                background: ${selectedTheme.gradient} !important;
+            }
+            .buttons-tranlate { background: ${selectedTheme.btnTranslate} !important; }
+            .badge-shape-wiz--thumbnail-default {
+                color: ${selectedTheme.videoDuration} !important;
+                background: ${selectedTheme.gradient} !important;
+            }
+            #logo-icon { color: ${selectedTheme.textLogo} !important; }
+            .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text { color: ${selectedTheme.colorIcons} !important; }
+            .ytd-topbar-menu-button-renderer #button.ytd-topbar-menu-button-renderer { color: ${selectedTheme.colorIcons} !important; }
+            .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon { color: ${selectedTheme.colorIcons} !important; }
+            .ytp-svg-fill { fill: ${selectedTheme.colorIcons} !important; }
+        `;
+        return css;
+    }
+
+    function getCustomThemeCss(settings) {
+        return `
+            .html5-video-player { color: ${settings.primaryColorPicker} !important; }
+            .ytProgressBarLineProgressBarPlayed { background: ${settings.progressbarColorPicker} !important; }
+            .ytp-menuitem .ytp-menuitem-icon svg path { fill: ${settings.iconsColorPicker} !important; }
+            .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment { background: ${settings.lineColorPicker} !important; }
+            .yt-badge-shape--thumbnail-default { color: ${settings.timeColorPicker} !important; }
+            a svg > path, .ytp-button svg path { fill: ${settings.iconsColorPicker} !important; }
+            .botones_div { background-color: transparent; border: none; color: ${settings.iconsColorPicker} !important; }
+            .ytp-swatch-background-color { background: ${settings.progressbarColorPicker} !important; }
+            #background.ytd-masthead { background: ${settings.headerColorPicker} !important; }
+            #logo-icon { color: ${settings.primaryColorPicker} !important; }
+            /* ... more custom css ... */
+        `;
+    }
+
+    const themes = [{
+        name: 'Default / Reload',
+        gradient: '',
+        textColor: '',
+        raised: '',
+        btnTranslate: '',
+        CurrentProgressVideo: '',
+        videoDuration: '',
+        colorIcons: '',
+        textLogo: '',
+        primaryColor: '',
+        secondaryColor: '',
+    }, {
+        name: 'Midnight Blue',
+        gradient: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+        textColor: '#ffffff',
+        raised: '#f00',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Forest Green',
+        gradient: 'linear-gradient(135deg, #14532d, #22c55e)',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Sunset Orange',
+        gradient: 'linear-gradient(135deg, #7c2d12, #f97316)',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Royal Purple',
+        gradient: 'linear-gradient(135deg, #2e1065, #4c1d95)',
+        textColor: '#ffffff',
+        raised: '#4c1d95',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Cherry Blossom',
+        gradient: 'linear-gradient(135deg, #a9005c, #fc008f)',
+        textColor: '#ffffff',
+        raised: '#fc008f',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Red Dark',
+        gradient: 'linear-gradient(135deg, #790909, #f70131)',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Raind ',
+        gradient: 'linear-gradient(90deg, #3f5efb 0%, #fc466b) 100%',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Neon',
+        gradient: 'linear-gradient(273deg, #ee49fd 0%, #6175ff 100%)',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Azure',
+        gradient: 'linear-gradient(273deg, #0172af 0%, #74febd 100%)',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Butterfly',
+        gradient: 'linear-gradient(273deg, #ff4060 0%, #fff16a 100%)',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    }, {
+        name: 'Colombia',
+        gradient: 'linear-gradient(174deg, #fbf63f  0%, #0000bb 45%, #ff0000 99%)',
+        textColor: '#ffffff',
+        raised: '#303131',
+        btnTranslate: '#000',
+        CurrentProgressVideo: '#0f0',
+        videoDuration: '#fff',
+        colorIcons: '#fff',
+        textLogo: '#f00',
+    },];
+
+    // Create our enhancement panel
+    const panel = $cl('div');
+
+    panel.id = 'yt-enhancement-panel';
+
+    const panelOverlay = $cl('div');
+    panelOverlay.id = 'panel-overlay';
+    $ap(panelOverlay);
+
+    // Generate theme options HTML
+    const themeOptionsHTML = themes
+        .map(
+            (theme, index) => `
+        <label >
+          <div class="theme-option">
+          <div class="theme-preview" style="background: ${theme.gradient};"></div>
+          <input type="radio" name="theme" value="${index}" ${index === 0 ? 'checked' : ''
+                }>
+              <span style="${theme.name === 'Default / Reload Page' ? 'color: red; ' : ''}" class="theme-name">${theme.name}</span>
+              </div>
+        </label>
+    `
+        )
+        .join('');
+
+    const languageOptionsHTML = Object.entries(languagesTranslate)
+        .map(([code, name]) => {
+            const selected = code === 'en' ? 'selected' : '';
+            return `<option value="${code}" ${selected}>${name}</option>`;
+        })
+        .join('');
+
+
+
+
     // ------------------------------
     // YTM Ambient Mode — CSS background-image blur approach
     // Uses album art or video poster as a blurred full-screen background glow
@@ -2905,513 +2993,6 @@
 
     // Cinematic Lighting Control Functions
 
-
-    function getDynamicThemeCss(settings, selectedTheme) {
-        let css = `
-            .botones_div {
-                background-color: transparent;
-                border: none;
-                color: #999999;
-                user-select: none;
-            }
-            .ytp-menuitem[aria-checked=true] .ytp-menuitem-toggle-checkbox {
-                background: ${selectedTheme.gradient} !important;
-            }
-            #background.ytd-masthead { background: ${selectedTheme.gradient} !important; }
-            .ytp-swatch-background-color {
-                background: ${selectedTheme.gradient} !important;
-            }
-            html, body { 
-                background-color: #0f0f0f !important;
-            }
-            ytd-app, #content.ytd-app, #page-manager.ytd-app, ytd-browse, ytd-watch-flexy,
-            ytd-two-column-browse-results-renderer, #primary.ytd-two-column-browse-results-renderer,
-            #secondary.ytd-two-column-browse-results-renderer, ytd-rich-grid-renderer,
-            #contents.ytd-rich-grid-renderer, ytd-item-section-renderer,
-            ytd-comments-header-renderer, ytd-comment-simplebox-renderer,
-            ytd-comment-thread-renderer, ytd-comment-renderer, #header.ytd-item-section-renderer,
-            #body.ytd-comment-renderer, #author-thumbnail.ytd-comment-simplebox-renderer,
-            #cinematic-shorts-scrim.ytd-shorts, ytd-comment-view-model,
-            ytd-comment-engagement-bar, ytd-comment-replies-renderer, #anchored-panel.ytd-shorts,
-            #cinematic-container.ytd-reel-video-renderer, #shorts-cinematic-container,
-            .short-video-container.ytd-reel-video-renderer, ytd-reel-video-renderer,
-            .navigation-container.ytd-shorts, .navigation-button.ytd-shorts { 
-                background: transparent !important; 
-            }
-            #cinematic-container.ytd-reel-video-renderer, #shorts-cinematic-container, #cinematic-shorts-scrim.ytd-shorts {
-                display: none !important; opacity: 0 !important; visibility: hidden !important;
-            }
-            #masthead-container.ytd-app, #background.ytd-masthead { 
-                background: ${selectedTheme.gradient} !important;
-            }
-            #header.ytd-rich-grid-renderer, ytd-feed-filter-chip-bar-renderer, #chips-wrapper.ytd-feed-filter-chip-bar-renderer {
-                background: transparent !important;
-            }
-            .navigation-container.ytd-shorts {
-                display: flex !important; flex-direction: column !important; justify-content: center !important;
-                gap: 12px !important; height: 100% !important; top: 0 !important; bottom: 0 !important;
-                margin: 0 !important; background: transparent !important; background-color: transparent !important;
-            }
-            #navigation-button-up[aria-hidden="true"], #navigation-button-up[aria-hidden=""], #navigation-button-up[hidden],
-            #navigation-button-down[aria-hidden="true"], #navigation-button-down[aria-hidden=""], #navigation-button-down[hidden] {
-                display: none !important;
-            }
-            #frosted-glass.ytd-app {
-                background: ${selectedTheme.gradient} !important; opacity: 0.8 !important;
-            }
-            ytd-engagement-panel-section-list-renderer { background: ${selectedTheme.gradient} !important; backdrop-filter: blur(12px) !important; }
-            ytd-engagement-panel-title-header-renderer[shorts-panel] #header.ytd-engagement-panel-title-header-renderer {
-                background: ${selectedTheme.gradient} !important;
-            }
-            .buttons-tranlate { background: ${selectedTheme.btnTranslate} !important; }
-            .badge-shape-wiz--thumbnail-default {
-                color: ${selectedTheme.videoDuration} !important;
-                background: ${selectedTheme.gradient} !important;
-            }
-            #logo-icon { color: ${selectedTheme.textLogo} !important; }
-            .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text { color: ${selectedTheme.colorIcons} !important; }
-            .ytd-topbar-menu-button-renderer #button.ytd-topbar-menu-button-renderer { color: ${selectedTheme.colorIcons} !important; }
-            .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon { color: ${selectedTheme.colorIcons} !important; }
-            .ytp-svg-fill { fill: ${selectedTheme.colorIcons} !important; }
-        `;
-        return css;
-    }
-
-    function getCustomThemeCss(settings) {
-        return `
-            .html5-video-player { color: ${settings.primaryColorPicker} !important; }
-            .ytProgressBarLineProgressBarPlayed { background: ${settings.progressbarColorPicker} !important; }
-            .ytp-menuitem .ytp-menuitem-icon svg path { fill: ${settings.iconsColorPicker} !important; }
-            .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment { background: ${settings.lineColorPicker} !important; }
-            .yt-badge-shape--thumbnail-default { color: ${settings.timeColorPicker} !important; }
-            a svg > path, .ytp-button svg path { fill: ${settings.iconsColorPicker} !important; }
-            .botones_div { background-color: transparent; border: none; color: ${settings.iconsColorPicker} !important; }
-            .ytp-swatch-background-color { background: ${settings.progressbarColorPicker} !important; }
-            #background.ytd-masthead { background: ${settings.headerColorPicker} !important; }
-            #logo-icon { color: ${settings.primaryColorPicker} !important; }
-            /* ... more custom css ... */
-        `;
-    }
-
-    // ------------------------------
-    // Feature: Show channel name on Shorts list (Home / feeds)
-    // Adapted from: @𝖢𝖸 𝖥𝗎𝗇𝗀
-
-    // ------------------------------
-    function setupShortsChannelNameFeature(enabled) {
-        __ytToolsRuntime.shortsChannelName.enabled = !!enabled;
-        document.documentElement.dataset.mdcmShortsChannelName = enabled ? '1' : '0';
-
-        // Disable: stop observers to reduce overhead
-        if (!enabled) {
-            try {
-                __ytToolsRuntime.shortsChannelName.observer?.disconnect?.();
-            } catch (e) { }
-            try {
-                __ytToolsRuntime.shortsChannelName.io?.disconnect?.();
-            } catch (e) { }
-            __ytToolsRuntime.shortsChannelName.observer = null;
-            __ytToolsRuntime.shortsChannelName.io = null;
-            clearTimeout(__ytToolsRuntime.shortsChannelName.scanT);
-            __ytToolsRuntime.shortsChannelName.scanT = null;
-            return;
-        }
-
-        const rt = __ytToolsRuntime.shortsChannelName;
-
-        const getShortsVideoIdFromItem = (item) => {
-            const a = item.querySelector('a[href^="/shorts/"]');
-            const href = a?.getAttribute('href') || '';
-            const m = href.match(/\/shorts\/([^/?]+)/);
-            return m?.[1] || null;
-        };
-
-        const findSubhead = (item) => {
-            return item.querySelector(
-                '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
-                ' .shortsLockupViewModelHostOutsideMetadataSubhead,' +
-                ' .ShortsLockupViewModelHostMetadataSubhead,' +
-                ' .shortsLockupViewModelHostMetadataSubhead'
-            );
-        };
-
-        const ensureLabel = (subhead) => {
-            const parent = subhead?.parentElement;
-            if (!parent) return null;
-            let el = parent.querySelector('.yt-tools-shorts-channel-name');
-            if (!el) {
-                el = document.createElement('div');
-                el.className = 'yt-tools-shorts-channel-name';
-                el.textContent = '';
-                parent.insertBefore(el, subhead);
-            }
-            return el;
-        };
-
-        const tryExtractChannelNameFromDom = (item) => {
-            const a = item.querySelector('a[href^="/@"], a[href^="/channel/"]');
-            const name = (a?.textContent || a?.getAttribute('title') || '').trim();
-            return name || null;
-        };
-
-        const fetchChannelNameFromWatch = (videoId) => {
-            rt.fetchChain = rt.fetchChain.then(async () => {
-                if (rt.cache.has(videoId)) return rt.cache.get(videoId);
-                let res = null;
-                try {
-                    res = await fetch(`/watch?v=${videoId}`, {
-                        method: 'GET',
-                        credentials: 'same-origin',
-                        cache: 'force-cache',
-                    });
-                } catch (e) {
-                    return '';
-                }
-                if (!res?.ok) return '';
-                const html = await res.text();
-
-                const idx = html.indexOf('itemprop="author"');
-                if (idx < 0) return '';
-                const start = html.lastIndexOf('<span', idx);
-                const end = html.indexOf('</span>', idx);
-                if (start < 0 || end < 0) return '';
-                const chunk = html.slice(start, end + 7);
-
-                const doc = new DOMParser().parseFromString(chunk, 'text/html');
-                const link = doc.querySelector('link[itemprop="name"]');
-                return (link?.getAttribute('content') || '').trim();
-            });
-            return rt.fetchChain;
-        };
-
-        const getChannelName = (videoId, item) => {
-            const cached = rt.cache.get(videoId);
-            if (cached) return Promise.resolve(cached);
-
-            const persisted = getShortsChannelFromPersistedCache(videoId);
-            if (persisted) {
-                rt.cache.set(videoId, persisted);
-                return Promise.resolve(persisted);
-            }
-
-            const domName = tryExtractChannelNameFromDom(item);
-            if (domName) {
-                rt.cache.set(videoId, domName);
-                setShortsChannelToPersistedCache(videoId, domName);
-                return Promise.resolve(domName);
-            }
-
-            const inflight = rt.inflight.get(videoId);
-            if (inflight) return inflight;
-
-            const p = fetchChannelNameFromWatch(videoId)
-                .then((name) => {
-                    const finalName = (name || '').trim();
-                    if (finalName) {
-                        rt.cache.set(videoId, finalName);
-                        setShortsChannelToPersistedCache(videoId, finalName);
-                    }
-                    return finalName;
-                })
-                .finally(() => {
-                    rt.inflight.delete(videoId);
-                });
-            rt.inflight.set(videoId, p);
-            return p;
-        };
-
-        const processItem = (item) => {
-            if (!(item instanceof Element)) return;
-            if (item.dataset.ytToolsShortsChannelProcessed === '1') return;
-
-            const subhead = findSubhead(item);
-            if (!subhead) return;
-
-            const videoId = getShortsVideoIdFromItem(item);
-            if (!videoId) return;
-
-            item.dataset.ytToolsShortsChannelProcessed = '1';
-            item.dataset.ytToolsShortsVideoId = videoId;
-
-            const label = ensureLabel(subhead);
-            if (!label) return;
-            label.textContent = '';
-
-            rt.io?.observe(item);
-        };
-
-        if (!rt.io) {
-            rt.io = new IntersectionObserver((entries) => {
-                for (const entry of entries) {
-                    if (!entry.isIntersecting) continue;
-                    const item = entry.target;
-                    const videoId = item?.dataset?.ytToolsShortsVideoId;
-                    const subhead = findSubhead(item);
-                    const label = subhead?.parentElement?.querySelector?.('.yt-tools-shorts-channel-name');
-
-                    if (!videoId || !label) {
-                        rt.io.unobserve(item);
-                        continue;
-                    }
-
-                    getChannelName(videoId, item)
-                        .then((name) => {
-                            if (name) label.textContent = name;
-                        })
-                        .finally(() => {
-                            rt.io.unobserve(item);
-                        });
-                }
-            }, {
-                threshold: 0.15
-            });
-        }
-
-        const scan = () => {
-            clearTimeout(rt.scanT);
-            rt.scanT = setTimeout(() => {
-                document
-                    .querySelectorAll('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')
-                    .forEach(processItem);
-            }, 120);
-        };
-
-        if (!rt.observer) {
-            rt.observer = new MutationObserver(scan);
-            const observeTarget = document.querySelector('#page-manager') || document.body;
-            rt.observer.observe(observeTarget, {
-                childList: true,
-                subtree: true
-            });
-        }
-
-        scan();
-    }
-
-
-
-    // ------------------------------
-    // Feature: Show cached rating/likes/dislikes on video cards (watch related + home/search)
-
-    // ------------------------------
-    function getVideoIdFromLockup(lockup) {
-        const a = lockup.querySelector('a[href*="watch?v="]');
-        if (a) {
-            const m = (a.getAttribute('href') || '').match(/[?&]v=([^&]+)/);
-            if (m) return m[1];
-        }
-        const el = lockup.querySelector('[class*="content-id-"]');
-        if (el) {
-            const m = el.className.match(/content-id-([A-Za-z0-9_-]+)/);
-            if (m) return m[1];
-        }
-        return null;
-    }
-
-    function createSvgIconFromString(svgString, sizePx) {
-        const div = document.createElement('div');
-        div.innerHTML = safeHTML(svgString.trim());
-        const svg = div.firstElementChild;
-        if (!svg) return null;
-        svg.setAttribute('width', String(sizePx || 14));
-        svg.setAttribute('height', String(sizePx || 14));
-        svg.style.display = 'inline-block';
-        svg.style.verticalAlign = 'middle';
-        svg.style.marginRight = '2px';
-        return svg;
-    }
-
-    const LOCKUP_RATING_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-star"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245" /></svg>';
-    const LOCKUP_LIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 11v8a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-7a1 1 0 0 1 1 -1h3a4 4 0 0 0 4 -4v-1a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a2 3 0 0 1 -2 2h-7a3 3 0 0 1 -3 -3" /></svg>';
-    const LOCKUP_DISLIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 13v-8a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v7a1 1 0 0 0 1 1h3a4 4 0 0 1 4 4v1a2 2 0 0 0 4 0v-5h3a2 2 0 0 0 2 -2l-1 -5a2 3 0 0 0 -2 -2h-7a3 3 0 0 0 -3 3" /></svg>';
-
-    function injectLockupCachedStats() {
-        if (!window.location.href.includes('youtube.com')) return;
-        document.querySelectorAll('yt-lockup-view-model').forEach((lockup) => {
-            if (lockup.hasAttribute('data-yt-tools-lockup-stats')) return;
-            const videoId = getVideoIdFromLockup(lockup);
-            if (!videoId) return;
-            const cached = getLikesDislikesFromPersistedCache(videoId);
-            if (!cached) return;
-            const hasRating = cached.rating != null;
-            const hasLikes = cached.likes != null;
-            const hasDislikes = cached.dislikes != null;
-            if (!hasRating && !hasLikes && !hasDislikes) return;
-            const meta = lockup.querySelector('yt-content-metadata-view-model');
-            if (!meta) return;
-            const row = document.createElement('div');
-            row.className = 'yt-content-metadata-view-model__metadata-row';
-            row.setAttribute('data-yt-tools-lockup-stats-row', '1');
-            const wrap = document.createElement('span');
-            wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color';
-            wrap.setAttribute('dir', 'auto');
-            wrap.setAttribute('role', 'text');
-            const sep = () => {
-                const s = document.createTextNode(' · ');
-                return s;
-            };
-            if (hasRating) {
-                const ratingIcon = createSvgIconFromString(LOCKUP_RATING_SVG, 14);
-                if (ratingIcon) wrap.appendChild(ratingIcon);
-                wrap.appendChild(document.createTextNode(' ' + cached.rating.toFixed(1)));
-                if (hasLikes || hasDislikes) wrap.appendChild(sep());
-            }
-            if (hasLikes) {
-                const likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 14);
-                if (likeIcon) wrap.appendChild(likeIcon);
-                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
-                if (hasDislikes) wrap.appendChild(sep());
-            }
-            if (hasDislikes) {
-                const dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 14);
-                if (dislikeIcon) wrap.appendChild(dislikeIcon);
-                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
-            }
-            row.appendChild(wrap);
-            meta.appendChild(row);
-            lockup.setAttribute('data-yt-tools-lockup-stats', videoId);
-        });
-    }
-
-    function getVideoIdFromShortsLockup(item) {
-        if (item.dataset.ytToolsShortsVideoId) return item.dataset.ytToolsShortsVideoId;
-        var a = item.querySelector('a[href^="/shorts/"]');
-        if (!a) return null;
-        var m = (a.getAttribute('href') || '').match(/\/shorts\/([^/?]+)/);
-        return m ? m[1] : null;
-    }
-
-    function injectShortsLockupCachedStats() {
-        if (!window.location.href.includes('youtube.com')) return;
-        // Process inner lockup (has metadata); v2 wraps it and would duplicate
-        document.querySelectorAll('ytm-shorts-lockup-view-model').forEach(function (item) {
-            if (item.hasAttribute('data-yt-tools-shorts-stats')) return;
-            var videoId = getVideoIdFromShortsLockup(item);
-            if (!videoId) return;
-            var cached = getLikesDislikesFromPersistedCache(videoId);
-            if (!cached) return;
-            var hasLikes = cached.likes != null;
-            var hasDislikes = cached.dislikes != null;
-            if (!hasLikes && !hasDislikes) return;
-            var subhead = item.querySelector(
-                '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
-                '.shortsLockupViewModelHostOutsideMetadataSubhead,' +
-                '.ShortsLockupViewModelHostMetadataSubhead,' +
-                '.shortsLockupViewModelHostMetadataSubhead'
-            );
-            if (!subhead || !subhead.parentElement) return;
-            var wrap = document.createElement('span');
-            wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color yt-tools-shorts-stats-row';
-            wrap.setAttribute('dir', 'auto');
-            wrap.setAttribute('role', 'text');
-            wrap.setAttribute('style', 'color: #aaa !important;');
-            var sep = function () {
-                return document.createTextNode(' \u00b7 ');
-            };
-            if (hasLikes) {
-                var likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 12);
-                if (likeIcon) {
-                    likeIcon.style.setProperty('color', '#aaa', 'important');
-                    wrap.appendChild(likeIcon);
-                }
-                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
-                if (hasDislikes) wrap.appendChild(sep());
-            }
-            if (hasDislikes) {
-                var dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 12);
-                if (dislikeIcon) {
-                    dislikeIcon.style.setProperty('color', '#aaa', 'important');
-                    wrap.appendChild(dislikeIcon);
-                }
-                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
-            }
-            var row = document.createElement('div');
-            row.className = 'yt-tools-shorts-stats-wrap';
-            row.setAttribute('style', 'color: #aaa !important;');
-            row.appendChild(wrap);
-            subhead.parentElement.appendChild(row);
-            item.setAttribute('data-yt-tools-shorts-stats', videoId);
-        });
-    }
-
-    function createLockupStatsObserver(target) {
-        var lockupStatsDebounceT = null;
-        var lockupStatsScheduled = false;
-        var obs = new MutationObserver(function () {
-            if (lockupStatsScheduled) return;
-            lockupStatsScheduled = true;
-            clearTimeout(lockupStatsDebounceT);
-            lockupStatsDebounceT = setTimeout(function () {
-                lockupStatsScheduled = false;
-                if (!window.location.href.includes('youtube.com')) return;
-                injectLockupCachedStats();
-                injectShortsLockupCachedStats();
-                // Single extra pass for late-rendered lockups (reduced from 3 passes)
-                setTimeout(function () {
-                    if (!window.location.href.includes('youtube.com')) return;
-                    if (!hasUnprocessedLockups()) return;
-                    injectLockupCachedStats();
-                    injectShortsLockupCachedStats();
-                }, 1200);
-            }, 280);
-        });
-        obs.observe(target, {
-            childList: true,
-            subtree: true
-        });
-        return obs;
-    }
-
-    function retargetLockupStatsObserverIfNeeded() {
-        if (!window.location.href.includes('youtube.com/watch')) return;
-        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
-        if (!secondary || !secondary.parentNode) return;
-        if (__ytToolsRuntime.lockupCachedStatsObserveTarget === secondary) return;
-        var obs = __ytToolsRuntime.lockupCachedStatsObserver;
-        if (!obs) return;
-        obs.disconnect();
-        __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(secondary);
-        __ytToolsRuntime.lockupCachedStatsObserveTarget = secondary;
-    }
-
-    function hasUnprocessedLockups() {
-        var normal = document.querySelectorAll('yt-lockup-view-model:not([data-yt-tools-lockup-stats])').length > 0;
-        var shorts = document.querySelectorAll('ytm-shorts-lockup-view-model:not([data-yt-tools-shorts-stats])').length > 0;
-        return normal || shorts;
-    }
-
-    function runLockupCachedStatsCatchUp() {
-        if (!window.location.href.includes('youtube.com')) return;
-        if (document.visibilityState !== 'visible') return;
-        if (!hasUnprocessedLockups()) return;
-        injectLockupCachedStats();
-        injectShortsLockupCachedStats();
-    }
-
-    function setupLockupCachedStats() {
-        if (!window.location.href.includes('youtube.com')) return;
-        injectLockupCachedStats();
-        injectShortsLockupCachedStats();
-        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
-        var observeTarget = secondary && secondary.parentNode ? secondary : document.body;
-        if (__ytToolsRuntime.lockupCachedStatsObserver) {
-            if (observeTarget !== __ytToolsRuntime.lockupCachedStatsObserveTarget) {
-                __ytToolsRuntime.lockupCachedStatsObserver.disconnect();
-                __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
-                __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
-            }
-            return;
-        }
-        __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
-        __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
-        // Catch-up interval: apply stats to any new cards (scroll, filters, SPA) every 1.8s when there are unprocessed lockups
-        if (!__ytToolsRuntime.lockupCachedStatsIntervalId) {
-            __ytToolsRuntime.lockupCachedStatsIntervalId = setInterval(runLockupCachedStatsCatchUp, 1800);
-        }
-    }
-
-
-
     // ------------------------------
     // Feature: Bookmarks per video (persisted)
 
@@ -3556,6 +3137,244 @@
     }
 
 
+
+    function isWatchPage() {
+        return window.location.href.includes('youtube.com/watch');
+    }
+
+    function isCinematicActive() {
+        const cinematicDiv = document.getElementById('cinematics');
+        if (!cinematicDiv) {
+            return false;
+        }
+
+        const hasContent = cinematicDiv.innerHTML.trim() !== '';
+        const hasCanvas = cinematicDiv.querySelector('canvas') !== null;
+        const hasChildren = cinematicDiv.children.length > 0;
+
+        const hasCinematicElements = cinematicDiv.querySelector('div[style*="position: fixed"]') !== null;
+
+        return hasContent || hasCanvas || hasChildren || hasCinematicElements;
+    }
+
+    function toggleCinematicLighting() {
+        const settingsButton = $e('.ytp-button.ytp-settings-button');
+        if (!settingsButton) {
+            console.log('[YT Tools] Settings button not found');
+            return;
+        }
+
+        settingsButton.click();
+
+        // Cinematic/ambient keywords in multiple languages for robust detection
+        const cinematicKeywords = [
+            'cinematic', 'lighting', 'cinema', 'ambient',
+            'ch\u1EBF \u0111\u1ED9 \u0111i\u1EC7n \u1EA3nh', // Vietnamese: Chế độ điện ảnh
+            '\u0111i\u1EC7n \u1EA3nh', // Vietnamese: điện ảnh
+            'atmosph', 'ambiante', 'cin\u00E9ma', // French
+            '\u30A2\u30F3\u30D3\u30A8\u30F3\u30C8', // Japanese
+            '\uC2DC\uB124\uB9C8\uD2F1', // Korean
+        ];
+
+        const findAndClickCinematic = () => {
+            const menuItems = $m('.ytp-menuitem');
+            if (!menuItems || menuItems.length === 0) return false;
+
+            for (let item of menuItems) {
+                // Method 1: Look for toggle checkbox (cinematic is the only toggle-type menu item)
+                const toggleCheckbox = item.querySelector('.ytp-menuitem-toggle-checkbox');
+                if (toggleCheckbox) {
+                    console.log('[YT Tools] Found cinematic/ambient toggle item (by checkbox)');
+                    item.click();
+                    return true;
+                }
+            }
+
+            // Method 2: Match by localized text keywords
+            for (let item of menuItems) {
+                const text = (item.textContent || '').toLowerCase();
+                for (const kw of cinematicKeywords) {
+                    if (text.includes(kw)) {
+                        console.log('[YT Tools] Found cinematic option by keyword:', kw);
+                        item.click();
+                        return true;
+                    }
+                }
+            }
+
+            // Method 3: Match by SVG icon path
+            for (let item of menuItems) {
+                const icon = item.querySelector('.ytp-menuitem-icon svg path');
+                if (icon && (icon.getAttribute('d')?.includes('M21 7v10H3V7') ||
+                    icon.getAttribute('d')?.includes('M12 2C6.48 2 2 6.48 2 12'))) {
+                    console.log('[YT Tools] Found cinematic option by SVG path');
+                    item.click();
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        const closeMenu = () => {
+            const menu = $e('.ytp-settings-menu');
+            if (menu) document.body.click();
+        };
+
+        // Use polling instead of MutationObserver for more reliable detection
+        let attempts = 0;
+        const maxAttempts = 20;
+        const pollInterval = setInterval(() => {
+            attempts++;
+            if (findAndClickCinematic()) {
+                clearInterval(pollInterval);
+                setTimeout(closeMenu, 150);
+                return;
+            }
+            if (attempts >= maxAttempts) {
+                clearInterval(pollInterval);
+                console.warn('[YT Tools] Could not find cinematic/ambient toggle after', maxAttempts, 'attempts');
+                closeMenu();
+            }
+        }, 200);
+    }
+
+    // Function to apply settings
+
+
+        function agregarBotonesDescarga(settings) {
+            const avatars = $m('#author-thumbnail-button #img.style-scope.yt-img-shadow');
+
+            avatars.forEach((img) => {
+                if (img.parentElement.querySelector('.yt-image-avatar-download')) return;
+
+                const button = $cl('button');
+                button.innerHTML = safeHTML('<i class="fa fa-download"></i>');
+                button.classList.add('yt-image-avatar-download');
+
+                button.onclick = async function () {
+                    try {
+                        const imageUrl = img.src.split('=')[0];
+                        const response = await fetch(imageUrl);
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+
+                        const parentComment = img.closest('ytd-comment-thread-renderer, ytd-comment-renderer');
+                        const nameElement = parentComment?.querySelector('#author-text');
+                        let authorName = nameElement ? nameElement.textContent.trim() : 'avatar';
+                        authorName = authorName.replace(/[\/\\:*?"<>|]/g, '');
+
+                        const link = $cl('a');
+                        link.href = blobUrl;
+                        link.download = `${authorName}_avatar.jpg` || 'avatar.jpg';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000); 
+                    } catch (error) {
+                        console.error('Error al descargar la imagen:', error);
+                    }
+                };
+
+                img.parentElement.style.position = 'relative';
+                img.parentElement.appendChild(button);
+            });
+        }
+
+        function downloadDescriptionVideo() {
+            if (isYTMusic) return; 
+            if (!window.location.href.includes('youtube.com/watch')) return;
+            if ($e('#button_copy_description')) return;
+
+            const containerDescription = $e('#bottom-row.style-scope.ytd-watch-metadata');
+            if (!containerDescription) return;
+
+            const buttomHTML = `
+                <div id="button_copy_description" style="display: flex; justify-content: end; align-items: center;margin-top: 10px;" >
+                  <button id="copy-description" title="Copy description" class="botones_div" type="button" style="cursor: pointer;">
+                    <i style="font-size: 20px;" class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+            `;
+
+            containerDescription.insertAdjacentHTML('beforebegin', safeHTML(buttomHTML));
+
+            $id('copy-description').addEventListener('click', () => {
+                const ldJson = [...$m('script[type="application/ld+json"]')];
+                for (let script of ldJson) {
+                    try {
+                        const data = JSON.parse(script.innerText);
+                        if (data['@type'] === 'VideoObject') {
+                            const description =
+                                `📅 Date published: ${data.uploadDate || 'No disponible'}\n` +
+                                `Author: ${data.author || 'No disponible'}\n` +
+                                `🎬 Name video: ${data.name || 'No disponible'}\n` +
+                                `🖼️ Thumbnail: ${Array.isArray(data.thumbnailUrl) ? data.thumbnailUrl.join(', ') : data.thumbnailUrl || 'No disponible'}\n` +
+                                `📝 Description: ${data.description || 'No disponible'}\n\n\n` +
+                                `🎭 Category: ${data.genre || 'No disponible'}\n`;
+
+                            navigator.clipboard.writeText(description);
+                            Notify('success', 'Description copied');
+                        }
+                    } catch (e) {
+                        Notify('error', 'Error parsing JSON-LD');
+                    }
+                }
+            });
+        }
+
+        let translatorEventBound = false;
+        function traductor() {
+            const texts = document.querySelectorAll('#content-text:not([data-translated])');
+            if (texts.length === 0) return;
+
+            const languages = languagesTranslate;
+            const idiomaDestino = $id('select-languages-comments-select')?.value || 'vi';
+
+            const optionsHTML = Object.entries(languages)
+                .map(([code, name]) => `<option value="${code}" ${code === idiomaDestino ? 'selected' : ''}>${name}</option>`)
+                .join('');
+
+            texts.forEach((texto) => {
+                texto.setAttribute('data-translated', 'true'); 
+                const controlsHTML = `
+				<div class="traductor-container">
+					<button class="buttons-tranlate" data-action="translate-comment"> Translate <i class="fa-solid fa-language"></i></button>
+					<select class="select-traductor">
+					${optionsHTML}
+					</select>
+				</div>
+				`;
+                texto.insertAdjacentHTML('afterend', safeHTML(controlsHTML));
+            });
+
+            if (!translatorEventBound) {
+                translatorEventBound = true;
+                document.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.buttons-tranlate[data-action="translate-comment"]');
+                    if (!btn) return;
+
+                    const container = btn.closest('.traductor-container');
+                    const selectLang = container.querySelector('.select-traductor');
+                    const textNode = container.previousElementSibling; 
+
+                    if (!textNode || !selectLang) return;
+                    const urlLista = `?client=dict-chrome-ex&sl=auto&tl=${selectLang.value}&q=` + encodeURIComponent(textNode.textContent);
+                    btn.innerHTML = safeHTML('Translating... <i class="fa-solid fa-spinner fa-spin"></i>');
+
+                    fetch(apiGoogleTranslate + urlLista)
+                        .then((response) => response.json())
+                        .then((datos) => {
+                            textNode.textContent = datos[0][0];
+                            btn.textContent = 'Translated';
+                        })
+                        .catch((err) => {
+                            console.error('Error en la traducción:', err);
+                            btn.textContent = 'Error';
+                        });
+                });
+            }
+        }
 
 
     function getLikesFromDom() {
@@ -5861,243 +5680,424 @@
 
     // Define themes
 
-    function isWatchPage() {
-        return window.location.href.includes('youtube.com/watch');
-    }
+    // ------------------------------
+    // Feature: Show channel name on Shorts list (Home / feeds)
+    // Adapted from: @𝖢𝖸 𝖥𝗎𝗇𝗀
 
-    function isCinematicActive() {
-        const cinematicDiv = document.getElementById('cinematics');
-        if (!cinematicDiv) {
-            return false;
-        }
+    // ------------------------------
+    function setupShortsChannelNameFeature(enabled) {
+        __ytToolsRuntime.shortsChannelName.enabled = !!enabled;
+        document.documentElement.dataset.mdcmShortsChannelName = enabled ? '1' : '0';
 
-        const hasContent = cinematicDiv.innerHTML.trim() !== '';
-        const hasCanvas = cinematicDiv.querySelector('canvas') !== null;
-        const hasChildren = cinematicDiv.children.length > 0;
-
-        const hasCinematicElements = cinematicDiv.querySelector('div[style*="position: fixed"]') !== null;
-
-        return hasContent || hasCanvas || hasChildren || hasCinematicElements;
-    }
-
-    function toggleCinematicLighting() {
-        const settingsButton = $e('.ytp-button.ytp-settings-button');
-        if (!settingsButton) {
-            console.log('[YT Tools] Settings button not found');
+        // Disable: stop observers to reduce overhead
+        if (!enabled) {
+            try {
+                __ytToolsRuntime.shortsChannelName.observer?.disconnect?.();
+            } catch (e) { }
+            try {
+                __ytToolsRuntime.shortsChannelName.io?.disconnect?.();
+            } catch (e) { }
+            __ytToolsRuntime.shortsChannelName.observer = null;
+            __ytToolsRuntime.shortsChannelName.io = null;
+            clearTimeout(__ytToolsRuntime.shortsChannelName.scanT);
+            __ytToolsRuntime.shortsChannelName.scanT = null;
             return;
         }
 
-        settingsButton.click();
+        const rt = __ytToolsRuntime.shortsChannelName;
 
-        // Cinematic/ambient keywords in multiple languages for robust detection
-        const cinematicKeywords = [
-            'cinematic', 'lighting', 'cinema', 'ambient',
-            'ch\u1EBF \u0111\u1ED9 \u0111i\u1EC7n \u1EA3nh', // Vietnamese: Chế độ điện ảnh
-            '\u0111i\u1EC7n \u1EA3nh', // Vietnamese: điện ảnh
-            'atmosph', 'ambiante', 'cin\u00E9ma', // French
-            '\u30A2\u30F3\u30D3\u30A8\u30F3\u30C8', // Japanese
-            '\uC2DC\uB124\uB9C8\uD2F1', // Korean
-        ];
+        const getShortsVideoIdFromItem = (item) => {
+            const a = item.querySelector('a[href^="/shorts/"]');
+            const href = a?.getAttribute('href') || '';
+            const m = href.match(/\/shorts\/([^/?]+)/);
+            return m?.[1] || null;
+        };
 
-        const findAndClickCinematic = () => {
-            const menuItems = $m('.ytp-menuitem');
-            if (!menuItems || menuItems.length === 0) return false;
+        const findSubhead = (item) => {
+            return item.querySelector(
+                '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
+                ' .shortsLockupViewModelHostOutsideMetadataSubhead,' +
+                ' .ShortsLockupViewModelHostMetadataSubhead,' +
+                ' .shortsLockupViewModelHostMetadataSubhead'
+            );
+        };
 
-            for (let item of menuItems) {
-                // Method 1: Look for toggle checkbox (cinematic is the only toggle-type menu item)
-                const toggleCheckbox = item.querySelector('.ytp-menuitem-toggle-checkbox');
-                if (toggleCheckbox) {
-                    console.log('[YT Tools] Found cinematic/ambient toggle item (by checkbox)');
-                    item.click();
-                    return true;
+        const ensureLabel = (subhead) => {
+            const parent = subhead?.parentElement;
+            if (!parent) return null;
+            let el = parent.querySelector('.yt-tools-shorts-channel-name');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'yt-tools-shorts-channel-name';
+                el.textContent = '';
+                parent.insertBefore(el, subhead);
+            }
+            return el;
+        };
+
+        const tryExtractChannelNameFromDom = (item) => {
+            const a = item.querySelector('a[href^="/@"], a[href^="/channel/"]');
+            const name = (a?.textContent || a?.getAttribute('title') || '').trim();
+            return name || null;
+        };
+
+        const fetchChannelNameFromWatch = (videoId) => {
+            rt.fetchChain = rt.fetchChain.then(async () => {
+                if (rt.cache.has(videoId)) return rt.cache.get(videoId);
+                let res = null;
+                try {
+                    res = await fetch(`/watch?v=${videoId}`, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        cache: 'force-cache',
+                    });
+                } catch (e) {
+                    return '';
                 }
+                if (!res?.ok) return '';
+                const html = await res.text();
+
+                const idx = html.indexOf('itemprop="author"');
+                if (idx < 0) return '';
+                const start = html.lastIndexOf('<span', idx);
+                const end = html.indexOf('</span>', idx);
+                if (start < 0 || end < 0) return '';
+                const chunk = html.slice(start, end + 7);
+
+                const doc = new DOMParser().parseFromString(chunk, 'text/html');
+                const link = doc.querySelector('link[itemprop="name"]');
+                return (link?.getAttribute('content') || '').trim();
+            });
+            return rt.fetchChain;
+        };
+
+        const getChannelName = (videoId, item) => {
+            const cached = rt.cache.get(videoId);
+            if (cached) return Promise.resolve(cached);
+
+            const persisted = getShortsChannelFromPersistedCache(videoId);
+            if (persisted) {
+                rt.cache.set(videoId, persisted);
+                return Promise.resolve(persisted);
             }
 
-            // Method 2: Match by localized text keywords
-            for (let item of menuItems) {
-                const text = (item.textContent || '').toLowerCase();
-                for (const kw of cinematicKeywords) {
-                    if (text.includes(kw)) {
-                        console.log('[YT Tools] Found cinematic option by keyword:', kw);
-                        item.click();
-                        return true;
+            const domName = tryExtractChannelNameFromDom(item);
+            if (domName) {
+                rt.cache.set(videoId, domName);
+                setShortsChannelToPersistedCache(videoId, domName);
+                return Promise.resolve(domName);
+            }
+
+            const inflight = rt.inflight.get(videoId);
+            if (inflight) return inflight;
+
+            const p = fetchChannelNameFromWatch(videoId)
+                .then((name) => {
+                    const finalName = (name || '').trim();
+                    if (finalName) {
+                        rt.cache.set(videoId, finalName);
+                        setShortsChannelToPersistedCache(videoId, finalName);
                     }
-                }
-            }
-
-            // Method 3: Match by SVG icon path
-            for (let item of menuItems) {
-                const icon = item.querySelector('.ytp-menuitem-icon svg path');
-                if (icon && (icon.getAttribute('d')?.includes('M21 7v10H3V7') ||
-                    icon.getAttribute('d')?.includes('M12 2C6.48 2 2 6.48 2 12'))) {
-                    console.log('[YT Tools] Found cinematic option by SVG path');
-                    item.click();
-                    return true;
-                }
-            }
-
-            return false;
+                    return finalName;
+                })
+                .finally(() => {
+                    rt.inflight.delete(videoId);
+                });
+            rt.inflight.set(videoId, p);
+            return p;
         };
 
-        const closeMenu = () => {
-            const menu = $e('.ytp-settings-menu');
-            if (menu) document.body.click();
+        const processItem = (item) => {
+            if (!(item instanceof Element)) return;
+            if (item.dataset.ytToolsShortsChannelProcessed === '1') return;
+
+            const subhead = findSubhead(item);
+            if (!subhead) return;
+
+            const videoId = getShortsVideoIdFromItem(item);
+            if (!videoId) return;
+
+            item.dataset.ytToolsShortsChannelProcessed = '1';
+            item.dataset.ytToolsShortsVideoId = videoId;
+
+            const label = ensureLabel(subhead);
+            if (!label) return;
+            label.textContent = '';
+
+            rt.io?.observe(item);
         };
 
-        // Use polling instead of MutationObserver for more reliable detection
-        let attempts = 0;
-        const maxAttempts = 20;
-        const pollInterval = setInterval(() => {
-            attempts++;
-            if (findAndClickCinematic()) {
-                clearInterval(pollInterval);
-                setTimeout(closeMenu, 150);
-                return;
-            }
-            if (attempts >= maxAttempts) {
-                clearInterval(pollInterval);
-                console.warn('[YT Tools] Could not find cinematic/ambient toggle after', maxAttempts, 'attempts');
-                closeMenu();
-            }
-        }, 200);
+        if (!rt.io) {
+            rt.io = new IntersectionObserver((entries) => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    const item = entry.target;
+                    const videoId = item?.dataset?.ytToolsShortsVideoId;
+                    const subhead = findSubhead(item);
+                    const label = subhead?.parentElement?.querySelector?.('.yt-tools-shorts-channel-name');
+
+                    if (!videoId || !label) {
+                        rt.io.unobserve(item);
+                        continue;
+                    }
+
+                    getChannelName(videoId, item)
+                        .then((name) => {
+                            if (name) label.textContent = name;
+                        })
+                        .finally(() => {
+                            rt.io.unobserve(item);
+                        });
+                }
+            }, {
+                threshold: 0.15
+            });
+        }
+
+        const scan = () => {
+            clearTimeout(rt.scanT);
+            rt.scanT = setTimeout(() => {
+                document
+                    .querySelectorAll('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')
+                    .forEach(processItem);
+            }, 120);
+        };
+
+        if (!rt.observer) {
+            rt.observer = new MutationObserver(scan);
+            const observeTarget = document.querySelector('#page-manager') || document.body;
+            rt.observer.observe(observeTarget, {
+                childList: true,
+                subtree: true
+            });
+        }
+
+        scan();
     }
 
-    // Function to apply settings
 
 
-        function agregarBotonesDescarga(settings) {
-            const avatars = $m('#author-thumbnail-button #img.style-scope.yt-img-shadow');
+    // ------------------------------
+    // Feature: Show cached rating/likes/dislikes on video cards (watch related + home/search)
 
-            avatars.forEach((img) => {
-                if (img.parentElement.querySelector('.yt-image-avatar-download')) return;
-
-                const button = $cl('button');
-                button.innerHTML = safeHTML('<i class="fa fa-download"></i>');
-                button.classList.add('yt-image-avatar-download');
-
-                button.onclick = async function () {
-                    try {
-                        const imageUrl = img.src.split('=')[0];
-                        const response = await fetch(imageUrl);
-                        const blob = await response.blob();
-                        const blobUrl = URL.createObjectURL(blob);
-
-                        const parentComment = img.closest('ytd-comment-thread-renderer, ytd-comment-renderer');
-                        const nameElement = parentComment?.querySelector('#author-text');
-                        let authorName = nameElement ? nameElement.textContent.trim() : 'avatar';
-                        authorName = authorName.replace(/[\/\\:*?"<>|]/g, '');
-
-                        const link = $cl('a');
-                        link.href = blobUrl;
-                        link.download = `${authorName}_avatar.jpg` || 'avatar.jpg';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000); 
-                    } catch (error) {
-                        console.error('Error al descargar la imagen:', error);
-                    }
-                };
-
-                img.parentElement.style.position = 'relative';
-                img.parentElement.appendChild(button);
-            });
+    // ------------------------------
+    function getVideoIdFromLockup(lockup) {
+        const a = lockup.querySelector('a[href*="watch?v="]');
+        if (a) {
+            const m = (a.getAttribute('href') || '').match(/[?&]v=([^&]+)/);
+            if (m) return m[1];
         }
-
-        function downloadDescriptionVideo() {
-            if (isYTMusic) return; 
-            if (!window.location.href.includes('youtube.com/watch')) return;
-            if ($e('#button_copy_description')) return;
-
-            const containerDescription = $e('#bottom-row.style-scope.ytd-watch-metadata');
-            if (!containerDescription) return;
-
-            const buttomHTML = `
-                <div id="button_copy_description" style="display: flex; justify-content: end; align-items: center;margin-top: 10px;" >
-                  <button id="copy-description" title="Copy description" class="botones_div" type="button" style="cursor: pointer;">
-                    <i style="font-size: 20px;" class="fa-solid fa-copy"></i>
-                  </button>
-                </div>
-            `;
-
-            containerDescription.insertAdjacentHTML('beforebegin', safeHTML(buttomHTML));
-
-            $id('copy-description').addEventListener('click', () => {
-                const ldJson = [...$m('script[type="application/ld+json"]')];
-                for (let script of ldJson) {
-                    try {
-                        const data = JSON.parse(script.innerText);
-                        if (data['@type'] === 'VideoObject') {
-                            const description =
-                                `📅 Date published: ${data.uploadDate || 'No disponible'}\n` +
-                                `Author: ${data.author || 'No disponible'}\n` +
-                                `🎬 Name video: ${data.name || 'No disponible'}\n` +
-                                `🖼️ Thumbnail: ${Array.isArray(data.thumbnailUrl) ? data.thumbnailUrl.join(', ') : data.thumbnailUrl || 'No disponible'}\n` +
-                                `📝 Description: ${data.description || 'No disponible'}\n\n\n` +
-                                `🎭 Category: ${data.genre || 'No disponible'}\n`;
-
-                            navigator.clipboard.writeText(description);
-                            Notify('success', 'Description copied');
-                        }
-                    } catch (e) {
-                        Notify('error', 'Error parsing JSON-LD');
-                    }
-                }
-            });
+        const el = lockup.querySelector('[class*="content-id-"]');
+        if (el) {
+            const m = el.className.match(/content-id-([A-Za-z0-9_-]+)/);
+            if (m) return m[1];
         }
+        return null;
+    }
 
-        let translatorEventBound = false;
-        function traductor() {
-            const texts = document.querySelectorAll('#content-text:not([data-translated])');
-            if (texts.length === 0) return;
+    function createSvgIconFromString(svgString, sizePx) {
+        const div = document.createElement('div');
+        div.innerHTML = safeHTML(svgString.trim());
+        const svg = div.firstElementChild;
+        if (!svg) return null;
+        svg.setAttribute('width', String(sizePx || 14));
+        svg.setAttribute('height', String(sizePx || 14));
+        svg.style.display = 'inline-block';
+        svg.style.verticalAlign = 'middle';
+        svg.style.marginRight = '2px';
+        return svg;
+    }
 
-            const languages = languagesTranslate;
-            const idiomaDestino = $id('select-languages-comments-select')?.value || 'vi';
+    const LOCKUP_RATING_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-star"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245" /></svg>';
+    const LOCKUP_LIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 11v8a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-7a1 1 0 0 1 1 -1h3a4 4 0 0 0 4 -4v-1a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a2 3 0 0 1 -2 2h-7a3 3 0 0 1 -3 -3" /></svg>';
+    const LOCKUP_DISLIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 13v-8a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v7a1 1 0 0 0 1 1h3a4 4 0 0 1 4 4v1a2 2 0 0 0 4 0v-5h3a2 2 0 0 0 2 -2l-1 -5a2 3 0 0 0 -2 -2h-7a3 3 0 0 0 -3 3" /></svg>';
 
-            const optionsHTML = Object.entries(languages)
-                .map(([code, name]) => `<option value="${code}" ${code === idiomaDestino ? 'selected' : ''}>${name}</option>`)
-                .join('');
-
-            texts.forEach((texto) => {
-                texto.setAttribute('data-translated', 'true'); 
-                const controlsHTML = `
-				<div class="traductor-container">
-					<button class="buttons-tranlate" data-action="translate-comment"> Translate <i class="fa-solid fa-language"></i></button>
-					<select class="select-traductor">
-					${optionsHTML}
-					</select>
-				</div>
-				`;
-                texto.insertAdjacentHTML('afterend', safeHTML(controlsHTML));
-            });
-
-            if (!translatorEventBound) {
-                translatorEventBound = true;
-                document.addEventListener('click', (e) => {
-                    const btn = e.target.closest('.buttons-tranlate[data-action="translate-comment"]');
-                    if (!btn) return;
-
-                    const container = btn.closest('.traductor-container');
-                    const selectLang = container.querySelector('.select-traductor');
-                    const textNode = container.previousElementSibling; 
-
-                    if (!textNode || !selectLang) return;
-                    const urlLista = `?client=dict-chrome-ex&sl=auto&tl=${selectLang.value}&q=` + encodeURIComponent(textNode.textContent);
-                    btn.innerHTML = safeHTML('Translating... <i class="fa-solid fa-spinner fa-spin"></i>');
-
-                    fetch(apiGoogleTranslate + urlLista)
-                        .then((response) => response.json())
-                        .then((datos) => {
-                            textNode.textContent = datos[0][0];
-                            btn.textContent = 'Translated';
-                        })
-                        .catch((err) => {
-                            console.error('Error en la traducción:', err);
-                            btn.textContent = 'Error';
-                        });
-                });
+    function injectLockupCachedStats() {
+        if (!window.location.href.includes('youtube.com')) return;
+        document.querySelectorAll('yt-lockup-view-model').forEach((lockup) => {
+            if (lockup.hasAttribute('data-yt-tools-lockup-stats')) return;
+            const videoId = getVideoIdFromLockup(lockup);
+            if (!videoId) return;
+            const cached = getLikesDislikesFromPersistedCache(videoId);
+            if (!cached) return;
+            const hasRating = cached.rating != null;
+            const hasLikes = cached.likes != null;
+            const hasDislikes = cached.dislikes != null;
+            if (!hasRating && !hasLikes && !hasDislikes) return;
+            const meta = lockup.querySelector('yt-content-metadata-view-model');
+            if (!meta) return;
+            const row = document.createElement('div');
+            row.className = 'yt-content-metadata-view-model__metadata-row';
+            row.setAttribute('data-yt-tools-lockup-stats-row', '1');
+            const wrap = document.createElement('span');
+            wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color';
+            wrap.setAttribute('dir', 'auto');
+            wrap.setAttribute('role', 'text');
+            const sep = () => {
+                const s = document.createTextNode(' · ');
+                return s;
+            };
+            if (hasRating) {
+                const ratingIcon = createSvgIconFromString(LOCKUP_RATING_SVG, 14);
+                if (ratingIcon) wrap.appendChild(ratingIcon);
+                wrap.appendChild(document.createTextNode(' ' + cached.rating.toFixed(1)));
+                if (hasLikes || hasDislikes) wrap.appendChild(sep());
             }
+            if (hasLikes) {
+                const likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 14);
+                if (likeIcon) wrap.appendChild(likeIcon);
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
+                if (hasDislikes) wrap.appendChild(sep());
+            }
+            if (hasDislikes) {
+                const dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 14);
+                if (dislikeIcon) wrap.appendChild(dislikeIcon);
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
+            }
+            row.appendChild(wrap);
+            meta.appendChild(row);
+            lockup.setAttribute('data-yt-tools-lockup-stats', videoId);
+        });
+    }
+
+    function getVideoIdFromShortsLockup(item) {
+        if (item.dataset.ytToolsShortsVideoId) return item.dataset.ytToolsShortsVideoId;
+        var a = item.querySelector('a[href^="/shorts/"]');
+        if (!a) return null;
+        var m = (a.getAttribute('href') || '').match(/\/shorts\/([^/?]+)/);
+        return m ? m[1] : null;
+    }
+
+    function injectShortsLockupCachedStats() {
+        if (!window.location.href.includes('youtube.com')) return;
+        // Process inner lockup (has metadata); v2 wraps it and would duplicate
+        document.querySelectorAll('ytm-shorts-lockup-view-model').forEach(function (item) {
+            if (item.hasAttribute('data-yt-tools-shorts-stats')) return;
+            var videoId = getVideoIdFromShortsLockup(item);
+            if (!videoId) return;
+            var cached = getLikesDislikesFromPersistedCache(videoId);
+            if (!cached) return;
+            var hasLikes = cached.likes != null;
+            var hasDislikes = cached.dislikes != null;
+            if (!hasLikes && !hasDislikes) return;
+            var subhead = item.querySelector(
+                '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
+                '.shortsLockupViewModelHostOutsideMetadataSubhead,' +
+                '.ShortsLockupViewModelHostMetadataSubhead,' +
+                '.shortsLockupViewModelHostMetadataSubhead'
+            );
+            if (!subhead || !subhead.parentElement) return;
+            var wrap = document.createElement('span');
+            wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color yt-tools-shorts-stats-row';
+            wrap.setAttribute('dir', 'auto');
+            wrap.setAttribute('role', 'text');
+            wrap.setAttribute('style', 'color: #aaa !important;');
+            var sep = function () {
+                return document.createTextNode(' \u00b7 ');
+            };
+            if (hasLikes) {
+                var likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 12);
+                if (likeIcon) {
+                    likeIcon.style.setProperty('color', '#aaa', 'important');
+                    wrap.appendChild(likeIcon);
+                }
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
+                if (hasDislikes) wrap.appendChild(sep());
+            }
+            if (hasDislikes) {
+                var dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 12);
+                if (dislikeIcon) {
+                    dislikeIcon.style.setProperty('color', '#aaa', 'important');
+                    wrap.appendChild(dislikeIcon);
+                }
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
+            }
+            var row = document.createElement('div');
+            row.className = 'yt-tools-shorts-stats-wrap';
+            row.setAttribute('style', 'color: #aaa !important;');
+            row.appendChild(wrap);
+            subhead.parentElement.appendChild(row);
+            item.setAttribute('data-yt-tools-shorts-stats', videoId);
+        });
+    }
+
+    function createLockupStatsObserver(target) {
+        var lockupStatsDebounceT = null;
+        var lockupStatsScheduled = false;
+        var obs = new MutationObserver(function () {
+            if (lockupStatsScheduled) return;
+            lockupStatsScheduled = true;
+            clearTimeout(lockupStatsDebounceT);
+            lockupStatsDebounceT = setTimeout(function () {
+                lockupStatsScheduled = false;
+                if (!window.location.href.includes('youtube.com')) return;
+                injectLockupCachedStats();
+                injectShortsLockupCachedStats();
+                // Single extra pass for late-rendered lockups (reduced from 3 passes)
+                setTimeout(function () {
+                    if (!window.location.href.includes('youtube.com')) return;
+                    if (!hasUnprocessedLockups()) return;
+                    injectLockupCachedStats();
+                    injectShortsLockupCachedStats();
+                }, 1200);
+            }, 280);
+        });
+        obs.observe(target, {
+            childList: true,
+            subtree: true
+        });
+        return obs;
+    }
+
+    function retargetLockupStatsObserverIfNeeded() {
+        if (!window.location.href.includes('youtube.com/watch')) return;
+        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
+        if (!secondary || !secondary.parentNode) return;
+        if (__ytToolsRuntime.lockupCachedStatsObserveTarget === secondary) return;
+        var obs = __ytToolsRuntime.lockupCachedStatsObserver;
+        if (!obs) return;
+        obs.disconnect();
+        __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(secondary);
+        __ytToolsRuntime.lockupCachedStatsObserveTarget = secondary;
+    }
+
+    function hasUnprocessedLockups() {
+        var normal = document.querySelectorAll('yt-lockup-view-model:not([data-yt-tools-lockup-stats])').length > 0;
+        var shorts = document.querySelectorAll('ytm-shorts-lockup-view-model:not([data-yt-tools-shorts-stats])').length > 0;
+        return normal || shorts;
+    }
+
+    function runLockupCachedStatsCatchUp() {
+        if (!window.location.href.includes('youtube.com')) return;
+        if (document.visibilityState !== 'visible') return;
+        if (!hasUnprocessedLockups()) return;
+        injectLockupCachedStats();
+        injectShortsLockupCachedStats();
+    }
+
+    function setupLockupCachedStats() {
+        if (!window.location.href.includes('youtube.com')) return;
+        injectLockupCachedStats();
+        injectShortsLockupCachedStats();
+        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
+        var observeTarget = secondary && secondary.parentNode ? secondary : document.body;
+        if (__ytToolsRuntime.lockupCachedStatsObserver) {
+            if (observeTarget !== __ytToolsRuntime.lockupCachedStatsObserveTarget) {
+                __ytToolsRuntime.lockupCachedStatsObserver.disconnect();
+                __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
+                __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
+            }
+            return;
         }
+        __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
+        __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
+        // Catch-up interval: apply stats to any new cards (scroll, filters, SPA) every 1.8s when there are unprocessed lockups
+        if (!__ytToolsRuntime.lockupCachedStatsIntervalId) {
+            __ytToolsRuntime.lockupCachedStatsIntervalId = setInterval(runLockupCachedStatsCatchUp, 1800);
+        }
+    }
+
+
 
 
         function formatTime(seconds) {

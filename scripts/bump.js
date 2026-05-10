@@ -3,12 +3,12 @@ const path = require('path');
 
 async function bumpVersion(type = 'auto') {
     const repoRoot = path.resolve(__dirname, '..');
-    const metaPath = path.join(repoRoot, 'src/00_core/00_meta.js');
+    const metaPath = path.join(repoRoot, 'src/core/meta.js');
     const filesToSync = [
         path.join(repoRoot, 'package.json'),
-        path.join(repoRoot, 'src/02_ui/12_ambient_mode.js'),
-        path.join(repoRoot, 'src/02_ui/12b_ytm_ambient.js'),
-        path.join(repoRoot, 'src/01_utils/08_parse_count.js')
+        path.join(repoRoot, 'src/ui/menu.js'),
+        path.join(repoRoot, 'src/ui/ytm_menu.js'),
+        path.join(repoRoot, 'src/utils/api_parsers.js')
     ];
 
     if (!(await fs.exists(metaPath))) {
@@ -20,7 +20,7 @@ async function bumpVersion(type = 'auto') {
     const versionMatch = content.match(/@version\s+([\d.]+)/);
     
     if (!versionMatch) {
-        console.error("Could not find version in 00_meta.js");
+        console.error("Could not find version in core/meta.js");
         return;
     }
 
