@@ -1,28 +1,45 @@
 {
-  "name": "youtube-ultimate-tools",
-  "version": "0.0.5.9",
-  "description": "Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.",
-  "main": "youtube-tools.user.js",
+  "name": "youtube-tools-userscript",
+  "version": "2.4.3.2",
+  "description": "Youtube Tools All in one - download mp3 mp4, return dislikes and more",
+  "type": "module",
   "scripts": {
-    "build": "node scripts/build.js",
-    "bump": "node scripts/bump.js",
-    "release": "node scripts/commit.js",
-    "push": "node scripts/commit.js --no-bump",
-    "dev": "node scripts/build.js --watch",
-    "lint": "eslint src/**/*.js"
+    "dev": "rollup -c rollup.config.dev.js -w",
+    "build": "vite build",
+    "serve": "serve dist -l 5173",
+    "sync:legacy": "node scripts/sync-legacy.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify:parity": "node scripts/verify-parity.mjs",
+    "build:full": "npm run sync:legacy && npm run build",
+    "verify": "npm run build && npm run verify:parity && npm run lint && npm run format:check"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^1.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "rollup": "^4.9.6",
+    "sass": "^1.99.0",
+    "vite": "^8.0.11",
+    "vite-plugin-monkey": "^8.0.1"
   },
   "keywords": [
     "youtube",
-    "userscript",
+    "tools",
     "download",
-    "dislikes"
+    "mp3",
+    "mp4",
+    "userscript",
+    "tampermonkey"
   ],
-  "author": "Akari, DeveloperMDCM, nvbangg",
-  "license": "GPL-3.0",
-  "devDependencies": {
-    "eslint": "^8.56.0",
-    "fs-extra": "^11.2.0",
-    "glob": "^10.3.10",
-    "uglify-js": "^3.17.4"
+  "author": "DeveloperMDCM",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DeveloperMDCM/youtube-tools"
   }
 }
