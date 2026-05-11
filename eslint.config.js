@@ -51,14 +51,7 @@ const userscriptGlobals = {
 
 export default [
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'script.js',
-      'src/legacy-full.js',
-      'src/script-full.js',
-      '*.min.js',
-    ],
+    ignores: ['node_modules/**', 'dist/**', 'src/script-full.js', '*.min.js'],
   },
   js.configs.recommended,
   {

@@ -1,5 +1,12 @@
 {
   "permissions": {
-    "allow": ["Bash(npm run *)", "Bash(npx rollup *)", "Bash(node *)"]
-  }
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx rollup *)",
+      "Bash(node *)",
+      "PowerShell(npm run *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\FPTSHOP\\\\Desktop\\\\youtube-tools\\\\src\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\FPTSHOP\\\\Desktop\\\\youtube-tools\\\\\", \"\"\\) } | Sort-Object)"
+    ]
+  },
+  "spinnerTipsEnabled": false
 }

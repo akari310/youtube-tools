@@ -26,7 +26,22 @@ export const DUBS_STATUS_ENDPOINT = 'https://dubs.io/wp-json/tools/v1/status-vid
 // Languages for translate
 export const languagesTranslate = {
   vi: 'Vietnamese',
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  ja: 'Japanese',
+  ko: 'Korean',
+  'zh-CN': 'Chinese (Simplified)',
+  ru: 'Russian',
+  de: 'German',
+  pt: 'Portuguese',
+  'zh-TW': 'Chinese (Traditional)',
+  it: 'Italian',
 };
+
+// Settings storage keys (shared across features)
+export const SETTINGS_KEY_YT = 'ytSettingsMDCM';
+export const SETTINGS_KEY_YTM = 'ytmSettingsMDCM';
 
 // Wave visualizer constants
 export const PROCESSED_FLAG = 'wave_visualizer_processed';

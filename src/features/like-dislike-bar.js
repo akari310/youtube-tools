@@ -8,6 +8,7 @@ import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getCurrentVideoId, FormatterNumber } from '../utils/helpers.js';
 import { safeHTML } from '../utils/trusted-types.js';
 import { isYTMusic, $m } from '../utils/dom.js';
+import { loadSettings } from '../settings/settings-manager.js';
 
 // ------------------------------
 // Feature: Like vs Dislike bar
@@ -56,6 +57,35 @@ export function parseCountText(text) {
   }
   s = s.replace(/[^\d.,]/g, '');
   if (!s) return null;
+
+  // Locales where dot is thousands separator and comma is decimal (e.g. de, es, pt, id, tr, nl)
+  const dotThousandsLocales = [
+    'de',
+    'es',
+    'pt',
+    'id',
+    'tr',
+    'nl',
+    'it',
+    'pl',
+    'cs',
+    'da',
+    'fi',
+    'nb',
+    'sv',
+    'el',
+    'hu',
+    'ro',
+    'sk',
+    'sl',
+    'hr',
+    'bg',
+    'uk',
+    'ru',
+    'ar',
+  ];
+  const isDotThousandsLocale = dotThousandsLocales.some(l => hl.startsWith(l));
+
   const lastDot = s.lastIndexOf('.');
   const lastComma = s.lastIndexOf(',');
   let nStr = s;
@@ -68,7 +98,10 @@ export function parseCountText(text) {
   } else if (lastComma !== -1) {
     // Only comma: could be decimal (1,5) or thousands (1,000)
     const afterComma = s.slice(lastComma + 1);
-    if (afterComma.length === 3 && s.indexOf(',') === lastComma) {
+    if (isDotThousandsLocale) {
+      // In dot-thousands locales, comma is ALWAYS the decimal separator
+      nStr = s.replace(',', '.');
+    } else if (afterComma.length === 3 && s.indexOf(',') === lastComma) {
       // Likely thousands separator (e.g. "1,000")
       nStr = s.replace(',', '');
     } else {
@@ -82,6 +115,9 @@ export function parseCountText(text) {
     if (dotCount > 1) {
       // Multiple dots = thousands separators (e.g. "1.234.567")
       nStr = s.replace(/\./g, '');
+    } else if (isDotThousandsLocale && afterDot.length === 3) {
+      // In dot-thousands locales, single dot with 3 digits = thousands (e.g. "1.234")
+      nStr = s.replace('.', '');
     } else if (afterDot.length === 3 && mult > 1) {
       // Single dot with 3 digits after and a multiplier = likely thousands (e.g. "1.234K")
       nStr = s.replace('.', '');
@@ -252,13 +288,15 @@ if (typeof window !== 'undefined') {
   window.addEventListener('yt-navigate-finish', () => {
     if (isYTMusic) return;
     try {
-      const settings = JSON.parse(GM_getValue('ytSettingsMDCM', '{}'));
+      const settings = loadSettings();
       if (settings.likeDislikeBar) {
         setTimeout(async () => {
           await videoDislike();
           await shortDislike();
         }, 1500);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[YT Tools] Like/dislike nav handler error:', e);
+    }
   });
 }

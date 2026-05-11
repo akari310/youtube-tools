@@ -220,17 +220,21 @@ export function updateUI() {
   // Weekly chart
   const chart = $id('weekly-chart');
   if (chart) {
-    setHTML(chart, week
-      .map(d => {
-        const h = d.sec > 0 ? formatTime(d.sec, { compact: true }) : '';
-        return `<div class="week-bar-wrapper"><div class="week-label">${d.label}</div><div class="week-bar-track"><div class="week-bar-fill" style="height:${d.pct}%"></div></div><div class="week-bar-val">${h}</div></div>`;
-      })
-      .join(''));
+    setHTML(
+      chart,
+      week
+        .map(d => {
+          const h = d.sec > 0 ? formatTime(d.sec, { compact: true }) : '';
+          return `<div class="week-bar-wrapper"><div class="week-label">${d.label}</div><div class="week-bar-track"><div class="week-bar-fill" style="height:${d.pct}%"></div></div><div class="week-bar-val">${h}</div></div>`;
+        })
+        .join('')
+    );
   }
   const topList = $id('top-videos-list');
   if (topList) {
     const top = getTopVideos(10);
-    setHTML(topList,
+    setHTML(
+      topList,
       top.length === 0
         ? '<div class="stat-empty">Watch some videos first</div>'
         : top
@@ -243,7 +247,8 @@ export function updateUI() {
           <span class="top-video-time">${formatTime(v.totalSec, { compact: true })}</span>
         </div>`
             )
-            .join(''));
+            .join('')
+    );
   }
 }
 

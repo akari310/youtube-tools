@@ -5,6 +5,12 @@ export const __ytToolsRuntime = {
   settingsLoaded: false,
   bookmarkClickHandlerInitialized: false,
   bookmarksPanelOpen: false,
+  nonstopPlayback: {
+    enabled: false,
+  },
+  audioOnly: {
+    enabled: false,
+  },
   continueWatching: {
     enabled: false,
     map: null,

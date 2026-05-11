@@ -193,9 +193,15 @@ export async function startDownloadVideoOrAudio(format, container) {
     const statusUrl = new URL(DUBS_STATUS_ENDPOINT);
     statusUrl.searchParams.set('id', startData.progressId);
 
-    container.__ytDownloadPoll = setInterval(async () => {
+    let dubsFailCount = 0;
+    let dubsDelay = 2000;
+
+    const pollDubs = async () => {
       try {
         const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
+        dubsFailCount = 0;
+        dubsDelay = 2000;
+
         const rawProgress = Number(st?.progress) || 0;
         const progress = Math.min(rawProgress / 10, 100);
         if (progressFill) progressFill.style.width = `${progress}%`;
@@ -205,14 +211,23 @@ export async function startDownloadVideoOrAudio(format, container) {
           clearTimeout(container.__ytDownloadPoll);
           container.__ytDownloadPoll = null;
           markCompleteAndOpen(st.downloadUrl);
+          return;
         }
       } catch (e) {
-        console.error('[YT Tools] Dubs polling error:', e);
-        clearTimeout(container.__ytDownloadPoll);
-        container.__ytDownloadPoll = null;
-        setErrorState('Download failed - server error. Please retry.');
+        dubsFailCount++;
+        if (dubsFailCount >= 5) {
+          console.error('[YT Tools] Dubs polling failed after 5 retries:', e);
+          clearTimeout(container.__ytDownloadPoll);
+          container.__ytDownloadPoll = null;
+          setErrorState('Download failed - server error. Please retry.');
+          return;
+        }
+        console.warn(`[YT Tools] Dubs poll error (${dubsFailCount}/5):`, e);
+        dubsDelay = Math.min(dubsDelay * 2, 16000);
       }
-    }, 3000);
+      container.__ytDownloadPoll = setTimeout(pollDubs, dubsDelay);
+    };
+    container.__ytDownloadPoll = setTimeout(pollDubs, dubsDelay);
   };
 
   try {

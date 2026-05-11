@@ -1,11 +1,13 @@
 // ===========================================
 // YouTube Tools - Modular Entry Point
 // ===========================================
-// Modular features are imported and initialized first.
-// Legacy full source is imported as fallback for features
-// not yet modularized (cinematic lighting, theme, player
-// size, video quality, avatar downloads, etc.)
+// All features have been migrated to modular ES modules.
+// Legacy code has been fully phased out.
+// See src/features/ for all feature implementations.
 // ===========================================
+
+// --- Legacy Compatibility Flags ---
+import './config/flags.js';
 
 // --- Modular Features ---
 import { setupContinueWatchingFeature } from './features/continue-watching.js';
@@ -22,9 +24,18 @@ import { hideComments } from './features/hide-comments.js';
 import { hideSidebar } from './features/hide-sidebar.js';
 import { reverseMode } from './features/reverse-mode.js';
 import { disableSubtitles } from './features/disable-subtitles.js';
+import { applyNonstopPlayback } from './features/nonstop-playback.js';
+import { applyAudioOnlyMode, getEffectiveAudioOnly } from './features/audio-only.js';
+import { applyCinematicLighting } from './features/cinematic-lighting.js';
+import { setupAvatarDownload } from './features/avatar-download.js';
+import { initWaveVisualizer } from './features/wave-visualizer.js';
+import { initShortsReelButtons } from './features/shorts-reel-buttons.js';
+import { initDownloadDescription } from './features/download-description.js';
+import { setupCommentNavListener } from './features/comment-observer.js';
 
 // --- Modular UI ---
-import { createPanel } from './ui/panel.js';
+
+import { initSettingsPanel } from './ui/settings-panel.js';
 
 // --- Settings ---
 import { loadSettings } from './settings/settings-manager.js';
@@ -32,9 +43,6 @@ import { loadSettings } from './settings/settings-manager.js';
 // --- Modular Utils ---
 import { __ytToolsRuntime } from './utils/runtime.js';
 import { checkNewVersion } from './utils/helpers.js';
-
-// --- Flag: tell legacy code to skip its wave visualizer ---
-import './config/flags.js';
 
 // --- YouTube Music: Glass-morphism UI improvements ---
 GM_addStyle(`
@@ -94,9 +102,6 @@ GM_addStyle(`
   }
 `);
 
-// --- Legacy fallback (handles remaining features and full panel UI) ---
-import './legacy-full.js';
-
 // ===========================================
 // Initialization
 // ===========================================
@@ -109,7 +114,7 @@ import './legacy-full.js';
 
   // 1b. Create the modular panel (gear icon + panel UI)
   try {
-    createPanel();
+    initSettingsPanel();
     console.log('[YT Tools] Modular panel created');
   } catch (e) {
     console.error('[YT Tools] Failed to create panel:', e);
@@ -135,6 +140,14 @@ import './legacy-full.js';
     [hideSidebar, settings.hideSidebar],
     [reverseMode, settings.reverseMode],
     [disableSubtitles, settings.disableSubtitles],
+    [applyNonstopPlayback, settings.nonstopPlayback],
+    [applyAudioOnlyMode, getEffectiveAudioOnly(settings)],
+    [applyCinematicLighting, settings],
+    [setupAvatarDownload, settings.avatars],
+    [initWaveVisualizer, settings],
+    [initShortsReelButtons, null],
+    [initDownloadDescription, null],
+    [setupCommentNavListener, settings],
   ];
   for (const [fn, arg] of features) {
     try {

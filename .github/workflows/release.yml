@@ -30,8 +30,8 @@ jobs:
         with:
           tag: v${{ steps.get_version.outputs.VERSION }}
           name: Release v${{ steps.get_version.outputs.VERSION }}
-          artifacts: "youtube-tools.user.js"
+          artifacts: 'youtube-tools.user.js'
           allowUpdates: true
           makeLatest: true
-          body: "Automatic release for version ${{ steps.get_version.outputs.VERSION }}"
+          body: 'Automatic release for version ${{ steps.get_version.outputs.VERSION }}'
           token: ${{ secrets.GITHUB_TOKEN }}

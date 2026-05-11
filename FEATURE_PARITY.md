@@ -3,6 +3,7 @@
 ## Modular Features (src/features/)
 
 ### bookmarks
+
 - `getBookmarksForVideo()`
 - `saveBookmark()`
 - `deleteBookmark()`
@@ -10,6 +11,7 @@
 - `applyBookmarksIfEnabled()`
 
 ### continue-watching
+
 - `isWatchPage()`
 - `getMainVideoEl()`
 - `getCurrentVideoMeta()`
@@ -28,11 +30,13 @@
 - `setupContinueWatchingFeature()`
 
 ### download
+
 - `startDownloadVideoOrAudio()`
 - `setupDownloadClickHandler()`
 - `initDownloadFeature()`
 
 ### like-dislike-bar
+
 - `parseCountText()`
 - `getLikesFromDom()`
 - `ensureDislikesForCurrentVideo()`
@@ -43,21 +47,26 @@
 - `applyLikeDislikeBarIfEnabled()`
 
 ### lockup-cached-stats
+
 - `setupLockupCachedStats()`
 
 ### shorts-channel-name
+
 - `setupShortsChannelNameFeature()`
 
 ### time-stats
+
 - `formatTime()`
 - `updateUI()`
 - `initTimeStats()`
 
 ### translate-comments
+
 - `traductor()`
 - `initTranslateComments()`
 
 ### wave-visualizer
+
 - `cleanupWaveVisualizer()`
 - `hideCanvas()`
 - `showCanvas()`
@@ -67,10 +76,12 @@
 - `initWaveVisualizer()`
 
 ### effects
+
 - `initEffectsFeature()`
 - `cleanupEffects()`
 
 ### player-size
+
 - `applyPlayerSize()`
 - `resetPlayerSize()`
 - `initPlayerSize()`
@@ -78,6 +89,7 @@
 ## Duplicates (both codebases have)
 
 ### bookmarks
+
 - `getBookmarksForVideo()` — both have it
 - `saveBookmark()` — both have it
 - `deleteBookmark()` — both have it
@@ -85,6 +97,7 @@
 - `applyBookmarksIfEnabled()` — both have it
 
 ### continue-watching
+
 - `isWatchPage()` — both have it
 - `getMainVideoEl()` — both have it
 - `getCurrentVideoMeta()` — both have it
@@ -103,9 +116,11 @@
 - `setupContinueWatchingFeature()` — both have it
 
 ### download
+
 - `startDownloadVideoOrAudio()` — both have it
 
 ### like-dislike-bar
+
 - `parseCountText()` — both have it
 - `getLikesFromDom()` — both have it
 - `ensureDislikesForCurrentVideo()` — both have it
@@ -116,23 +131,29 @@
 - `applyLikeDislikeBarIfEnabled()` — both have it
 
 ### lockup-cached-stats
+
 - `setupLockupCachedStats()` — both have it
 
 ### shorts-channel-name
+
 - `setupShortsChannelNameFeature()` — both have it
 
 ### time-stats
+
 - `formatTime()` — both have it
 - `updateUI()` — both have it
 
 ### translate-comments
+
 - `traductor()` — both have it
 
 ### wave-visualizer
+
 - `hideCanvas()` — both have it
 - `showCanvas()` — both have it
 
 ### player-size
+
 - `applyPlayerSize()` — both have it
 
 ## Legacy-Only Key Features
@@ -161,25 +182,25 @@
 
 ## Recommendation
 
-| Feature | Keep | Reason |
-|---------|------|--------|
-| Bookmarks | **Modular** | Cleaner code, scoped DOM queries |
-| Continue Watching | **Modular** | Better save logic, video metadata cache, pagehide handler |
-| Download | **Modular** | Retry logic, error UX, safe anchor download, fetchWithRetry |
-| Like/Dislike Bar | **Legacy** | More robust DOM selectors, works on both video+shorts |
-| Lockup Cached Stats | **Modular** | Clean implementation |
-| Shorts Channel Name | **Modular** | IntersectionObserver, cache, deduplication |
-| Time Stats | **Modular** | Per-video, daily, weekly chart, top videos, export |
-| Translate Comments | **Legacy** | More mature, handles edge cases better |
-| Wave Visualizer | **Legacy** | Full audio analyzer, multiple styles, canvas management |
-| Effects (Game) | **Modular** | Legacy has no equivalent |
-| Player Size | **Modular** | CSS width resize, not transform scale |
-| Cinematic Lighting | **Legacy** | YTM ambient mode, complex toggle logic |
-| Hide Comments | **Legacy** | Simple but effective |
-| Hide Sidebar | **Legacy** | Simple toggle |
-| Reverse Mode | **Legacy** | No modular equivalent |
-| Disable Subtitles | **Legacy** | No modular equivalent |
-| Avatar Download | **Legacy** | No modular equivalent |
-| Audio-only Mode | **Legacy** | Background art + video hide (just fixed) |
-| Settings Panel | **Legacy** | Full settings UI with themes, toggles, slider, import/export |
-| Stats Panel | **Modular** | Clean stats-only panel with drag |
+| Feature             | Keep        | Reason                                                       |
+| ------------------- | ----------- | ------------------------------------------------------------ |
+| Bookmarks           | **Modular** | Cleaner code, scoped DOM queries                             |
+| Continue Watching   | **Modular** | Better save logic, video metadata cache, pagehide handler    |
+| Download            | **Modular** | Retry logic, error UX, safe anchor download, fetchWithRetry  |
+| Like/Dislike Bar    | **Legacy**  | More robust DOM selectors, works on both video+shorts        |
+| Lockup Cached Stats | **Modular** | Clean implementation                                         |
+| Shorts Channel Name | **Modular** | IntersectionObserver, cache, deduplication                   |
+| Time Stats          | **Modular** | Per-video, daily, weekly chart, top videos, export           |
+| Translate Comments  | **Legacy**  | More mature, handles edge cases better                       |
+| Wave Visualizer     | **Legacy**  | Full audio analyzer, multiple styles, canvas management      |
+| Effects (Game)      | **Modular** | Legacy has no equivalent                                     |
+| Player Size         | **Modular** | CSS width resize, not transform scale                        |
+| Cinematic Lighting  | **Legacy**  | YTM ambient mode, complex toggle logic                       |
+| Hide Comments       | **Legacy**  | Simple but effective                                         |
+| Hide Sidebar        | **Legacy**  | Simple toggle                                                |
+| Reverse Mode        | **Legacy**  | No modular equivalent                                        |
+| Disable Subtitles   | **Legacy**  | No modular equivalent                                        |
+| Avatar Download     | **Legacy**  | No modular equivalent                                        |
+| Audio-only Mode     | **Legacy**  | Background art + video hide (just fixed)                     |
+| Settings Panel      | **Legacy**  | Full settings UI with themes, toggles, slider, import/export |
+| Stats Panel         | **Modular** | Clean stats-only panel with drag                             |

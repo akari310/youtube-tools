@@ -10,19 +10,19 @@ Công cụ YouTube tất cả trong một — userscript cho Tampermonkey/Grease
 
 ## Tính năng
 
-| Tính năng | Mô tả |
-|-----------|-------|
-| 📥 **Download MP3/MP4** | Tải video/audio chất lượng cao qua SaveNow và Dubs API |
-| 👎 **Return Dislike** | Hiển thị lượt dislike qua ReturnYouTubeDislike API |
-| 📊 **Thống kê xem** | Tổng thời gian, session, today, top videos, weekly chart |
-| 🔖 **Bookmarks** | Đánh dấu timestamp trong video |
-| ▶️ **Continue Watching** | Tiếp tục video đang xem dở |
-| 🌊 **Wave Visualizer** | Hiển thị sóng âm thanh real-time (Web Audio API) |
-| 💬 **Translate Comments** | Dịch bình luận qua Google Translate API |
-| 🎮 **Effects Mini-game** | Game nhỏ trong panel |
-| 📐 **Player Size** | Điều chỉnh kích thước player |
-| 📺 **Shorts Channel Name** | Hiển thị tên kênh trên YouTube Shorts |
-| 📈 **Cached Stats** | Thống kê lượt xem trên video cards |
+| Tính năng                  | Mô tả                                                    |
+| -------------------------- | -------------------------------------------------------- |
+| 📥 **Download MP3/MP4**    | Tải video/audio chất lượng cao qua SaveNow và Dubs API   |
+| 👎 **Return Dislike**      | Hiển thị lượt dislike qua ReturnYouTubeDislike API       |
+| 📊 **Thống kê xem**        | Tổng thời gian, session, today, top videos, weekly chart |
+| 🔖 **Bookmarks**           | Đánh dấu timestamp trong video                           |
+| ▶️ **Continue Watching**   | Tiếp tục video đang xem dở                               |
+| 🌊 **Wave Visualizer**     | Hiển thị sóng âm thanh real-time (Web Audio API)         |
+| 💬 **Translate Comments**  | Dịch bình luận qua Google Translate API                  |
+| 🎮 **Effects Mini-game**   | Game nhỏ trong panel                                     |
+| 📐 **Player Size**         | Điều chỉnh kích thước player                             |
+| 📺 **Shorts Channel Name** | Hiển thị tên kênh trên YouTube Shorts                    |
+| 📈 **Cached Stats**        | Thống kê lượt xem trên video cards                       |
 
 ---
 
@@ -38,7 +38,7 @@ Công cụ YouTube tất cả trong một — userscript cho Tampermonkey/Grease
 
 ### Cách 1: Cài từ Greasy Fork
 
-> *Script có sẵn trên Greasy Fork — tìm "YouTube Tools All in one local download"*
+> _Script có sẵn trên Greasy Fork — tìm "YouTube Tools All in one local download"_
 
 1. Cài Tampermonkey cho trình duyệt
 2. Truy cập Greasy Fork và cài đặt script
@@ -68,17 +68,17 @@ Cài file `dist/youtube-tools-userscript.user.js` vào Tampermonkey.
 
 ### Scripts
 
-| Command | Mô tả |
-|---------|-------|
-| `npm run dev` | Dev mode với Rollup — watch `src/`, output IIFE |
-| `npm run build` | Production build với Vite + vite-plugin-monkey |
-| `npm run build:full` | Sync legacy + build production |
-| `npm run lint` | ESLint check |
-| `npm run lint:fix` | ESLint auto-fix |
-| `npm run format` | Prettier format toàn bộ |
-| `npm run format:check` | Check Prettier |
-| `npm run verify:parity` | Kiểm tra đồng bộ legacy ↔ modular |
-| `npm run verify` | Build + verify parity + lint + format check (CI pipeline) |
+| Command                 | Mô tả                                                     |
+| ----------------------- | --------------------------------------------------------- |
+| `npm run dev`           | Dev mode với Rollup — watch `src/`, output IIFE           |
+| `npm run build`         | Production build với Vite + vite-plugin-monkey            |
+| `npm run build:full`    | Sync legacy + build production                            |
+| `npm run lint`          | ESLint check                                              |
+| `npm run lint:fix`      | ESLint auto-fix                                           |
+| `npm run format`        | Prettier format toàn bộ                                   |
+| `npm run format:check`  | Check Prettier                                            |
+| `npm run verify:parity` | Kiểm tra đồng bộ legacy ↔ modular                         |
+| `npm run verify`        | Build + verify parity + lint + format check (CI pipeline) |
 
 ### Cấu trúc build
 
@@ -134,12 +134,12 @@ src/
 
 ## API Integrations
 
-| API | Endpoint | Mục đích |
-|-----|----------|---------|
-| ReturnYouTubeDislike | `returnyoutubedislikeapi.com/Votes` | Lấy lượt dislike |
-| Google Translate | `translate.googleapis.com/translate_a/t` | Dịch bình luận |
-| SaveNow | `p.savenow.to/ajax/download.php` | Download MP3/MP4 |
-| Dubs | `dubs.io/wp-json/tools/v1/` | Download fallback |
+| API                  | Endpoint                                 | Mục đích          |
+| -------------------- | ---------------------------------------- | ----------------- |
+| ReturnYouTubeDislike | `returnyoutubedislikeapi.com/Votes`      | Lấy lượt dislike  |
+| Google Translate     | `translate.googleapis.com/translate_a/t` | Dịch bình luận    |
+| SaveNow              | `p.savenow.to/ajax/download.php`         | Download MP3/MP4  |
+| Dubs                 | `dubs.io/wp-json/tools/v1/`              | Download fallback |
 
 ---
 
@@ -148,6 +148,7 @@ src/
 Dự án có 28 vấn đề đã được phân tích chi tiết: xem [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md) và [CHECKLIST.md](CHECKLIST.md).
 
 **Tóm tắt:**
+
 - 🔴 3 Critical (kiến trúc dual codebase, lỗi scope, silent error)
 - 🟠 8 High (memory leak, storage inconsistency, locale parsing)
 - 🟡 11 Medium (duplicate code, hardcoded values, monolithic CSS)
