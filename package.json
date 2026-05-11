@@ -20,7 +20,7 @@
   "author": "Akari, DeveloperMDCM, nvbangg",
   "license": "GPL-3.0",
   "devDependencies": {
-    "eslint": "^8.56.0",
+    "eslint": "^10.3.0",
     "fs-extra": "^11.2.0",
     "glob": "^10.3.10",
     "uglify-js": "^3.17.4"
