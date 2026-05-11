@@ -76,8 +76,8 @@ Built with a modern **Node.js** modular workflow for maximum performance and mai
 
 Crafted with passion by:
 - [**Akari**](https://github.com/akari310) — Optimization & Development
-- [**DeveloperMDCM**](https://github.com/DeveloperMDCM) — Original Core Logic
-- [**nvbangg**](https://github.com/nvbangg) — Optimization & YTM Specialist
+- [**DeveloperMDCM**](https://github.com/DeveloperMDCM) — Original Project Creator & Lead
+- [**nvbangg**](https://github.com/nvbangg) — Audio-only & Nonstop Features
 
 ## 📄 License
 This project is licensed under the [GNU General Public License v3.0](LICENSE).
