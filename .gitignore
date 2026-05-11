@@ -16,3 +16,13 @@ build/
 *.min.user.js
 
 package-lock.json
+
+# Temp and Clone files
+scratch/
+src_clone/
+ECC.md
+NEW_FEATURE.MD
+README(clone).md
+backup.js
+youtube-tools-clone.user.js
+scripts/build_clone.*
