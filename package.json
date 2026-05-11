@@ -22,7 +22,7 @@
   "devDependencies": {
     "eslint": "^8.56.0",
     "fs-extra": "^11.2.0",
-    "glob": "^10.3.10",
+    "glob": "^13.0.6",
     "uglify-js": "^3.17.4"
   }
 }
