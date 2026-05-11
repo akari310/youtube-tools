@@ -24,7 +24,7 @@
 // @description:ko 고품질 비디오/오디오 다운로드, 싫어요 표시, YouTube 및 YouTube Music을 위한 더 많은 VIP 기능.
 // @description:it Scarica video/audio di alta qualità, ripristina i dislike e altre funzioni VIP per YouTube e YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.5.4
+// @version      0.0.6.0
 // @author       Akari, DeveloperMDCM
 // @contributor  nvbangg
 // @match        *://www.youtube.com/*
@@ -40,57 +40,6 @@
 // @grant        GM_registerMenuCommand
 // @require      https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js
 // @compatible   chrome
-
-    // ---------------------------------------------------------
-    // Playlist Redesign Module (YouTube Main)
-    // Adds Glassmorphism / Liquid styles to the playlist panel
-    // ---------------------------------------------------------
-    function applyPlaylistRedesign() {
-        if (isYTMusic) return;
-        const rawSettings = GM_getValue('ytSettingsMDCM', '{}');
-        let settings = {};
-        try { settings = JSON.parse(rawSettings); } catch(e) {}
-        const style = settings.playlistStyle || 'blur';
-        
-        const panel = document.querySelector('ytd-playlist-panel-renderer');
-        if (!panel) return;
-
-        panel.classList.remove('yt-playlist-style-blur', 'yt-playlist-style-liquid', 'yt-playlist-style-transparent');
-        panel.classList.add(`yt-playlist-style-${style}`);
-
-        if (!document.getElementById('yt-playlist-redesign-css')) {
-            const css = `
-                ytd-playlist-panel-renderer.yt-playlist-style-blur {
-                    background: rgba(15, 15, 15, 0.7) !important;
-                    backdrop-filter: blur(25px) saturate(160%) !important;
-                    -webkit-backdrop-filter: blur(25px) saturate(160%) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                    border-radius: 12px !important;
-                }
-                ytd-playlist-panel-renderer.yt-playlist-style-liquid {
-                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)) !important;
-                    backdrop-filter: blur(40px) brightness(1.1) !important;
-                    -webkit-backdrop-filter: blur(40px) brightness(1.1) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
-                    border-radius: 16px !important;
-                }
-                ytd-playlist-panel-renderer.yt-playlist-style-transparent {
-                    background: transparent !important;
-                    border: none !important;
-                }
-                ytd-playlist-panel-renderer[class*="yt-playlist-style-"] #container,
-                ytd-playlist-panel-renderer[class*="yt-playlist-style-"] #items-container {
-                    background: transparent !important;
-                }
-            `;
-            const styleEl = document.createElement('style');
-            styleEl.id = 'yt-playlist-redesign-css';
-            styleEl.textContent = css;
-            document.head.appendChild(styleEl);
-        }
-    }
-
 // @compatible   firefox
 // @compatible   opera
 // @compatible   safari
@@ -100,6 +49,7 @@
 // @keywords     youtube, download, mp3, mp4, high quality, return dislikes, tools
 // @downloadURL none
 // ==/UserScript==
+
 (function () {
     'use strict';
     let validoUrl = document.location.href;
@@ -129,6 +79,7 @@
     const DUBS_STATUS_ENDPOINT = "https://dubs.io/wp-json/tools/v1/status-video";
 
     // for translate comments video
+
     const languagesTranslate = {
         "vi": "Vietnamese",
         "en": "English",
@@ -143,6 +94,7 @@
         "zh-TW": "Chinese (Traditional)",
         "it": "Italian"
     };
+
 
 
     // var for wave
@@ -169,6 +121,8 @@
 
     // ------------------------------
     // PERF: runtime guards + dynamic style (avoid style/event/interval leaks)
+
+    let validoBotones = true;
 
     // ------------------------------
     const __ytToolsRuntime = {
@@ -229,6 +183,7 @@
         },
     };
 
+
     function setDynamicCss(cssText = '') {
         if (!__ytToolsRuntime.dynamicStyleEl) {
             const style = document.createElement('style');
@@ -239,6 +194,40 @@
         if (__ytToolsRuntime.dynamicCssLast === cssText) return;
         __ytToolsRuntime.dynamicCssLast = cssText;
         __ytToolsRuntime.dynamicStyleEl.textContent = cssText;
+    }
+
+
+    function paramsVideoURL() {
+        const parametrosURL = new URLSearchParams(window.location.search);
+        return parametrosURL.get('v');
+    }
+
+    function isWatchPage() {
+        return window.location.href.includes('youtube.com/watch');
+    }
+
+    function checkDarkModeActive() {
+        const htmlElement = document.documentElement;
+        const isDarkModeYT = htmlElement.hasAttribute('dark') || htmlElement.getAttribute('style')?.includes('color-scheme: dark');
+        const isDarkModeYTM = document.querySelector('ytmusic-app')?.hasAttribute('dark');
+        return !!(isDarkModeYT || isDarkModeYTM);
+    }
+
+    function FormatterNumber(num, digits) {
+        const lookup = [
+            { value: 1, symbol: "" },
+            { value: 1e3, symbol: "k" },
+            { value: 1e6, symbol: "M" },
+            { value: 1e9, symbol: "G" },
+            { value: 1e12, symbol: "T" },
+            { value: 1e15, symbol: "P" },
+            { value: 1e18, symbol: "E" }
+        ];
+        const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
+        const item = lookup.slice().reverse().find(function (item) {
+            return num >= item.value;
+        });
+        return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
     }
 
     const scheduleApplySettings = (() => {
@@ -257,313 +246,8 @@
         };
     })();
 
-    function hideCanvas() {
 
-        const canvas = $id('wave-visualizer-canvas');
-        if (canvas) {
-            canvas.style.opacity = '0';
-            if (controlPanel) {
-                controlPanel.style.opacity = '0';
-            }
-        }
-    }
-
-    function showCanvas() {
-        const canvas = $id('wave-visualizer-canvas');
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        if (canvas) {
-            canvas.style.opacity = '1';
-            if (controlPanel) controlPanel.style.opacity = '1';
-        }
-    }
-
-
-    function Notify(type = 'info', message = '', title = '') {
-        const defaultTitles = {
-            success: 'Success',
-            error: 'Error',
-            info: 'Information',
-            warning: 'Warning',
-        };
-
-        if (isYTMusic || (window.trustedTypes && window.trustedTypes.defaultPolicy === null)) {
-            // Avoid iziToast due to innerHTML TrustedTypes violation on strict environments
-            let toast = document.getElementById('yt-tools-custom-toast');
-            if (!toast) {
-                toast = document.createElement('div');
-                toast.id = 'yt-tools-custom-toast';
-                toast.style.cssText = 'position:fixed;bottom:20px;left:20px;background:rgba(30,30,30,0.9);color:#fff;padding:12px 20px;border-radius:8px;z-index:99999;font-family:sans-serif;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-left:4px solid #ff0000;transition:opacity 0.3s;opacity:0;pointer-events:none;';
-                document.body.appendChild(toast);
-            }
-            toast.textContent = (title || defaultTitles[type] || 'Notification') + ': ' + message;
-            if (type === 'success') toast.style.borderLeftColor = '#22c55e';
-            else if (type === 'error') toast.style.borderLeftColor = '#ef4444';
-            else if (type === 'warning') toast.style.borderLeftColor = '#f59e0b';
-            else toast.style.borderLeftColor = '#3b82f6';
-
-            toast.style.opacity = '1';
-            if (toast._timer) clearTimeout(toast._timer);
-            toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
-            return;
-        }
-
-        try {
-            iziToast[type]({
-                title: title || defaultTitles[type] || 'Notification',
-                message: message,
-                position: 'bottomLeft',
-            });
-        } catch (e) {
-            console.warn('[yt-tools] iziToast failed:', e);
-        }
-    }
-
-    async function startDownloadVideoOrAudio(format, container) {
-        const videoURL = window.location.href;
-        // Notify('info', 'Starting download...');
-
-        // Check if already downloading
-        if (container.dataset.downloading === 'true') {
-            return;
-        }
-
-        // Stop any previous poller (avoid leaks on retry)
-        try {
-            if (container.__ytDownloadPoll) {
-                clearInterval(container.__ytDownloadPoll);
-                container.__ytDownloadPoll = null;
-            }
-        } catch (e) { }
-
-        // Get UI elements from the container
-        const downloadBtn = container.querySelector('.download-btn');
-        const retryBtn = container.querySelector('.retry-btn');
-        const progressRetryBtn = container.querySelector('.progress-retry-btn');
-        const downloadAgainBtn = container.querySelector('.download-again-btn');
-        const progressContainer = container.querySelector('.progress-container');
-        const progressFill = container.querySelector('.progress-fill');
-        const progressText = container.querySelector('.progress-text');
-        const downloadText = container.querySelector('.download-text');
-
-        // Set downloading flag
-        container.dataset.downloading = 'true';
-        container.dataset.urlOpened = 'false';
-        container.dataset.lastDownloadUrl = '';
-
-        // Update UI to show progress
-        downloadBtn.style.display = 'none';
-        retryBtn.style.display = 'none';
-        progressRetryBtn.style.display = 'block';
-        if (downloadAgainBtn) downloadAgainBtn.style.display = 'none';
-        progressContainer.style.display = 'flex';
-        progressFill.style.width = '0%';
-        progressText.textContent = '0%';
-
-        const fetchJsonWithTimeout = async (url, timeoutMs = 20000) => {
-            const ctrl = new AbortController();
-            const t = setTimeout(() => ctrl.abort(), timeoutMs);
-            try {
-                const res = await fetch(url, {
-                    signal: ctrl.signal
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return await res.json();
-            } finally {
-                clearTimeout(t);
-            }
-        };
-
-        const setErrorState = () => {
-            retryBtn.style.display = 'block';
-            progressContainer.style.display = 'none';
-            progressRetryBtn.style.display = 'none';
-            if (downloadAgainBtn) downloadAgainBtn.style.display = 'none';
-            container.dataset.downloading = 'false';
-            container.dataset.urlOpened = 'false';
-            container.dataset.lastDownloadUrl = '';
-        };
-
-        const markCompleteAndOpen = (downloadUrl) => {
-            if (!downloadUrl) {
-                setErrorState();
-                return;
-            }
-            // Save for the \"download again\" button
-            container.dataset.lastDownloadUrl = String(downloadUrl);
-            // Check if URL was already opened
-            if (container.dataset.urlOpened === 'true') return;
-            // Mark URL as opened
-            container.dataset.urlOpened = 'true';
-            // Update UI to show completion
-            container.classList.add('completed');
-            container.classList.remove('video', 'audio');
-            downloadText.textContent = 'Download Complete!';
-            progressFill.style.width = '100%';
-            progressText.textContent = '100%';
-            progressRetryBtn.style.display = 'none';
-            if (downloadAgainBtn) downloadAgainBtn.style.display = 'flex';
-            container.dataset.downloading = 'false';
-            try {
-                window.open(downloadUrl);
-            } catch (e) {
-                console.warn('Could not open download URL:', e);
-            }
-        };
-
-        const pollProgressUrl = (progressURL) => {
-            container.__ytDownloadPoll = setInterval(async () => {
-                try {
-                    const progressData = await fetchJsonWithTimeout(progressURL, 15000);
-
-                    const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
-                    progressFill.style.width = `${progress}%`;
-                    progressText.textContent = `${Math.round(progress)}%`;
-
-                    if (Number(progressData.progress) >= 1000 && progressData.download_url) {
-                        clearInterval(container.__ytDownloadPoll);
-                        container.__ytDownloadPoll = null;
-                        markCompleteAndOpen(progressData.download_url);
-                    }
-                } catch (e) {
-                    console.error('Error in progress:', e);
-                    clearInterval(container.__ytDownloadPoll);
-                    container.__ytDownloadPoll = null;
-                    setErrorState();
-                }
-            }, 3000);
-        };
-
-        const trySaveNowProvider = async (baseUrl) => {
-            const url = new URL('/ajax/download.php', baseUrl);
-            url.searchParams.set('copyright', '0');
-            url.searchParams.set('allow_extended_duration', '1');
-            url.searchParams.set('format', String(format));
-            url.searchParams.set('url', videoURL);
-            url.searchParams.set('api', API_KEY_DEVELOPERMDCM);
-            const data = await fetchJsonWithTimeout(url.toString(), 25000);
-            if (!data?.success || !data?.progress_url) {
-                throw new Error('SaveNow provider did not return success/progress_url');
-            }
-            return data;
-        };
-
-        const tryDubsProvider = async () => {
-            const videoId = paramsVideoURL();
-            if (!videoId) throw new Error('Missing videoId');
-
-            const startUrl = new URL(DUBS_START_ENDPOINT);
-            startUrl.searchParams.set('id', videoId);
-            startUrl.searchParams.set('format', String(format));
-
-            const startData = await fetchJsonWithTimeout(startUrl.toString(), 25000);
-            if (!startData?.success || !startData?.progressId) {
-                throw new Error('Dubs provider did not return success/progressId');
-            }
-
-            const statusUrl = new URL(DUBS_STATUS_ENDPOINT);
-            statusUrl.searchParams.set('id', startData.progressId);
-
-            container.__ytDownloadPoll = setInterval(async () => {
-                try {
-                    const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
-                    const rawProgress = Number(st?.progress) || 0; // 0..1000
-                    const progress = Math.min(rawProgress / 10, 100);
-                    progressFill.style.width = `${progress}%`;
-                    progressText.textContent = `${Math.round(progress)}%`;
-
-                    if (st?.finished && st?.downloadUrl) {
-                        clearInterval(container.__ytDownloadPoll);
-                        container.__ytDownloadPoll = null;
-                        markCompleteAndOpen(st.downloadUrl);
-                    }
-                } catch (e) {
-                    console.error('❌ Error polling dubs status:', e);
-                    clearInterval(container.__ytDownloadPoll);
-                    container.__ytDownloadPoll = null;
-                    setErrorState();
-                }
-            }, 3000);
-        };
-
-        try {
-            let started = null;
-            let lastErr = null;
-
-            for (const base of DOWNLOAD_API_FALLBACK_BASES) {
-                try {
-                    started = await trySaveNowProvider(base);
-                    break;
-                } catch (e) {
-                    lastErr = e;
-                }
-            }
-
-            if (started?.success && started?.progress_url) {
-                pollProgressUrl(started.progress_url);
-                return;
-            }
-
-            console.warn('SaveNow providers failed, falling back to dubs.io', lastErr);
-            await tryDubsProvider();
-        } catch (error) {
-            setErrorState();
-            console.error('❌ Error starting download:', error);
-        }
-    }
-
-
-    const UPDATE_INTERVAL = 1000;
-    const STORAGE = {
-        USAGE: 'YT_TOTAL_USAGE',
-        VIDEO: 'YT_VIDEO_TIME',
-        SHORTS: 'YT_SHORTS_TIME'
-    };
-
-    let usageTime = GM_getValue(STORAGE.USAGE, 0);
-    let videoTime = GM_getValue(STORAGE.VIDEO, 0);
-    let shortsTime = GM_getValue(STORAGE.SHORTS, 0);
-    let lastUpdate = Date.now();
-    let activeVideo = null;
-    let activeType = null;
-
-    // Inicializar almacenamiento
-    GM_setValue(STORAGE.USAGE, usageTime);
-    GM_setValue(STORAGE.VIDEO, videoTime);
-    GM_setValue(STORAGE.SHORTS, shortsTime);
-
-    function FormatterNumber(num, digits) {
-        const lookup = [{
-            value: 1,
-            symbol: '',
-        }, {
-            value: 1e3,
-            symbol: ' K',
-        }, {
-            value: 1e6,
-            symbol: ' M',
-        },];
-        const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
-        const item = lookup
-            .slice()
-            .reverse()
-            .find((item) => {
-                return num >= item.value;
-            });
-        return item ?
-            (num / item.value).toFixed(digits).replace(rx, '$1') + item.symbol :
-            '0';
-    }
-
-    function paramsVideoURL() {
-        const parametrosURL = new URLSearchParams(window.location.search); // Url parametros
-        return parametrosURL.get('v');
-    }
-
-
-
-    // Create a Trusted Types policy (use custom name to avoid conflict with YTM's own 'default' policy)
+    // Create a Trusted Types policy
     let policy = null;
     try {
         const tt = (typeof unsafeWindow !== 'undefined' ? unsafeWindow.trustedTypes : window.trustedTypes);
@@ -573,7 +257,6 @@
                     createHTML: (s) => s
                 });
             } catch (e) {
-                // fallback: try to reuse 'default' policy if it exists
                 policy = tt.defaultPolicy || null;
             }
         }
@@ -581,7 +264,6 @@
         policy = null;
     }
 
-    // Helper: wrap raw HTML strings for Trusted Types compliance
     function safeHTML(str) {
         if (policy && typeof policy.createHTML === 'function') return policy.createHTML(str);
         return str;
@@ -2268,7 +1950,9 @@
 
         const validoVentana = $e('#below > ytd-watch-metadata > div');
         if (validoVentana != undefined && document.location.href.split('?v=')[0].includes('youtube.com/watch')) {
-            validoUrl = paramsVideoURL();
+            let localVideoId = paramsVideoURL();
+            if (!localVideoId) return;
+            validoUrl = localVideoId;
             const data = await ensureDislikesForCurrentVideo();
             if (!data || data.dislikes == null) return;
 
@@ -2305,47 +1989,79 @@
                     showDislikes = false;
                 }
 
+                const likes_btn =
+                    $e('#top-level-buttons-computed like-button-view-model button-view-model button') ||
+                    $e('#top-level-buttons-computed like-button-view-model button') ||
+                    $e('#top-level-buttons-computed ytd-toggle-button-renderer:nth-child(1)') ||
+                    $e('segmented-like-dislike-button-view-model like-button-view-model button');
+
+                // Capture current state as "initial" for this data load
+                const currentIsPressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
+                dislikes_btn.dataset.initialState = currentIsPressed;
+                dislikes_btn.dataset.originalCount = dislikes;
+
+                if (likes_btn) {
+                    likes_btn.dataset.initialState = likes_btn.getAttribute('aria-pressed') === 'true';
+                    likes_btn.dataset.originalCount = data.likes || 0;
+                }
+
+                const updateCount = () => {
+                    // Dislikes calculation
+                    const isDislikePressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
+                    const wasDislikePressed = dislikes_btn.dataset.initialState === 'true';
+                    const originalDislikes = Number(dislikes_btn.dataset.originalCount);
+
+                    let dislikeOffset = 0;
+                    if (!wasDislikePressed && isDislikePressed) dislikeOffset = 1;
+                    else if (wasDislikePressed && !isDislikePressed) dislikeOffset = -1;
+
+                    const newDislikes = Math.max(0, originalDislikes + dislikeOffset);
+
+                    // Likes calculation
+                    let newLikes = data.likes || 0;
+                    if (likes_btn) {
+                        const isLikePressed = likes_btn.getAttribute('aria-pressed') === 'true';
+                        const wasLikePressed = likes_btn.dataset.initialState === 'true';
+                        const originalLikes = Number(likes_btn.dataset.originalCount);
+
+                        let likeOffset = 0;
+                        if (!wasLikePressed && isLikePressed) likeOffset = 1;
+                        else if (wasLikePressed && !isLikePressed) likeOffset = -1;
+
+                        newLikes = Math.max(0, originalLikes + likeOffset);
+                    }
+
+                    // Update run-time cache
+                    if (__ytToolsRuntime.dislikesCache.videoId === localVideoId) {
+                        __ytToolsRuntime.dislikesCache.dislikes = newDislikes;
+                        __ytToolsRuntime.dislikesCache.likes = newLikes;
+
+                        // Also persist it so F5 uses the updated count as "original"
+                        setLikesDislikesToPersistedCache(
+                            localVideoId,
+                            newLikes,
+                            newDislikes,
+                            __ytToolsRuntime.dislikesCache.viewCount,
+                            __ytToolsRuntime.dislikesCache.rating
+                        );
+                    }
+
+                    if (settings.dislikes && textContent) {
+                        textContent.textContent = FormatterNumber(newDislikes, 0);
+                    }
+
+                    // Sync the like/dislike bar immediately
+                    if (settings.likeDislikeBar) {
+                        updateLikeDislikeBar(newLikes, newDislikes);
+                    }
+                };
+
+                // Initial update
+                updateCount();
+
                 // Use MutationObserver for robust state tracking (handles Like button clicks too)
                 if (!dislikes_btn.dataset.observerInitialized) {
                     dislikes_btn.dataset.observerInitialized = 'true';
-
-                    const videoId = validoUrl;
-                    const sessionKey = `yt-dislike-initial-${videoId}`;
-
-                    // Delay capturing initial state to ensure YouTube's UI has stabilized
-                    setTimeout(() => {
-                        let initialState = sessionStorage.getItem(sessionKey);
-                        if (initialState === null) {
-                            initialState = dislikes_btn.getAttribute('aria-pressed') === 'true';
-                            sessionStorage.setItem(sessionKey, initialState);
-                        } else {
-                            initialState = initialState === 'true';
-                        }
-
-                        dislikes_btn.dataset.initialState = initialState;
-                        dislikes_btn.dataset.originalCount = dislikes;
-
-                        // Initial update
-                        updateCount();
-                    }, 500);
-
-                    const updateCount = () => {
-                        const isPressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
-                        const wasPressed = dislikes_btn.dataset.initialState === 'true';
-                        const original = Number(dislikes_btn.dataset.originalCount || dislikes);
-                        const data = __ytToolsRuntime.dislikesCache;
-
-                        let offset = 0;
-                        if (!wasPressed && isPressed) offset = 1;      // Added dislike
-                        else if (wasPressed && !isPressed) offset = -1; // Removed dislike
-
-                        const newCount = Math.max(0, original + offset);
-                        if (data) data.dislikes = newCount;
-
-                        if (settings.dislikes && textContent) {
-                            textContent.textContent = FormatterNumber(newCount, 0);
-                        }
-                    };
 
                     const observer = new MutationObserver((mutations) => {
                         for (const mutation of mutations) {
@@ -2356,11 +2072,17 @@
                     });
 
                     observer.observe(dislikes_btn, { attributes: true, attributeFilter: ['aria-pressed'] });
+                    if (likes_btn) observer.observe(likes_btn, { attributes: true, attributeFilter: ['aria-pressed'] });
 
                     // Also handle direct clicks just in case
                     dislikes_btn.addEventListener('click', () => {
                         setTimeout(updateCount, 150);
                     });
+                    if (likes_btn) {
+                        likes_btn.addEventListener('click', () => {
+                            setTimeout(updateCount, 150);
+                        });
+                    }
                 }
 
                 try {
@@ -2438,6 +2160,309 @@
 
 
     // Styles for our enhancement panel
+
+    const thumbnailVideo = `
+  <button title="Image video" class="botones_div" type="button" id="imagen">
+
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo-down" width="24"
+    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+    <path d="M15 8h.01"></path>
+    <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
+    <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
+    <path d="M14 14l1 -1c.653 -.629 1.413 -.815 2.13 -.559"></path>
+    <path d="M19 16v6"></path>
+    <path d="M22 19l-3 3l-3 -3"></path>
+  </svg>
+</button>
+  `;
+
+    const repeatVideo = `
+  <button title="Repeat video" class="botones_div" type="button" id="repeatvideo">
+
+  <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-repeat" width="24"
+    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+    <path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"></path>
+    <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"></path>
+  </svg>
+</button>
+  `;
+
+    const downloadMP4Mp3 = `
+  <button title="MP4" type="button" class="btn1 botones_div">
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-file-download"
+    width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+    <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
+    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path>
+    <path d="M12 17v-6"></path>
+    <path d="M9.5 14.5l2.5 2.5l2.5 -2.5"></path>
+  </svg>
+</button>
+<button title="MP3" type="button" class="btn2 botones_div">
+
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-file-music" width="24"
+    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+    <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
+    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path>
+    <path d="M11 16m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>
+    <path d="M12 16l0 -5l2 1"></path>
+  </svg>
+</button>
+<button title="Close" type="button" class="btn3 botones_div">
+<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-x" width="24"
+  height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+  stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+  <path d="M10 10l4 4m0 -4l-4 4"></path>
+</svg>
+</button>
+  `;
+
+    const pictureToPicture = `
+  <button title="Picture to picture" type="button" class="video_picture_to_picture botones_div">
+
+  <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11 19h-6a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4" /><path d="M14 14m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z" /></svg>
+</button>
+
+  `;
+    const screenShot = `
+  <button title="Screenshot video" type="button" class="screenshot_video botones_div">
+  <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 8h.01" /><path d="M6 13l2.644 -2.644a1.21 1.21 0 0 1 1.712 0l3.644 3.644" /><path d="M13 13l1.644 -1.644a1.21 1.21 0 0 1 1.712 0l1.644 1.644" /><path d="M4 8v-2a2 2 0 0 1 2 -2h2" /><path d="M4 16v2a2 2 0 0 0 2 2h2" /><path d="M16 4h2a2 2 0 0 1 2 2v2" /><path d="M16 20h2a2 2 0 0 0 2 -2v-2" /></svg>
+</button>
+
+  `;
+
+    const bookmarkAddBtn = `
+  <button title="Add bookmark" type="button" id="yt-bookmark-add" class="botones_div">
+    <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M7 4h10a2 2 0 0 1 2 2v14l-7 -4l-7 4v-14a2 2 0 0 1 2 -2z" />
+      <path d="M12 7v6" />
+      <path d="M9 10h6" />
+    </svg>
+  </button>
+  `;
+
+    const bookmarkToggleBtn = `
+  <button title="Show bookmarks" type="button" id="yt-bookmark-toggle" class="botones_div">
+    <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M9 6h11" />
+      <path d="M9 12h11" />
+      <path d="M9 18h11" />
+      <path d="M5 6h.01" />
+      <path d="M5 12h.01" />
+      <path d="M5 18h.01" />
+    </svg>
+  </button>
+  `;
+
+    const continueWatchingHistoryBtn = `
+  <button title="History" type="button" id="yt-cw-history-toggle" class="botones_div" style="display:none;">
+    <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M12 8v4l3 3" />
+      <path d="M3 12a9 9 0 1 0 3 -6.7" />
+      <path d="M3 4v4h4" />
+    </svg>
+  </button>
+  `;
+
+    const menuBotones = `
+    <main class="yt-tools-container">
+    <div class="container">
+    <form>
+      <div class="containerButtons">
+      ${thumbnailVideo}
+      ${!isYTMusic ? repeatVideo : ''}
+      ${bookmarkAddBtn}
+      ${bookmarkToggleBtn}
+      ${continueWatchingHistoryBtn}
+      ${downloadMP4Mp3}
+      ${pictureToPicture}
+      ${screenShot}
+      </div>
+      <div id="yt-bookmarks-panel" class="yt-bookmarks-panel" style="display:none;"></div>
+      <div id="yt-continue-watching-panel" class="yt-continue-watching-panel" style="display:none;"></div>
+      <div>
+      </div>
+    </form>
+
+    </div>
+    <div class="content_collapsible_colors" style="margin-top: 10px">
+
+    <form class="formulariodescarga ocultarframe" action="">
+    <div class="containerall">
+    <select class="selectcalidades ocultarframe" required>
+      <option selected disabled>Video Quality</option>
+      <option value="144">144p MP4</option>
+      <option value="240">240p MP4</option>
+      <option value="360">360p MP4</option>
+      <option value="480">480p MP4</option>
+      <option value="720">720p HD MP4 Default</option>
+      <option value="1080">1080p FULL HD MP4</option>
+      <option value="1440">1440p 2K WEBM</option>
+      <option value="4k">2160p 4K WEBM</option>
+      <option value="8k">4320p 8K WEBM</option>
+      </select>
+      <div id="descargando" class="download-container ocultarframe">
+        <button class="progress-retry-btn" title="Retry" style="display: none;">
+        <i class="fa-solid fa-rotate-right"></i>
+        </button>
+        <button class="download-again-btn" title="Download again" style="display: none;">
+        <i class="fa-solid fa-download"></i>
+        </button>
+        <div class="download-info">
+          <span class="download-text">Download Video And Please Wait...</span>
+          <span class="download-quality"></span>
+        </div>
+        <div class="download-actions">
+          <button class="download-btn video-btn">Download</button>
+          <button class="retry-btn" style="display: none;">Retry</button>
+        </div>
+        <div class="progress-container" style="display: none;">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <span class="progress-text">0%</span>
+        </div>
+        <div class="download-footer">
+          <a href="https://github.com/akari310/" target="_blank"> <i class="fa-brands fa-github"></i> by: Akari</a>
+        </div>
+        <h1 class="text-description-download">
+          <span >Enable pop-ups on YouTube to download audio or video</span>
+        </h1>
+      </div>
+    </div>
+    </form>
+    <form class="formulariodescargaaudio ocultarframe" action="">
+    <div class="containerall">
+    <select class="selectcalidadesaudio ocultarframeaudio" required>
+      <option selected disabled>Audio Quality</option>
+      <option value="flac">Audio FLAC UHQ</option>
+      <option value="wav">Audio WAV UHQ</option>
+      <option value="webm">Audio WEBM UHQ</option>
+      <option value="mp3">Audio MP3 Default</option>
+      <option value="m4a">Audio M4A</option>
+      <option value="aac">Audio AAC</option>
+      <option value="opus">Audio OPUS</option>
+      <option value="ogg">Audio OGG</option>
+      </select>
+      <div id="descargandomp3" class="download-container ocultarframeaudio">
+        <button class="progress-retry-btn" title="Retry" style="display: none;">
+        <i class="fa-solid fa-rotate-right"></i>
+        </button>
+        <button class="download-again-btn" title="Download again" style="display: none;">
+        <i class="fa-solid fa-download"></i>
+        </button>
+        <div class="download-info">
+          <span class="download-text">Download Audio And Please Wait...</span>
+          <span class="download-quality"></span>
+        </div>
+        <div class="download-actions">
+          <button class="download-btn audio-btn">Download</button>
+          <button class="retry-btn" style="display: none;">Retry</button>
+        </div>
+        <div class="progress-container" style="display: none;">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <span class="progress-text">0%</span>
+        </div>
+         <div class="download-footer">
+          <a href="https://github.com/akari310/" target="_blank"><i class="fa-brands fa-github"></i> by: Akari</a>
+        </div>
+         <h1 class="text-description-download">
+          <span >Enable pop-ups on YouTube to download audio or video</span>
+        </h1>
+      </div>
+    </div>
+    </form>
+      </main>
+  `;
+
+    function Notify(type = 'info', message = '', title = '') {
+        const defaultTitles = {
+            success: 'Success',
+            error: 'Error',
+            info: 'Information',
+            warning: 'Warning',
+        };
+
+        if (isYTMusic || (window.trustedTypes && window.trustedTypes.defaultPolicy === null)) {
+            // Avoid iziToast due to innerHTML TrustedTypes violation on strict environments
+            let toast = document.getElementById('yt-tools-custom-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'yt-tools-custom-toast';
+                toast.style.cssText = 'position:fixed;bottom:20px;left:20px;background:rgba(30,30,30,0.9);color:#fff;padding:12px 20px;border-radius:8px;z-index:99999;font-family:sans-serif;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);border-left:4px solid #ff0000;transition:opacity 0.3s;opacity:0;pointer-events:none;';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = (title || defaultTitles[type] || 'Notification') + ': ' + message;
+            if (type === 'success') toast.style.borderLeftColor = '#22c55e';
+            else if (type === 'error') toast.style.borderLeftColor = '#ef4444';
+            else if (type === 'warning') toast.style.borderLeftColor = '#f59e0b';
+            else toast.style.borderLeftColor = '#3b82f6';
+
+            toast.style.opacity = '1';
+            if (toast._timer) clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+            return;
+        }
+
+        try {
+            iziToast[type]({
+                title: title || defaultTitles[type] || 'Notification',
+                message: message,
+                position: 'bottomLeft',
+            });
+        } catch (e) {
+            console.warn('[yt-tools] iziToast failed:', e);
+        }
+    }
+
+    // Helper: create SVG icon using DOM API (no innerHTML needed)
+    function createSvgIcon(pathsData, size) {
+        const sz = size || 24;
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('width', String(sz));
+        svg.setAttribute('height', String(sz));
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        pathsData.forEach(d => {
+            const p = document.createElementNS(svgNS, 'path');
+            p.setAttribute('d', d);
+            if (d === 'M0 0h24v24H0z') p.setAttribute('fill', 'none');
+            svg.appendChild(p);
+        });
+        return svg;
+    }
+
+    // Helper: create a toolbar button with SVG icon
+    function makeToolBtn(title, id, className, paths) {
+        const btn = document.createElement('button');
+        btn.title = title;
+        btn.type = 'button';
+        if (id) btn.id = id;
+        btn.className = (className ? className + ' ' : '') + 'botones_div';
+        btn.appendChild(createSvgIcon(paths));
+        return btn;
+    }
+
+
     GM_addStyle(`
        @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
       @import url("https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css");
@@ -2745,6 +2770,15 @@
             background: rgba(255,255,255,0.08);
             border-color: rgba(255,255,255,0.1);
         }
+        /* Themes Grid 2 Columns */
+        .themes-grid-mdcm {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+        }
+        .themes-grid-mdcm .theme-option {
+            margin-bottom: 0 !important;
+        }
             .tab-content {
             display: none;
         }
@@ -3014,7 +3048,7 @@
             -webkit-backdrop-filter: blur(12px) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             color: #ffffff !important;
-            padding: 0 20px !important; 
+            padding: 0 20px !important;
             height: 40px !important;
             line-height: 40px !important;
             border-radius: 10px !important;
@@ -4064,6 +4098,78 @@
       box-shadow: none !important;
     }
 
+    /* YouTube watch playlist panel: reuse the same 3 style choices as YTM. */
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
+      background: rgba(20, 20, 20, 0.62) !important;
+      backdrop-filter: blur(20px) saturate(140%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.38) !important;
+      border-radius: 16px !important;
+      overflow: hidden !important;
+    }
+
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
+      background: rgba(25, 25, 25, 0.45) !important;
+      backdrop-filter: blur(24px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-top-color: rgba(255, 255, 255, 0.25) !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+      border-radius: 16px !important;
+      overflow: hidden !important;
+    }
+
+    body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
+      background: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
+    body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items,
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items,
+    body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items {
+      background: transparent !important;
+    }
+
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header,
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header {
+      background: rgba(255, 255, 255, 0.04) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header {
+      background: transparent !important;
+      border-bottom: none !important;
+    }
+
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer,
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer {
+      background: transparent !important;
+    }
+
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container,
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container {
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-thumbnail,
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-thumbnail {
+      border-radius: 8px !important;
+      overflow: hidden !important;
+    }
+
+    body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta,
+    body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta,
+    body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta {
+      min-width: 0 !important;
+    }
+
     /* Inner Container Resets */
     html[dark] .yt-tools-container,
     ytmusic-app .yt-tools-container,
@@ -4237,235 +4343,1010 @@
     `);
 
 
-    // botons bottom video player
 
-    const thumbnailVideo = `
-  <button title="Image video" class="botones_div" type="button" id="imagen">
 
-  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo-down" width="24"
-    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
-    stroke-linecap="round" stroke-linejoin="round">
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-    <path d="M15 8h.01"></path>
-    <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
-    <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
-    <path d="M14 14l1 -1c.653 -.629 1.413 -.815 2.13 -.559"></path>
-    <path d="M19 16v6"></path>
-    <path d="M22 19l-3 3l-3 -3"></path>
-  </svg>
-</button>
-  `;
 
-    const repeatVideo = `
-  <button title="Repeat video" class="botones_div" type="button" id="repeatvideo">
+    function buildYTMToolbar() {
+        const main = document.createElement('main');
+        main.className = 'yt-tools-container';
 
-  <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-repeat" width="24"
-    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
-    stroke-linecap="round" stroke-linejoin="round">
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-    <path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"></path>
-    <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"></path>
-  </svg>
-</button>
-  `;
+        const container = document.createElement('div');
+        container.className = 'yt-tools-inner-container';
 
-    const downloadMP4Mp3 = `
-  <button title="MP4" type="button" class="btn1 botones_div">
-  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-file-download"
-    width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
-    stroke-linecap="round" stroke-linejoin="round">
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-    <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
-    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path>
-    <path d="M12 17v-6"></path>
-    <path d="M9.5 14.5l2.5 2.5l2.5 -2.5"></path>
-  </svg>
-</button>
-<button title="MP3" type="button" class="btn2 botones_div">
+        const form = document.createElement('form');
+        form.className = 'yt-tools-form';
+        const btnsDiv = document.createElement('div');
+        btnsDiv.className = 'containerButtons';
 
-  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-file-music" width="24"
-    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
-    stroke-linecap="round" stroke-linejoin="round">
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-    <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
-    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path>
-    <path d="M11 16m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>
-    <path d="M12 16l0 -5l2 1"></path>
-  </svg>
-</button>
-<button title="Close" type="button" class="btn3 botones_div">
-<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-x" width="24"
-  height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
-  stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-  <path d="M10 10l4 4m0 -4l-4 4"></path>
-</svg>
-</button>
-  `;
+        // Thumbnail (Image download)
+        btnsDiv.appendChild(makeToolBtn('Image video', 'imagen', '', [
+            'M0 0h24v24H0z', 'M15 8h.01',
+            'M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5',
+            'M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4',
+            'M14 14l1 -1c.653 -.629 1.413 -.815 2.13 -.559',
+            'M19 16v6', 'M22 19l-3 3l-3 -3'
+        ]));
 
-    const pictureToPicture = `
-  <button title="Picture to picture" type="button" class="video_picture_to_picture botones_div">
+        // Repeat
+        if (!isYTMusic) {
+            btnsDiv.appendChild(makeToolBtn('Repeat video', 'repeatvideo', '', [
+                'M0 0h24v24H0z',
+                'M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3',
+                'M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3'
+            ]));
+        }
 
-  <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11 19h-6a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4" /><path d="M14 14m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z" /></svg>
-</button>
+        // Download MP4
+        btnsDiv.appendChild(makeToolBtn('MP4', null, 'btn1', [
+            'M0 0h24v24H0z', 'M14 3v4a1 1 0 0 0 1 1h4',
+            'M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z',
+            'M12 17v-6', 'M9.5 14.5l2.5 2.5l2.5 -2.5'
+        ]));
 
-  `;
-    const screenShot = `
-  <button title="Screenshot video" type="button" class="screenshot_video botones_div">
-  <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 8h.01" /><path d="M6 13l2.644 -2.644a1.21 1.21 0 0 1 1.712 0l3.644 3.644" /><path d="M13 13l1.644 -1.644a1.21 1.21 0 0 1 1.712 0l1.644 1.644" /><path d="M4 8v-2a2 2 0 0 1 2 -2h2" /><path d="M4 16v2a2 2 0 0 0 2 2h2" /><path d="M16 4h2a2 2 0 0 1 2 2v2" /><path d="M16 20h2a2 2 0 0 0 2 -2v-2" /></svg>
-</button>
+        // Download MP3
+        btnsDiv.appendChild(makeToolBtn('MP3', null, 'btn2', [
+            'M0 0h24v24H0z', 'M14 3v4a1 1 0 0 0 1 1h4',
+            'M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z',
+            'M11 16m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0', 'M12 16l0 -5l2 1'
+        ]));
 
-  `;
+        // Close
+        btnsDiv.appendChild(makeToolBtn('Close', null, 'btn3', [
+            'M0 0h24v24H0z',
+            'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
+            'M10 10l4 4m0 -4l-4 4'
+        ]));
 
-    const bookmarkAddBtn = `
-  <button title="Add bookmark" type="button" id="yt-bookmark-add" class="botones_div">
-    <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-      <path d="M7 4h10a2 2 0 0 1 2 2v14l-7 -4l-7 4v-14a2 2 0 0 1 2 -2z" />
-      <path d="M12 7v6" />
-      <path d="M9 10h6" />
-    </svg>
-  </button>
-  `;
+        if (!isYTMusic) {
+            // Add Bookmark
+            btnsDiv.appendChild(makeToolBtn('Add bookmark', 'yt-bookmark-add', '', [
+                'M0 0h24v24H0z',
+                'M7 4h10a2 2 0 0 1 2 2v14l-7 -4l-7 4v-14a2 2 0 0 1 2 -2z',
+                'M12 7v6', 'M9 10h6'
+            ]));
 
-    const bookmarkToggleBtn = `
-  <button title="Show bookmarks" type="button" id="yt-bookmark-toggle" class="botones_div">
-    <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-      <path d="M9 6h11" />
-      <path d="M9 12h11" />
-      <path d="M9 18h11" />
-      <path d="M5 6h.01" />
-      <path d="M5 12h.01" />
-      <path d="M5 18h.01" />
-    </svg>
-  </button>
-  `;
+            // Show Bookmarks
+            btnsDiv.appendChild(makeToolBtn('Show bookmarks', 'yt-bookmark-toggle', '', [
+                'M0 0h24v24H0z',
+                'M9 6h11', 'M9 12h11', 'M9 18h11', 'M5 6h.01', 'M5 12h.01', 'M5 18h.01'
+            ]));
 
-    const continueWatchingHistoryBtn = `
-  <button title="History" type="button" id="yt-cw-history-toggle" class="botones_div" style="display:none;">
-    <svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-      <path d="M12 8v4l3 3" />
-      <path d="M3 12a9 9 0 1 0 3 -6.7" />
-      <path d="M3 4v4h4" />
-    </svg>
-  </button>
-  `;
+            // History (Continue Watching)
+            btnsDiv.appendChild(makeToolBtn('History', 'yt-cw-history-toggle', '', [
+                'M0 0h24v24H0z',
+                'M12 8v4l3 3', 'M3 12a9 9 0 1 0 3 -6.7', 'M3 4v4h4'
+            ]));
+        }
 
-    const menuBotones = `
-    <main class="yt-tools-container">
-    <div class="container">
-    <form>
-      <div class="containerButtons">
-      ${thumbnailVideo}
-      ${!isYTMusic ? repeatVideo : ''}
-      ${bookmarkAddBtn}
-      ${bookmarkToggleBtn}
-      ${continueWatchingHistoryBtn}
-      ${downloadMP4Mp3}
-      ${pictureToPicture}
-      ${screenShot}
-      </div>
-      <div id="yt-bookmarks-panel" class="yt-bookmarks-panel" style="display:none;"></div>
-      <div id="yt-continue-watching-panel" class="yt-continue-watching-panel" style="display:none;"></div>
-      <div>
-      </div>
-    </form>
+        // Picture-in-Picture
+        btnsDiv.appendChild(makeToolBtn('Picture to picture', null, 'video_picture_to_picture', [
+            'M0 0h24v24H0z',
+            'M11 19h-6a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4',
+            'M14 14m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z'
+        ]));
 
-    </div>
-    <div class="content_collapsible_colors" style="margin-top: 10px">
+        // Screenshot
+        btnsDiv.appendChild(makeToolBtn('Screenshot video', null, 'screenshot_video', [
+            'M0 0h24v24H0z', 'M15 8h.01',
+            'M6 13l2.644 -2.644a1.21 1.21 0 0 1 1.712 0l3.644 3.644',
+            'M13 13l1.644 -1.644a1.21 1.21 0 0 1 1.712 0l1.644 1.644',
+            'M4 8v-2a2 2 0 0 1 2 -2h2', 'M4 16v2a2 2 0 0 0 2 2h2',
+            'M16 4h2a2 2 0 0 1 2 2v2', 'M16 20h2a2 2 0 0 0 2 -2v-2'
+        ]));
 
-    <form class="formulariodescarga ocultarframe" action="">
-    <div class="containerall">
-    <select class="selectcalidades ocultarframe" required>
-      <option selected disabled>Video Quality</option>
-      <option value="144">144p MP4</option>
-      <option value="240">240p MP4</option>
-      <option value="360">360p MP4</option>
-      <option value="480">480p MP4</option>
-      <option value="720">720p HD MP4 Default</option>
-      <option value="1080">1080p FULL HD MP4</option>
-      <option value="1440">1440p 2K WEBM</option>
-      <option value="4k">2160p 4K WEBM</option>
-      <option value="8k">4320p 8K WEBM</option>
-      </select>
-      <div id="descargando" class="download-container ocultarframe">
-        <button class="progress-retry-btn" title="Retry" style="display: none;">
-        <i class="fa-solid fa-rotate-right"></i>
-        </button>
-        <button class="download-again-btn" title="Download again" style="display: none;">
-        <i class="fa-solid fa-download"></i>
-        </button>
-        <div class="download-info">
-          <span class="download-text">Download Video And Please Wait...</span>
-          <span class="download-quality"></span>
-        </div>
-        <div class="download-actions">
-          <button class="download-btn video-btn">Download</button>
-          <button class="retry-btn" style="display: none;">Retry</button>
-        </div>
-        <div class="progress-container" style="display: none;">
-          <div class="progress-bar">
-            <div class="progress-fill"></div>
-          </div>
-          <span class="progress-text">0%</span>
-        </div>
-        <div class="download-footer">
-          <a href="https://github.com/akari310/" target="_blank"> <i class="fa-brands fa-github"></i> by: Akari</a>
-        </div>
-        <h1 class="text-description-download">
-          <span >Enable pop-ups on YouTube to download audio or video</span>
-        </h1>
-      </div>
-    </div>
-    </form>
-    <form class="formulariodescargaaudio ocultarframe" action="">
-    <div class="containerall">
-    <select class="selectcalidadesaudio ocultarframeaudio" required>
-      <option selected disabled>Audio Quality</option>
-      <option value="flac">Audio FLAC UHQ</option>
-      <option value="wav">Audio WAV UHQ</option>
-      <option value="webm">Audio WEBM UHQ</option>
-      <option value="mp3">Audio MP3 Default</option>
-      <option value="m4a">Audio M4A</option>
-      <option value="aac">Audio AAC</option>
-      <option value="opus">Audio OPUS</option>
-      <option value="ogg">Audio OGG</option>
-      </select>
-      <div id="descargandomp3" class="download-container ocultarframeaudio">
-        <button class="progress-retry-btn" title="Retry" style="display: none;">
-        <i class="fa-solid fa-rotate-right"></i>
-        </button>
-        <button class="download-again-btn" title="Download again" style="display: none;">
-        <i class="fa-solid fa-download"></i>
-        </button>
-        <div class="download-info">
-          <span class="download-text">Download Audio And Please Wait...</span>
-          <span class="download-quality"></span>
-        </div>
-        <div class="download-actions">
-          <button class="download-btn audio-btn">Download</button>
-          <button class="retry-btn" style="display: none;">Retry</button>
-        </div>
-        <div class="progress-container" style="display: none;">
-          <div class="progress-bar">
-            <div class="progress-fill"></div>
-          </div>
-          <span class="progress-text">0%</span>
-        </div>
-         <div class="download-footer">
-          <a href="https://github.com/akari310/" target="_blank"><i class="fa-brands fa-github"></i> by: Akari</a>
-        </div>
-         <h1 class="text-description-download">
-          <span >Enable pop-ups on YouTube to download audio or video</span>
-        </h1>
-      </div>
-    </div>
-    </form>
-      </main>
-  `;
+        form.appendChild(btnsDiv);
+
+        if (!isYTMusic) {
+            const bookmarksPanel = document.createElement('div');
+            bookmarksPanel.id = 'yt-bookmarks-panel';
+            bookmarksPanel.className = 'yt-bookmarks-panel';
+            bookmarksPanel.style.display = 'none';
+            form.appendChild(bookmarksPanel);
+
+            const historyPanel = document.createElement('div');
+            historyPanel.id = 'yt-continue-watching-panel';
+            historyPanel.className = 'yt-continue-watching-panel';
+            historyPanel.style.display = 'none';
+            form.appendChild(historyPanel);
+        }
+
+        // Download video quality select
+        const videoForm = document.createElement('form');
+        videoForm.className = 'formulariodescarga ocultarframe';
+        const videoSelectDiv = document.createElement('div');
+        videoSelectDiv.className = 'containerall';
+        const videoSelect = document.createElement('select');
+        videoSelect.className = 'selectcalidades ocultarframe';
+        videoSelect.required = true;
+        [['', 'Video Quality', true],
+        ['144', '144p MP4'], ['240', '240p MP4'], ['360', '360p MP4'],
+        ['480', '480p MP4'], ['720', '720p HD MP4 Default'],
+        ['1080', '1080p FULL HD MP4'], ['1440', '1440p 2K WEBM'], ['4k', '2160p 4K WEBM'], ['8k', '4320p 8K WEBM']
+        ].forEach(([val, text, dis]) => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = text;
+            if (dis) { opt.selected = true; opt.disabled = true; }
+            videoSelect.appendChild(opt);
+        });
+        videoSelectDiv.appendChild(videoSelect);
+
+        // Download video container
+        const dlVideoContainer = document.createElement('div');
+        dlVideoContainer.id = 'descargando';
+        dlVideoContainer.className = 'download-container ocultarframe';
+
+        const dlInfo = document.createElement('div');
+        dlInfo.className = 'download-info';
+        const dlText = document.createElement('span');
+        dlText.className = 'download-text';
+        dlText.textContent = 'Download Video And Please Wait...';
+        const dlQuality = document.createElement('span');
+        dlQuality.className = 'download-quality';
+        dlInfo.appendChild(dlText);
+        dlInfo.appendChild(dlQuality);
+
+        const dlActions = document.createElement('div');
+        dlActions.className = 'download-actions';
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'download-btn video-btn';
+        dlBtn.textContent = 'Download';
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'retry-btn';
+        retryBtn.style.display = 'none';
+        retryBtn.textContent = 'Retry';
+        dlActions.appendChild(dlBtn);
+        dlActions.appendChild(retryBtn);
+
+        const progressC = document.createElement('div');
+        progressC.className = 'progress-container';
+        progressC.style.display = 'none';
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar';
+        const progressFill = document.createElement('div');
+        progressFill.className = 'progress-fill';
+        progressBar.appendChild(progressFill);
+        const progressText = document.createElement('span');
+        progressText.className = 'progress-text';
+        progressText.textContent = '0%';
+        progressC.appendChild(progressBar);
+        progressC.appendChild(progressText);
+
+        // progress-retry-btn and download-again-btn (required by startDownloadVideoOrAudio)
+        const progRetryBtn = document.createElement('button');
+        progRetryBtn.className = 'progress-retry-btn';
+        progRetryBtn.title = 'Retry';
+        progRetryBtn.style.display = 'none';
+        progRetryBtn.textContent = '↻';
+        const dlAgainBtn = document.createElement('button');
+        dlAgainBtn.className = 'download-again-btn';
+        dlAgainBtn.title = 'Download again';
+        dlAgainBtn.style.display = 'none';
+        dlAgainBtn.textContent = '⬇';
+
+        dlVideoContainer.appendChild(progRetryBtn);
+        dlVideoContainer.appendChild(dlAgainBtn);
+        dlVideoContainer.appendChild(dlInfo);
+        dlVideoContainer.appendChild(dlActions);
+        dlVideoContainer.appendChild(progressC);
+        videoSelectDiv.appendChild(dlVideoContainer);
+        videoForm.appendChild(videoSelectDiv);
+
+        // Download audio quality select
+        const audioForm = document.createElement('form');
+        audioForm.className = 'formulariodescargaaudio ocultarframe';
+        const audioSelectDiv = document.createElement('div');
+        audioSelectDiv.className = 'containerall';
+        const audioSelect = document.createElement('select');
+        audioSelect.className = 'selectcalidadesaudio ocultarframeaudio';
+        audioSelect.required = true;
+        [['', 'Audio Quality', true],
+        ['flac', 'Audio FLAC UHQ'], ['wav', 'Audio WAV UHQ'],
+        ['webm', 'Audio WEBM UHQ'], ['mp3', 'Audio MP3 Default'],
+        ['m4a', 'Audio M4A'], ['aac', 'Audio AAC'],
+        ['opus', 'Audio OPUS'], ['ogg', 'Audio OGG']
+        ].forEach(([val, text, dis]) => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = text;
+            if (dis) { opt.selected = true; opt.disabled = true; }
+            audioSelect.appendChild(opt);
+        });
+        audioSelectDiv.appendChild(audioSelect);
+
+        // Download audio container
+        const dlAudioContainer = document.createElement('div');
+        dlAudioContainer.id = 'descargandomp3';
+        dlAudioContainer.className = 'download-container ocultarframeaudio';
+
+        const dlInfoA = document.createElement('div');
+        dlInfoA.className = 'download-info';
+        const dlTextA = document.createElement('span');
+        dlTextA.className = 'download-text';
+        dlTextA.textContent = 'Download Audio And Please Wait...';
+        const dlQualityA = document.createElement('span');
+        dlQualityA.className = 'download-quality';
+        dlInfoA.appendChild(dlTextA);
+        dlInfoA.appendChild(dlQualityA);
+
+        const dlActionsA = document.createElement('div');
+        dlActionsA.className = 'download-actions';
+        const dlBtnA = document.createElement('button');
+        dlBtnA.className = 'download-btn audio-btn';
+        dlBtnA.textContent = 'Download';
+        const retryBtnA = document.createElement('button');
+        retryBtnA.className = 'retry-btn';
+        retryBtnA.style.display = 'none';
+        retryBtnA.textContent = 'Retry';
+        dlActionsA.appendChild(dlBtnA);
+        dlActionsA.appendChild(retryBtnA);
+
+        const progressCA = document.createElement('div');
+        progressCA.className = 'progress-container';
+        progressCA.style.display = 'none';
+        const progressBarA = document.createElement('div');
+        progressBarA.className = 'progress-bar';
+        const progressFillA = document.createElement('div');
+        progressFillA.className = 'progress-fill';
+        progressBarA.appendChild(progressFillA);
+        const progressTextA = document.createElement('span');
+        progressTextA.className = 'progress-text';
+        progressTextA.textContent = '0%';
+        progressCA.appendChild(progressBarA);
+        progressCA.appendChild(progressTextA);
+
+        // progress-retry-btn and download-again-btn for audio
+        const progRetryBtnA = document.createElement('button');
+        progRetryBtnA.className = 'progress-retry-btn';
+        progRetryBtnA.title = 'Retry';
+        progRetryBtnA.style.display = 'none';
+        progRetryBtnA.textContent = '↻';
+        const dlAgainBtnA = document.createElement('button');
+        dlAgainBtnA.className = 'download-again-btn';
+        dlAgainBtnA.title = 'Download again';
+        dlAgainBtnA.style.display = 'none';
+        dlAgainBtnA.textContent = '⬇';
+
+        dlAudioContainer.appendChild(progRetryBtnA);
+        dlAudioContainer.appendChild(dlAgainBtnA);
+        dlAudioContainer.appendChild(dlInfoA);
+        dlAudioContainer.appendChild(dlActionsA);
+        dlAudioContainer.appendChild(progressCA);
+        audioSelectDiv.appendChild(dlAudioContainer);
+        audioForm.appendChild(audioSelectDiv);
+
+        const collapsible = document.createElement('div');
+        collapsible.className = 'content_collapsible_colors';
+        collapsible.style.marginTop = '2px';
+        collapsible.appendChild(videoForm);
+        collapsible.appendChild(audioForm);
+
+        container.appendChild(form);
+        container.appendChild(collapsible);
+        main.appendChild(container);
+
+        return main;
+    }
+
+
+    function renderizarButtons() {
+        if (isYTMusic) {
+            // YouTube Music: inject ABOVE the tab header container (Tiếp theo/Lời nhạc/Liên quan)
+            const sidePanel = document.querySelector('#player-page #side-panel');
+            const tabHeaders = sidePanel && sidePanel.querySelector('.tab-header-container');
+            const addButton = tabHeaders || document.querySelector('#tab-renderer');
+
+            // YTM loads lazily - if element not found, retry
+            if (!addButton && validoBotones) {
+                if (!renderizarButtons._ytmRetries) renderizarButtons._ytmRetries = 0;
+                if (renderizarButtons._ytmRetries < 30) {
+                    renderizarButtons._ytmRetries++;
+                    setTimeout(renderizarButtons, 500);
+                }
+                return;
+            }
+            renderizarButtons._ytmRetries = 0;
+
+            if (addButton && validoBotones) {
+                validoBotones = false;
+
+                const sidePanel = document.querySelector('ytmusic-player-page #side-panel');
+                if (sidePanel) {
+                    // CREATE A COMMON WRAPPER FOR TOOLS AND TAB HEADERS (Top Box)
+                    let sideWrapper = $id('ytm-side-panel-wrapper');
+                    if (!sideWrapper) {
+                        sideWrapper = document.createElement('div');
+                        sideWrapper.id = 'ytm-side-panel-wrapper';
+                        sidePanel.insertBefore(sideWrapper, addButton);
+                    }
+
+                    const toolbar = buildYTMToolbar();
+                    sideWrapper.appendChild(toolbar);
+
+                    // ADD A LINE SEPARATOR
+                    const line = document.createElement('div');
+                    line.className = 'ytm-side-panel-divider';
+                    sideWrapper.appendChild(line);
+
+                    // MOVE THE TAB HEADER INTO THE TOP BOX
+                    sideWrapper.appendChild(addButton);
+                }
+            }
+        } else {
+            // Regular YouTube
+            const addButton = document.querySelector('.style-scope .ytd-watch-metadata');
+            const addButton2 = document.querySelector('#contents');
+
+            if (addButton && validoBotones) {
+                const isVisible = addButton.offsetParent !== null;
+
+                if (isVisible || addButton2) {
+                    validoBotones = false;
+                    const toolbar = buildYTMToolbar();
+                    // Insert before metadata to be above descriptions/comments
+                    addButton.parentNode.insertBefore(toolbar, addButton);
+                }
+            }
+        }
+
+        const formulariodescarga = $e('.formulariodescarga');
+        const formulariodescargaaudio = $e('.formulariodescargaaudio');
+        const btn1mp4 = $e('.btn1');
+        const btn2mp3 = $e('.btn2');
+        const btn3cancel = $e('.btn3');
+        const selectcalidades = $e('.selectcalidades');
+        const selectcalidadesaudio = $e('.selectcalidadesaudio');
+
+        [formulariodescarga, formulariodescargaaudio].forEach(form => {
+            if (!form) return;
+            if (form.dataset.ytToolsPreventDefault === '1') return;
+            form.addEventListener('click', e => e.preventDefault());
+            form.dataset.ytToolsPreventDefault = '1';
+        });
+
+        if (selectcalidades && selectcalidades.dataset.ytToolsBound !== '1') {
+            selectcalidades.dataset.ytToolsBound = '1';
+            selectcalidades.addEventListener('change', e => {
+                const quality = e.target.value;
+                if (!quality) return; // Don't proceed if no quality selected
+
+                const downloadContainer = $id('descargando');
+                const downloadText = downloadContainer.querySelector('.download-text');
+                const downloadQuality = downloadContainer.querySelector('.download-quality');
+                const downloadBtn = downloadContainer.querySelector('.download-btn');
+                const retryBtn = downloadContainer.querySelector('.retry-btn');
+                const progressContainer = downloadContainer.querySelector('.progress-container');
+
+                // Update UI
+                downloadContainer.classList.add('video');
+                downloadContainer.classList.remove('ocultarframe');
+                downloadText.textContent = `Download ${quality.toUpperCase()} And Please Wait...`;
+                downloadQuality.textContent = `${quality}p`;
+
+                // Show download button, hide progress
+                downloadBtn.style.display = 'block';
+                retryBtn.style.display = 'none';
+                progressContainer.style.display = 'none';
+
+                // Store quality for later use
+                downloadContainer.dataset.quality = quality;
+                downloadContainer.dataset.type = 'video';
+            });
+        }
+
+        if (selectcalidadesaudio && selectcalidadesaudio.dataset.ytToolsBound !== '1') {
+            selectcalidadesaudio.dataset.ytToolsBound = '1';
+            selectcalidadesaudio.addEventListener('change', e => {
+                const format = e.target.value;
+                if (!format) return; // Don't proceed if no format selected
+
+                const downloadContainer = $id('descargandomp3');
+                const downloadText = downloadContainer.querySelector('.download-text');
+                const downloadQuality = downloadContainer.querySelector('.download-quality');
+                const downloadBtn = downloadContainer.querySelector('.download-btn');
+                const retryBtn = downloadContainer.querySelector('.retry-btn');
+                const progressContainer = downloadContainer.querySelector('.progress-container');
+
+                // Update UI
+                downloadContainer.classList.add('audio');
+                downloadContainer.classList.remove('ocultarframeaudio');
+                downloadText.textContent = `Download ${format.toUpperCase()} And Please Wait...`;
+                downloadQuality.textContent = format.toUpperCase();
+
+                // Show download button, hide progress
+                downloadBtn.style.display = 'block';
+                retryBtn.style.display = 'none';
+                progressContainer.style.display = 'none';
+
+                // Store format for later use
+                downloadContainer.dataset.quality = format;
+                downloadContainer.dataset.type = 'audio';
+            });
+        }
+
+        if (btn3cancel && btn3cancel.dataset.ytToolsBound !== '1') {
+            btn3cancel.dataset.ytToolsBound = '1';
+            btn3cancel.addEventListener('click', () => {
+                // Hide all selects
+                selectcalidades?.classList.add('ocultarframe');
+                selectcalidadesaudio?.classList.add('ocultarframeaudio');
+
+                // Hide all download containers
+                const videoContainer = $id('descargando');
+                const audioContainer = $id('descargandomp3');
+
+                if (videoContainer) {
+                    videoContainer.classList.add('ocultarframe');
+                    videoContainer.classList.remove('video', 'audio', 'completed');
+                    videoContainer.removeAttribute('data-quality');
+                    videoContainer.removeAttribute('data-type');
+                    videoContainer.removeAttribute('data-downloading');
+                    videoContainer.removeAttribute('data-url-opened');
+                    videoContainer.removeAttribute('data-last-download-url');
+                    videoContainer.querySelector?.('.download-again-btn')?.style && (videoContainer.querySelector('.download-again-btn').style.display = 'none');
+                }
+
+                if (audioContainer) {
+                    audioContainer.classList.add('ocultarframeaudio');
+                    audioContainer.classList.remove('video', 'audio', 'completed');
+                    audioContainer.removeAttribute('data-quality');
+                    audioContainer.removeAttribute('data-type');
+                    audioContainer.removeAttribute('data-downloading');
+                    audioContainer.removeAttribute('data-url-opened');
+                    audioContainer.removeAttribute('data-last-download-url');
+                    audioContainer.querySelector?.('.download-again-btn')?.style && (audioContainer.querySelector('.download-again-btn').style.display = 'none');
+                }
+
+                // Hide all forms
+                if (formulariodescarga) formulariodescarga.style.setProperty('display', 'none', 'important');
+                if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'none', 'important');
+
+                // Reset forms
+                formulariodescarga?.reset();
+                formulariodescargaaudio?.reset();
+            });
+        }
+
+        // Add event listeners for download buttons (only once)
+        if (!__ytToolsRuntime.downloadClickHandlerInitialized) {
+            __ytToolsRuntime.downloadClickHandlerInitialized = true;
+            document.addEventListener('click', (e) => {
+                const target = e.target;
+                if (!(target instanceof Element)) return;
+
+                const clicked =
+                    target.closest('.download-btn') ||
+                    target.closest('.retry-btn') ||
+                    target.closest('.progress-retry-btn') ||
+                    target.closest('.download-again-btn');
+                if (!clicked) return;
+
+                const container = clicked.closest('.download-container');
+                if (!container) return;
+
+                const quality = container.dataset.quality;
+                const type = container.dataset.type;
+                // download-again just re-opens the last URL (no restart)
+                if (clicked.classList.contains('download-again-btn')) {
+                    const url = container.dataset.lastDownloadUrl;
+                    if (url) window.open(url);
+                    return;
+                }
+                if (!quality || !type) return;
+
+                if (clicked.classList.contains('progress-retry-btn')) {
+                    container.dataset.downloading = 'false';
+                    container.dataset.urlOpened = 'false';
+                    container.dataset.lastDownloadUrl = '';
+                    container.querySelector?.('.download-again-btn')?.style && (container.querySelector('.download-again-btn').style.display = 'none');
+                }
+                startDownloadVideoOrAudio(quality, container);
+            });
+        }
+
+
+
+        if (btn1mp4 && btn1mp4.dataset.ytToolsBound !== '1') {
+            btn1mp4.dataset.ytToolsBound = '1';
+            btn1mp4.addEventListener('click', () => {
+                // Show video select, hide audio select
+                selectcalidades?.classList.remove('ocultarframe');
+                selectcalidadesaudio?.classList.add('ocultarframeaudio');
+
+                // Hide all download containers
+                const videoContainer = $id('descargando');
+                const audioContainer = $id('descargandomp3');
+
+                if (videoContainer) {
+                    videoContainer.classList.add('ocultarframe');
+                    videoContainer.classList.remove('video', 'audio', 'completed');
+                    videoContainer.removeAttribute('data-quality');
+                    videoContainer.removeAttribute('data-type');
+                    videoContainer.removeAttribute('data-downloading');
+                    videoContainer.removeAttribute('data-url-opened');
+                }
+
+                if (audioContainer) {
+                    audioContainer.classList.add('ocultarframeaudio');
+                    audioContainer.classList.remove('video', 'audio', 'completed');
+                    audioContainer.removeAttribute('data-quality');
+                    audioContainer.removeAttribute('data-type');
+                    audioContainer.removeAttribute('data-downloading');
+                    audioContainer.removeAttribute('data-url-opened');
+                }
+
+                // Show video form, hide audio form
+                if (formulariodescarga) formulariodescarga.style.setProperty('display', 'flex', 'important');
+                if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'none', 'important');
+
+                // Reset forms
+                formulariodescarga?.reset();
+                formulariodescargaaudio?.reset();
+
+                // On YTM: auto-select 720p and show download button immediately
+                if (isYTMusic && selectcalidades) {
+                    selectcalidades.value = '720';
+                    selectcalidades.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
+
+        if (btn2mp3 && btn2mp3.dataset.ytToolsBound !== '1') {
+            btn2mp3.dataset.ytToolsBound = '1';
+            btn2mp3.addEventListener('click', () => {
+                // Show audio select, hide video select
+                selectcalidadesaudio?.classList.remove('ocultarframeaudio');
+                selectcalidades?.classList.add('ocultarframe');
+
+                // Hide all download containers
+                const videoContainer = $id('descargando');
+                const audioContainer = $id('descargandomp3');
+
+                if (videoContainer) {
+                    videoContainer.classList.add('ocultarframe');
+                    videoContainer.classList.remove('video', 'audio', 'completed');
+                    videoContainer.removeAttribute('data-quality');
+                    videoContainer.removeAttribute('data-type');
+                    videoContainer.removeAttribute('data-downloading');
+                    videoContainer.removeAttribute('data-url-opened');
+                }
+
+                if (audioContainer) {
+                    audioContainer.classList.add('ocultarframeaudio');
+                    audioContainer.classList.remove('video', 'audio', 'completed');
+                    audioContainer.removeAttribute('data-quality');
+                    audioContainer.removeAttribute('data-type');
+                    audioContainer.removeAttribute('data-downloading');
+                    audioContainer.removeAttribute('data-url-opened');
+                }
+
+                // Show audio form, hide video form
+                if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'flex', 'important');
+                if (formulariodescarga) formulariodescarga.style.setProperty('display', 'none', 'important');
+
+                // Reset forms
+                formulariodescargaaudio?.reset();
+                formulariodescarga?.reset();
+
+                // On YTM: auto-select MP3 and show download button immediately
+                if (isYTMusic && selectcalidadesaudio) {
+                    selectcalidadesaudio.value = 'mp3';
+                    selectcalidadesaudio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
+        // Invertir contenido
+
+
+
+        const btnImagen = $e('#imagen');
+
+        // valido modo oscuro y venta de video
+        // Repeat video button
+        let countRepeat = 0; // count
+        const repeat = $e('#repeatvideo'); // Repeat button
+        const videoFull = isYTMusic
+            ? $e('video')
+            : $e('#movie_player > div.html5-video-container > video');
+        if (repeat != undefined) {
+
+            repeat.onclick = () => {
+                if (
+                    (isYTMusic ? videoFull : $e('#cinematics > div')) != undefined ||
+                    videoFull != undefined
+                ) {
+                    countRepeat += 1;
+                    switch (countRepeat) {
+                        case 1:
+                            const videoEl = isYTMusic ? $e('video') : document
+                                .querySelector('#movie_player > div.html5-video-container > video');
+                            videoEl?.setAttribute('loop', 'true');
+                            if (isYTMusic) {
+                                // On YTM, replace SVG icon using DOM API
+                                const newSvg = createSvgIcon([
+                                    'M0 0h24v24H0z',
+                                    'M4 12v-3c0 -1.336 .873 -2.468 2.08 -2.856m3.92 -.144h10m-3 -3l3 3l-3 3',
+                                    'M20 12v3a3 3 0 0 1 -.133 .886m-1.99 1.984a3 3 0 0 1 -.877 .13h-13m3 3l-3 -3l3 -3',
+                                    'M3 3l18 18'
+                                ]);
+                                repeat.replaceChildren(newSvg);
+                            } else {
+                                const imarepeat = $e('.icon-tabler-repeat');
+                                if (imarepeat) imarepeat.innerHTML = safeHTML(`  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-repeat-off" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M4 12v-3c0 -1.336 .873 -2.468 2.08 -2.856m3.92 -.144h10m-3 -3l3 3l-3 3"></path>
+                    <path d="M20 12v3a3 3 0 0 1 -.133 .886m-1.99 1.984a3 3 0 0 1 -.877 .13h-13m3 3l-3 -3l3 -3"></path>
+                    <path d="M3 3l18 18"></path>
+                 </svg> `);
+                            }
+                            break;
+                        case 2:
+                            countRepeat = 0;
+                            const videoEl2 = isYTMusic ? $e('video') : document
+                                .querySelector('#movie_player > div.html5-video-container > video');
+                            videoEl2?.removeAttribute('loop');
+                            if (isYTMusic) {
+                                const newSvg2 = createSvgIcon([
+                                    'M0 0h24v24H0z',
+                                    'M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3',
+                                    'M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3'
+                                ]);
+                                repeat.replaceChildren(newSvg2);
+                            } else {
+                                const imarepeat2 = $e('.icon-tabler-repeat');
+                                if (imarepeat2) imarepeat2.innerHTML = safeHTML(` <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-repeat" width="24"
+                    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"></path>
+                    <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"></path>
+                  </svg>`);
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
+        // Background transparent
+
+        const cinematica = $e('#cinematics > div');
+        if (cinematica != undefined) {
+            cinematica.style.cssText =
+                'position: fixed; inset: 0px; pointer-events: none; transform: scale(1.5, 2)';
+        }
+
+        if (btnImagen != undefined) {
+            btnImagen.onclick = () => {
+                if (
+                    $e('#cinematics > div') != undefined ||
+                    videoFull != undefined
+                ) {
+                    const parametrosURL = new URLSearchParams(window.location.search);
+                    let enlace = parametrosURL.get('v');
+
+                    const imageUrl = `https://i.ytimg.com/vi/${enlace}/maxresdefault.jpg`;
+
+                    fetch(imageUrl)
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.blob();
+                        })
+                        .then((blob) => {
+                            const imageSizeKB = blob.size / 1024;
+
+                            if (imageSizeKB >= 20) {
+                                window.open(
+                                    `https://i.ytimg.com/vi/${enlace}/maxresdefault.jpg`,
+                                    'popUpWindow',
+                                    'height=500,width=400,left=100,top=100,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no, status=yes'
+                                );
+                                const imageUrlObject = URL.createObjectURL(blob);
+
+                                const enlaceDescarga = $cl('a');
+                                enlaceDescarga.href = imageUrlObject;
+                                const titleVideo = isYTMusic
+                                    ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
+                                    : ($e('h1.style-scope.ytd-watch-metadata')?.innerText || 'video');
+                                enlaceDescarga.download = `${titleVideo}_maxresdefault.jpg`;
+                                enlaceDescarga.click();
+
+                                URL.revokeObjectURL(imageUrlObject);
+                            } else {
+                                console.log(
+                                    'La imagen no excede los 20 KB. No se descargará.'
+                                );
+                            }
+                        })
+                        .catch((error) => {
+                            alert('No found image');
+                            console.error('Error al obtener la imagen:', error);
+                        });
+                }
+            };
+        }
+        // [REMOVED] Duplicate background image handler — handled at end of script (line ~6648+).
+
+        const viewPictureToPicture = $e(
+            '.video_picture_to_picture'
+        );
+        if (viewPictureToPicture != undefined) {
+            viewPictureToPicture.onclick = () => {
+                const video = $e('video');
+                if ('pictureInPictureEnabled' in document) {
+                    if (!document.pictureInPictureElement) {
+
+                        video
+                            .requestPictureInPicture()
+                            .then(() => { })
+                            .catch((error) => {
+                                console.error(
+                                    'Error al activar el modo Picture-in-Picture:',
+                                    error
+                                );
+                            });
+                    } else {
+                        // video picture
+                    }
+                } else {
+                    alert('Picture-in-Picture not supported');
+                }
+            };
+        }
+        const screenShotVideo = $e('.screenshot_video');
+        if (screenShotVideo != undefined) {
+            screenShotVideo.onclick = () => {
+                const video = $e('video');
+                const canvas = $cl('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imagenURL = canvas.toDataURL('image/png');
+                const enlaceDescarga = $cl('a');
+                enlaceDescarga.href = imagenURL;
+                const titleVideo = isYTMusic
+                    ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
+                    : ($e('h1.style-scope.ytd-watch-metadata')?.innerText || 'video');
+                enlaceDescarga.download = `${video.currentTime.toFixed(
+                    0
+                )}s_${titleVideo}.png`;
+                enlaceDescarga.click();
+            };
+        } else {
+            const containerButtons = $e('.containerButtons');
+
+            if (containerButtons != undefined) {
+                containerButtons.innerHTML = safeHTML('');
+            }
+        }
+        // [REMOVED] clearInterval(renderizarButtons) — was passing a function, not an interval ID.
+    }
+
+
+
+
+    function hideCanvas() {
+
+        const canvas = $id('wave-visualizer-canvas');
+        if (canvas) {
+            canvas.style.opacity = '0';
+            if (controlPanel) {
+                controlPanel.style.opacity = '0';
+            }
+        }
+    }
+
+    function showCanvas() {
+        const canvas = $id('wave-visualizer-canvas');
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        if (canvas) {
+            canvas.style.opacity = '1';
+            if (controlPanel) controlPanel.style.opacity = '1';
+        }
+    }
+
+
+
+    async function startDownloadVideoOrAudio(format, container) {
+        const videoURL = window.location.href;
+        // Notify('info', 'Starting download...');
+
+        // Check if already downloading
+        if (container.dataset.downloading === 'true') {
+            return;
+        }
+
+        // Stop any previous poller (avoid leaks on retry)
+        try {
+            if (container.__ytDownloadPoll) {
+                clearInterval(container.__ytDownloadPoll);
+                container.__ytDownloadPoll = null;
+            }
+        } catch (e) { }
+
+        // Get UI elements from the container
+        const downloadBtn = container.querySelector('.download-btn');
+        const retryBtn = container.querySelector('.retry-btn');
+        const progressRetryBtn = container.querySelector('.progress-retry-btn');
+        const downloadAgainBtn = container.querySelector('.download-again-btn');
+        const progressContainer = container.querySelector('.progress-container');
+        const progressFill = container.querySelector('.progress-fill');
+        const progressText = container.querySelector('.progress-text');
+        const downloadText = container.querySelector('.download-text');
+
+        // Set downloading flag
+        container.dataset.downloading = 'true';
+        container.dataset.urlOpened = 'false';
+        container.dataset.lastDownloadUrl = '';
+
+        // Update UI to show progress
+        downloadBtn.style.display = 'none';
+        retryBtn.style.display = 'none';
+        progressRetryBtn.style.display = 'block';
+        if (downloadAgainBtn) downloadAgainBtn.style.display = 'none';
+        progressContainer.style.display = 'flex';
+        progressFill.style.width = '0%';
+        progressText.textContent = '0%';
+
+        const fetchJsonWithTimeout = async (url, timeoutMs = 20000) => {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, {
+                    signal: ctrl.signal
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } finally {
+                clearTimeout(t);
+            }
+        };
+
+        const setErrorState = () => {
+            retryBtn.style.display = 'block';
+            progressContainer.style.display = 'none';
+            progressRetryBtn.style.display = 'none';
+            if (downloadAgainBtn) downloadAgainBtn.style.display = 'none';
+            container.dataset.downloading = 'false';
+            container.dataset.urlOpened = 'false';
+            container.dataset.lastDownloadUrl = '';
+        };
+
+        const markCompleteAndOpen = (downloadUrl) => {
+            if (!downloadUrl) {
+                setErrorState();
+                return;
+            }
+            // Save for the \"download again\" button
+            container.dataset.lastDownloadUrl = String(downloadUrl);
+            // Check if URL was already opened
+            if (container.dataset.urlOpened === 'true') return;
+            // Mark URL as opened
+            container.dataset.urlOpened = 'true';
+            // Update UI to show completion
+            container.classList.add('completed');
+            container.classList.remove('video', 'audio');
+            downloadText.textContent = 'Download Complete!';
+            progressFill.style.width = '100%';
+            progressText.textContent = '100%';
+            progressRetryBtn.style.display = 'none';
+            if (downloadAgainBtn) downloadAgainBtn.style.display = 'flex';
+            container.dataset.downloading = 'false';
+            try {
+                window.open(downloadUrl);
+            } catch (e) {
+                console.warn('Could not open download URL:', e);
+            }
+        };
+
+        const pollProgressUrl = (progressURL) => {
+            container.__ytDownloadPoll = setInterval(async () => {
+                try {
+                    const progressData = await fetchJsonWithTimeout(progressURL, 15000);
+
+                    const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `${Math.round(progress)}%`;
+
+                    if (Number(progressData.progress) >= 1000 && progressData.download_url) {
+                        clearInterval(container.__ytDownloadPoll);
+                        container.__ytDownloadPoll = null;
+                        markCompleteAndOpen(progressData.download_url);
+                    }
+                } catch (e) {
+                    console.error('Error in progress:', e);
+                    clearInterval(container.__ytDownloadPoll);
+                    container.__ytDownloadPoll = null;
+                    setErrorState();
+                }
+            }, 3000);
+        };
+
+        const trySaveNowProvider = async (baseUrl) => {
+            const url = new URL('/ajax/download.php', baseUrl);
+            url.searchParams.set('copyright', '0');
+            url.searchParams.set('allow_extended_duration', '1');
+            url.searchParams.set('format', String(format));
+            url.searchParams.set('url', videoURL);
+            url.searchParams.set('api', API_KEY_DEVELOPERMDCM);
+            const data = await fetchJsonWithTimeout(url.toString(), 25000);
+            if (!data?.success || !data?.progress_url) {
+                throw new Error('SaveNow provider did not return success/progress_url');
+            }
+            return data;
+        };
+
+        const tryDubsProvider = async () => {
+            const videoId = paramsVideoURL();
+            if (!videoId) throw new Error('Missing videoId');
+
+            const startUrl = new URL(DUBS_START_ENDPOINT);
+            startUrl.searchParams.set('id', videoId);
+            startUrl.searchParams.set('format', String(format));
+
+            const startData = await fetchJsonWithTimeout(startUrl.toString(), 25000);
+            if (!startData?.success || !startData?.progressId) {
+                throw new Error('Dubs provider did not return success/progressId');
+            }
+
+            const statusUrl = new URL(DUBS_STATUS_ENDPOINT);
+            statusUrl.searchParams.set('id', startData.progressId);
+
+            container.__ytDownloadPoll = setInterval(async () => {
+                try {
+                    const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
+                    const rawProgress = Number(st?.progress) || 0; // 0..1000
+                    const progress = Math.min(rawProgress / 10, 100);
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `${Math.round(progress)}%`;
+
+                    if (st?.finished && st?.downloadUrl) {
+                        clearInterval(container.__ytDownloadPoll);
+                        container.__ytDownloadPoll = null;
+                        markCompleteAndOpen(st.downloadUrl);
+                    }
+                } catch (e) {
+                    console.error('❌ Error polling dubs status:', e);
+                    clearInterval(container.__ytDownloadPoll);
+                    container.__ytDownloadPoll = null;
+                    setErrorState();
+                }
+            }, 3000);
+        };
+
+        try {
+            let started = null;
+            let lastErr = null;
+
+            for (const base of DOWNLOAD_API_FALLBACK_BASES) {
+                try {
+                    started = await trySaveNowProvider(base);
+                    break;
+                } catch (e) {
+                    lastErr = e;
+                }
+            }
+
+            if (started?.success && started?.progress_url) {
+                pollProgressUrl(started.progress_url);
+                return;
+            }
+
+            console.warn('SaveNow providers failed, falling back to dubs.io', lastErr);
+            await tryDubsProvider();
+        } catch (error) {
+            setErrorState();
+            console.error('❌ Error starting download:', error);
+        }
+    }
+
+
+
 
 
 
@@ -4486,7 +5367,7 @@
         name: 'Midnight Blue',
         gradient: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
         textColor: '#ffffff',
-        raised: '#f00',
+        raised: '#1e3a8a',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4496,7 +5377,7 @@
         name: 'Forest Green',
         gradient: 'linear-gradient(135deg, #14532d, #22c55e)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#14532d',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4506,7 +5387,7 @@
         name: 'Sunset Orange',
         gradient: 'linear-gradient(135deg, #7c2d12, #f97316)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#7c2d12',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4536,7 +5417,7 @@
         name: 'Red Dark',
         gradient: 'linear-gradient(135deg, #790909, #f70131)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#790909',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4544,9 +5425,9 @@
         textLogo: '#f00',
     }, {
         name: 'Raind ',
-        gradient: 'linear-gradient(90deg, #3f5efb 0%, #fc466b) 100%',
+        gradient: 'linear-gradient(90deg, #3f5efb 0%, #fc466b 100%)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#3f5efb',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4556,7 +5437,7 @@
         name: 'Neon',
         gradient: 'linear-gradient(273deg, #ee49fd 0%, #6175ff 100%)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#ee49fd',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4566,7 +5447,7 @@
         name: 'Azure',
         gradient: 'linear-gradient(273deg, #0172af 0%, #74febd 100%)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#0172af',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4576,7 +5457,7 @@
         name: 'Butterfly',
         gradient: 'linear-gradient(273deg, #ff4060 0%, #fff16a 100%)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#ff4060',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4586,7 +5467,7 @@
         name: 'Colombia',
         gradient: 'linear-gradient(174deg, #fbf63f  0%, #0000bb 45%, #ff0000 99%)',
         textColor: '#ffffff',
-        raised: '#303131',
+        raised: '#0000bb',
         btnTranslate: '#000',
         CurrentProgressVideo: '#0f0',
         videoDuration: '#fff',
@@ -4798,9 +5679,14 @@
             <input type="checkbox" class="checkbox-mdcm" id="custom-timeline-color-toggle"> Royal Purple Timeline
           </div>
         </label>
-        <div class="quality-selector-mdcm" style="grid-column: span 2; ${!isYTMusic ? 'display:none' : ''}">
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Sync Ambient Mode YT
+          </div>
+        </label>
+        <div class="quality-selector-mdcm" style="grid-column: span 2;">
           <div class="select-wrapper-mdcm">
-            <label>Side Panel Style (YTM):
+            <label>Side/Playlist Panel Style:
               <select class="tab-button-active" id="side-panel-style-select">
                 <option value="blur">Blur</option>
                 <option value="liquid">Liquid Glass</option>
@@ -4809,11 +5695,6 @@
             </label>
           </div>
         </div>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Sync Ambient Mode YT
-          </div>
-        </label>
         <div class="quality-selector-mdcm" style="grid-column: span 2;">
           <div class="select-wrapper-mdcm">
             <label>Effect wave visualizer:
@@ -4900,7 +5781,7 @@
           </label>
         </div>
         <div class="themes-options">
-          <div class="options-mdcm">
+          <div class="options-mdcm themes-grid-mdcm">
             ${themeOptionsHTML}
           </div>
         </div>
@@ -5073,8 +5954,8 @@
   <div class="actions-mdcm">
     <div class="developer-mdcm">
       <div style="font-size: 11px; opacity: 0.9; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; line-height: 1.6;">
-        Developed by <a href="https://github.com/akari310" target="_blank" style="color: #ff4444; text-decoration: none;"><i class="fa-brands fa-github"></i> Akari</a>. 
-        Base by <a href="https://github.com/DeveloperMDCM" target="_blank" style="color: #00aaff; text-decoration: none;"><i class="fa-brands fa-github"></i> MDCM</a>. 
+        Developed by <a href="https://github.com/akari310" target="_blank" style="color: #ff4444; text-decoration: none;"><i class="fa-brands fa-github"></i> Akari</a>.
+        Base by <a href="https://github.com/DeveloperMDCM" target="_blank" style="color: #00aaff; text-decoration: none;"><i class="fa-brands fa-github"></i> MDCM</a>.
         Features from <a href="https://github.com/nvbangg" target="_blank" style="color: #00ffaa; text-decoration: none;"><i class="fa-brands fa-github"></i> nvbangg</a>.
       </div>
     </div>
@@ -5487,6 +6368,7 @@
     // Elements stay persistent for smooth transitions — only .active class toggles
 
     // ------------------------------
+
     const ytmAmbientMode = {
         active: false,
         _initialized: false, // true once DOM elements are created
@@ -5809,6 +6691,7 @@
     }
 
     // Cinematic Lighting Control Functions
+
     function isWatchPage() {
         return window.location.href.includes('youtube.com/watch');
     }
@@ -5973,15 +6856,13 @@
         applyAudioOnlyMode(getEffectiveAudioOnly(settings));
 
         // Handle Side Panel Style classes
-        if (isYTMusic) {
-            document.body.classList.remove('ytm-style-blur', 'ytm-style-liquid', 'ytm-style-transparent');
-            if (settings.sidePanelStyle === 'liquid') {
-                document.body.classList.add('ytm-style-liquid');
-            } else if (settings.sidePanelStyle === 'transparent') {
-                document.body.classList.add('ytm-style-transparent');
-            } else {
-                document.body.classList.add('ytm-style-blur');
-            }
+        document.body.classList.remove('ytm-style-blur', 'ytm-style-liquid', 'ytm-style-transparent');
+        if (settings.sidePanelStyle === 'liquid') {
+            document.body.classList.add('ytm-style-liquid');
+        } else if (settings.sidePanelStyle === 'transparent') {
+            document.body.classList.add('ytm-style-transparent');
+        } else {
+            document.body.classList.add('ytm-style-blur');
         }
 
 
@@ -6170,13 +7051,14 @@
             $sp('--ytmusic-color-white4', secondaryText || textColor);
             $sp('--ytmusic-player-bar-background', raisedBg || bgColor);
             $sp('--ytmusic-nav-bar-background', bgColor);
+            $sp('--ytmusic-nav-bar', bgColor);
             $sp('--ytmusic-search-background', menuBg || bgColor);
             // Shared YT/YTM variables
             $sp('--yt-spec-general-background-a', bgColor);
             $sp('--yt-spec-general-background-b', bgColor);
             $sp('--yt-spec-general-background-c', bgColor);
 
-            // YTM Slider Progress bar 
+            // YTM Slider Progress bar
             if (progressColor) {
                 $sp('--paper-slider-active-color', progressColor);
                 $sp('--paper-slider-knob-color', progressColor);
@@ -6185,6 +7067,24 @@
             if (progressSecondary) {
                 $sp('--paper-slider-secondary-color', progressSecondary);
                 $sp('--paper-progress-secondary-color', progressSecondary);
+            }
+
+            // Force colors via CSS to prevent YTM's native ambient mode from overriding the variables
+            // Only add this if not cleared (bgColor is truthy)
+            if (bgColor) {
+                addDynamicCss(`
+                    #nav-bar-background.ytmusic-app-layout {
+                        background: ${bgColor} !important;
+                        background-image: ${bgColor.includes('gradient') ? bgColor : 'none'} !important;
+                    }
+                    ytmusic-app-layout.content-scrolled #nav-bar-background.ytmusic-app-layout {
+                        background: ${bgColor} !important;
+                    }
+                    #player-bar-background.ytmusic-app-layout {
+                        background: ${raisedBg || bgColor} !important;
+                        background-image: ${(raisedBg || bgColor).includes('gradient') ? (raisedBg || bgColor) : 'none'} !important;
+                    }
+                `);
             }
         }
 
@@ -6212,7 +7112,8 @@
                             '--yt-spec-base-background', '--yt-spec-text-primary', '--yt-spec-text-secondary', '--yt-spec-menu-background',
                             '--yt-spec-icon-inactive', '--yt-spec-brand-icon-inactive', '--yt-spec-brand-icon-active', '--yt-spec-static-brand-red',
                             '--yt-spec-raised-background', '--yt-spec-static-brand-white', '--ytd-searchbox-background', '--ytd-searchbox-text-color',
-                            '--ytcp-text-primary'
+                            '--ytcp-text-primary', '--ytmusic-nav-bar', '--paper-slider-active-color', '--paper-slider-knob-color',
+                            '--paper-progress-active-color', '--paper-slider-secondary-color', '--paper-progress-secondary-color'
                         ];
                         props.forEach(p => document.documentElement.style.removeProperty(p));
                         addDynamicCss(`
@@ -6263,7 +7164,7 @@
                             selectedTheme.textColor,
                             selectedTheme.gradient,
                             selectedTheme.colorIcons || selectedTheme.textColor,
-                            selectedTheme.raised,
+                            selectedTheme.raised === '#303131' ? selectedTheme.gradient : selectedTheme.raised,
                             ytmSliderSolidColor,
                             ytmSliderSolidColor + '80' // Add 50% opacity in hex for secondary 'buffer' slider
                         );
@@ -6283,7 +7184,7 @@
             .ytp-swatch-background-color {
             background: ${selectedTheme.gradient} !important;
           }
-          html, body { 
+          html, body {
             background-color: #0f0f0f !important;
           }
           `);
@@ -6305,10 +7206,10 @@
 
                     /* Minimal transparency to allow background to show */
                     addDynamicCss(`
-          ytd-app, 
-          #content.ytd-app, 
-          #page-manager.ytd-app, 
-          ytd-browse, 
+          ytd-app,
+          #content.ytd-app,
+          #page-manager.ytd-app,
+          ytd-browse,
           ytd-watch-flexy,
           ytd-two-column-browse-results-renderer,
           #primary.ytd-two-column-browse-results-renderer,
@@ -6333,8 +7234,8 @@
           .short-video-container.ytd-reel-video-renderer,
           ytd-reel-video-renderer,
           .navigation-container.ytd-shorts,
-          .navigation-button.ytd-shorts { 
-            background: transparent !important; 
+          .navigation-button.ytd-shorts {
+            background: transparent !important;
           }
           /* Completely hide the cinematic glow in shorts if it's causing black blocks */
           #cinematic-container.ytd-reel-video-renderer,
@@ -6347,7 +7248,7 @@
 
           /* Use theme colors on major components without breaking layout */
           #masthead-container.ytd-app,
-          #background.ytd-masthead { 
+          #background.ytd-masthead {
             background: ${selectedTheme.gradient} !important;
           }
 
@@ -6358,7 +7259,7 @@
             background: transparent !important;
           }
 
-          
+
           /* Improve Shorts Navigation: Center 'Next' button if it's the first Short */
           ytd-shorts[is-watch-while-mode] .navigation-container.ytd-shorts,
           .navigation-container.ytd-shorts {
@@ -6425,7 +7326,7 @@
                     // YTM-specific element selectors
                     if (isYTMusic) {
                         addDynamicCss(`
-              html, body, ytmusic-app { 
+              html, body, ytmusic-app {
                 background-color: ${localStorage.getItem('backgroundImage') ? 'transparent' : '#030303'} !important;
                 background-image: ${localStorage.getItem('backgroundImage') ? 'none' : selectedTheme.gradient} !important;
                 background-size: cover !important;
@@ -6436,8 +7337,8 @@
                 background: ${localStorage.getItem('backgroundImage') ? 'transparent' : selectedTheme.gradient} !important;
                 ${localStorage.getItem('backgroundImage') ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
               }
-              ytmusic-nav-bar { 
-                background: transparent !important; 
+              ytmusic-nav-bar {
+                background: transparent !important;
                 transition: background 0.4s ease-in-out !important;
               }
               ytmusic-nav-bar.scrolled,
@@ -6457,7 +7358,7 @@
               ytmusic-item-section-renderer,
               #content.ytmusic-app,
               #shorts-container, ytd-shorts, #shorts-inner-container, ytd-reel-player-overlay, #overlay.ytd-reel-video-renderer, ytmusic-app-layout, #mini-guide-background, #guide-wrapper.ytmusic-app-layout, ytmusic-browse-response #background, ytmusic-browse-response .background, ytmusic-app-layout #background, ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer, ytmusic-chip-cloud-chip-renderer, ytmusic-chip-cloud-renderer, ytmusic-player-page, ytmusic-player-page #background { background: transparent !important; }
-              
+
               /* Neutralize default YTM gradients */
               ytmusic-browse-response #background,
               ytmusic-header-renderer #background,
@@ -6467,7 +7368,7 @@
               .background-gradient.ytmusic-browse-response,
               #background.style-scope.ytmusic-browse-response,
               #header.style-scope.ytmusic-browse-response,
-              
+
               ytmusic-browse-response [id="background"],
               ytmusic-header-renderer [id="background"], #mini-guide-background, #guide-spacer, .immersive-background, ytmusic-fullbleed-thumbnail-renderer[is-background] {
                 background: transparent !important;
@@ -6479,7 +7380,7 @@
 
               #layout { background: transparent !important; }
               .content.ytmusic-player-page { background: transparent !important; }
-              
+
               ytmusic-player-bar .title, ytmusic-player-bar .byline {
                 color: ${selectedTheme.textColor} !important;
               }
@@ -6598,7 +7499,7 @@
             background: ${settings.progressbarColorPicker
                         } !important;
           }
-        #shorts-container, 
+        #shorts-container,
         ytd-shorts,
         #shorts-inner-container,
         #page-manager.ytd-app,
@@ -6647,7 +7548,7 @@
                     // YTM-specific element selectors for custom theme
                     if (isYTMusic) {
                         addDynamicCss(`
-              html, body, ytmusic-app { 
+              html, body, ytmusic-app {
                 background-image: none !important;
                 background-color: ${localStorage.getItem('backgroundImage') ? 'transparent' : settings.bgColorPicker} !important;
                 background-size: cover !important;
@@ -6658,8 +7559,8 @@
                 background: ${localStorage.getItem('backgroundImage') ? 'transparent' : (settings.headerColorPicker || settings.bgColorPicker)} !important;
                 ${localStorage.getItem('backgroundImage') ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
               }
-              ytmusic-nav-bar { 
-                background: transparent !important; 
+              ytmusic-nav-bar {
+                background: transparent !important;
                 transition: background 0.4s ease-in-out !important;
               }
               ytmusic-nav-bar.scrolled,
@@ -6678,17 +7579,17 @@
               ytmusic-grid-renderer,
               ytmusic-item-section-renderer,
               #content.ytmusic-app,
-              #shorts-container, ytd-shorts, #shorts-inner-container, ytd-reel-player-overlay, #overlay.ytd-reel-video-renderer, 
+              #shorts-container, ytd-shorts, #shorts-inner-container, ytd-reel-player-overlay, #overlay.ytd-reel-video-renderer,
               ytmusic-app-layout, ytmusic-app-layout.content-scrolled,
-              #mini-guide-background, #guide-wrapper.ytmusic-app-layout, 
-              ytmusic-browse-response #background, ytmusic-browse-response .background, 
+              #mini-guide-background, #guide-wrapper.ytmusic-app-layout,
+              ytmusic-browse-response #background, ytmusic-browse-response .background,
               ytmusic-app-layout #background, ytmusic-app-layout #guide-background, ytmusic-app-layout #nav-bar-background, ytmusic-app-layout #player-bar-background,
               tp-yt-app-drawer, tp-yt-app-drawer #contentContainer,
               #mini-guide, #mini-guide-renderer,
               ytmusic-guide-renderer, #guide-wrapper, #guide-content, #guide-spacer,
               ytmusic-guide-section-renderer, ytmusic-guide-entry-renderer, tp-yt-paper-item.ytmusic-guide-entry-renderer,
-              ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer, ytmusic-chip-cloud-chip-renderer, ytmusic-chip-cloud-renderer, ytmusic-player-page, ytmusic-player-page #background { 
-                background: transparent !important; 
+              ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer, ytmusic-chip-cloud-chip-renderer, ytmusic-chip-cloud-renderer, ytmusic-player-page, ytmusic-player-page #background {
+                background: transparent !important;
                 --ytmusic-guide-background: transparent !important;
                 --iron-drawer-background-color: transparent !important;
               }
@@ -6702,13 +7603,13 @@
               .background-gradient.ytmusic-browse-response,
               #background.style-scope.ytmusic-browse-response,
               #header.style-scope.ytmusic-browse-response,
-              
+
               ytmusic-browse-response [id="background"],
               ytmusic-header-renderer [id="background"], #mini-guide-background, #guide-spacer, .immersive-background, ytmusic-fullbleed-thumbnail-renderer[is-background] {
                 background: transparent !important;
                 background-image: none !important;
                 }
-              body:not(.ytm-ambient-active) #mini-guide-background, 
+              body:not(.ytm-ambient-active) #mini-guide-background,
               .immersive-background, ytmusic-fullbleed-thumbnail-renderer[is-background] {
                 opacity: 0 !important;
                 pointer-events: none !important;
@@ -6716,7 +7617,7 @@
 
               #layout { background: transparent !important; }
               .content.ytmusic-player-page { background: transparent !important; }
-              
+
               ytmusic-player-bar .title, ytmusic-player-bar .byline {
                 color: ${settings.primaryColorPicker} !important;
               }
@@ -6752,7 +7653,8 @@
                     '--yt-spec-base-background', '--yt-spec-text-primary', '--yt-spec-text-secondary', '--yt-spec-menu-background',
                     '--yt-spec-icon-inactive', '--yt-spec-brand-icon-inactive', '--yt-spec-brand-icon-active', '--yt-spec-static-brand-red',
                     '--yt-spec-raised-background', '--yt-spec-static-brand-white', '--ytd-searchbox-background', '--ytd-searchbox-text-color',
-                    '--ytcp-text-primary'
+                    '--ytcp-text-primary', '--ytmusic-nav-bar', '--ytmusic-nav-bar-background', '--paper-slider-active-color',
+                    '--paper-slider-knob-color', '--paper-progress-active-color', '--paper-slider-secondary-color', '--paper-progress-secondary-color'
                 ];
                 props.forEach(p => document.documentElement.style.removeProperty(p));
 
@@ -6764,9 +7666,10 @@
                         document.documentElement.style.setProperty('--ytmusic-nav-bar-background', 'transparent');
                         document.documentElement.style.setProperty('--ytmusic-player-bar-background', 'transparent');
                     } else {
-                        // No bgImage → restore YTM native defaults
-                        document.documentElement.style.setProperty('--ytmusic-nav-bar-background', '#121212');
-                        document.documentElement.style.setProperty('--ytmusic-player-bar-background', '#030303');
+                        // No bgImage → restore YTM native defaults completely
+                        document.documentElement.style.removeProperty('--ytmusic-nav-bar-background');
+                        document.documentElement.style.removeProperty('--ytmusic-player-bar-background');
+                        document.documentElement.style.removeProperty('--ytmusic-nav-bar');
                     }
                     // Cleanup carousel/container backgrounds that were made transparent by theme
                     // But DON'T reset nav-bar/player-bar when backgroundImage is active (applyPageBackground handles those)
@@ -6858,7 +7761,7 @@
             -webkit-backdrop-filter: blur(12px) !important;
             border-radius: 50% !important;
           }
-          ytmusic-play-button-renderer yt-icon, 
+          ytmusic-play-button-renderer yt-icon,
           ytmusic-play-button-renderer #icon,
           ytmusic-play-button-renderer .icon {
             background: transparent !important;
@@ -6870,16 +7773,7 @@
           ytmusic-play-button-renderer svg {
             fill: #fff !important;
           }
-          ` : `
-          #nav-bar-background {
-            background: initial !important;
-            background-color: initial !important;
-          }
-          #player-bar-background {
-            background: initial !important;
-            background-color: initial !important;
-          }
-          `}
+          ` : ''}
         `);
                 } else {
                     // Remove nav-bar var only on YT (not relevant there anyway)
@@ -7764,820 +8658,27 @@
 
     }
 
-    let validoBotones = true;
-
-    // Helper: create SVG icon using DOM API (no innerHTML needed)
-    function createSvgIcon(pathsData, size) {
-        const sz = size || 24;
-        const svgNS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('width', String(sz));
-        svg.setAttribute('height', String(sz));
-        svg.setAttribute('viewBox', '0 0 24 24');
-        svg.setAttribute('stroke-width', '2');
-        svg.setAttribute('stroke', 'currentColor');
-        svg.setAttribute('fill', 'none');
-        svg.setAttribute('stroke-linecap', 'round');
-        svg.setAttribute('stroke-linejoin', 'round');
-        pathsData.forEach(d => {
-            const p = document.createElementNS(svgNS, 'path');
-            p.setAttribute('d', d);
-            if (d === 'M0 0h24v24H0z') p.setAttribute('fill', 'none');
-            svg.appendChild(p);
-        });
-        return svg;
-    }
-
-    // Helper: create a toolbar button with SVG icon
-    function makeToolBtn(title, id, className, paths) {
-        const btn = document.createElement('button');
-        btn.title = title;
-        btn.type = 'button';
-        if (id) btn.id = id;
-        btn.className = (className ? className + ' ' : '') + 'botones_div';
-        btn.appendChild(createSvgIcon(paths));
-        return btn;
-    }
 
     // Build YTM toolbar using pure DOM API (bypasses Trusted Types)
-    function buildYTMToolbar() {
-        const main = document.createElement('main');
-        main.className = 'yt-tools-container';
 
-        const container = document.createElement('div');
-        container.className = 'yt-tools-inner-container';
-
-        const form = document.createElement('form');
-        form.className = 'yt-tools-form';
-        const btnsDiv = document.createElement('div');
-        btnsDiv.className = 'containerButtons';
-
-        // Thumbnail (Image download)
-        btnsDiv.appendChild(makeToolBtn('Image video', 'imagen', '', [
-            'M0 0h24v24H0z', 'M15 8h.01',
-            'M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5',
-            'M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4',
-            'M14 14l1 -1c.653 -.629 1.413 -.815 2.13 -.559',
-            'M19 16v6', 'M22 19l-3 3l-3 -3'
-        ]));
-
-        // Repeat
-        if (!isYTMusic) {
-            btnsDiv.appendChild(makeToolBtn('Repeat video', 'repeatvideo', '', [
-                'M0 0h24v24H0z',
-                'M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3',
-                'M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3'
-            ]));
-        }
-
-        // Download MP4
-        btnsDiv.appendChild(makeToolBtn('MP4', null, 'btn1', [
-            'M0 0h24v24H0z', 'M14 3v4a1 1 0 0 0 1 1h4',
-            'M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z',
-            'M12 17v-6', 'M9.5 14.5l2.5 2.5l2.5 -2.5'
-        ]));
-
-        // Download MP3
-        btnsDiv.appendChild(makeToolBtn('MP3', null, 'btn2', [
-            'M0 0h24v24H0z', 'M14 3v4a1 1 0 0 0 1 1h4',
-            'M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z',
-            'M11 16m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0', 'M12 16l0 -5l2 1'
-        ]));
-
-        // Close
-        btnsDiv.appendChild(makeToolBtn('Close', null, 'btn3', [
-            'M0 0h24v24H0z',
-            'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
-            'M10 10l4 4m0 -4l-4 4'
-        ]));
-
-        if (!isYTMusic) {
-            // Add Bookmark
-            btnsDiv.appendChild(makeToolBtn('Add bookmark', 'yt-bookmark-add', '', [
-                'M0 0h24v24H0z',
-                'M7 4h10a2 2 0 0 1 2 2v14l-7 -4l-7 4v-14a2 2 0 0 1 2 -2z',
-                'M12 7v6', 'M9 10h6'
-            ]));
-
-            // Show Bookmarks
-            btnsDiv.appendChild(makeToolBtn('Show bookmarks', 'yt-bookmark-toggle', '', [
-                'M0 0h24v24H0z',
-                'M9 6h11', 'M9 12h11', 'M9 18h11', 'M5 6h.01', 'M5 12h.01', 'M5 18h.01'
-            ]));
-
-            // History (Continue Watching)
-            btnsDiv.appendChild(makeToolBtn('History', 'yt-cw-history-toggle', '', [
-                'M0 0h24v24H0z',
-                'M12 8v4l3 3', 'M3 12a9 9 0 1 0 3 -6.7', 'M3 4v4h4'
-            ]));
-        }
-
-        // Picture-in-Picture
-        btnsDiv.appendChild(makeToolBtn('Picture to picture', null, 'video_picture_to_picture', [
-            'M0 0h24v24H0z',
-            'M11 19h-6a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4',
-            'M14 14m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z'
-        ]));
-
-        // Screenshot
-        btnsDiv.appendChild(makeToolBtn('Screenshot video', null, 'screenshot_video', [
-            'M0 0h24v24H0z', 'M15 8h.01',
-            'M6 13l2.644 -2.644a1.21 1.21 0 0 1 1.712 0l3.644 3.644',
-            'M13 13l1.644 -1.644a1.21 1.21 0 0 1 1.712 0l1.644 1.644',
-            'M4 8v-2a2 2 0 0 1 2 -2h2', 'M4 16v2a2 2 0 0 0 2 2h2',
-            'M16 4h2a2 2 0 0 1 2 2v2', 'M16 20h2a2 2 0 0 0 2 -2v-2'
-        ]));
-
-        form.appendChild(btnsDiv);
-
-        if (!isYTMusic) {
-            const bookmarksPanel = document.createElement('div');
-            bookmarksPanel.id = 'yt-bookmarks-panel';
-            bookmarksPanel.className = 'yt-bookmarks-panel';
-            bookmarksPanel.style.display = 'none';
-            form.appendChild(bookmarksPanel);
-
-            const historyPanel = document.createElement('div');
-            historyPanel.id = 'yt-continue-watching-panel';
-            historyPanel.className = 'yt-continue-watching-panel';
-            historyPanel.style.display = 'none';
-            form.appendChild(historyPanel);
-        }
-
-        // Download video quality select
-        const videoForm = document.createElement('form');
-        videoForm.className = 'formulariodescarga ocultarframe';
-        const videoSelectDiv = document.createElement('div');
-        videoSelectDiv.className = 'containerall';
-        const videoSelect = document.createElement('select');
-        videoSelect.className = 'selectcalidades ocultarframe';
-        videoSelect.required = true;
-        [['', 'Video Quality', true],
-        ['144', '144p MP4'], ['240', '240p MP4'], ['360', '360p MP4'],
-        ['480', '480p MP4'], ['720', '720p HD MP4 Default'],
-        ['1080', '1080p FULL HD MP4'], ['1440', '1440p 2K WEBM'], ['4k', '2160p 4K WEBM'], ['8k', '4320p 8K WEBM']
-        ].forEach(([val, text, dis]) => {
-            const opt = document.createElement('option');
-            opt.value = val;
-            opt.textContent = text;
-            if (dis) { opt.selected = true; opt.disabled = true; }
-            videoSelect.appendChild(opt);
-        });
-        videoSelectDiv.appendChild(videoSelect);
-
-        // Download video container
-        const dlVideoContainer = document.createElement('div');
-        dlVideoContainer.id = 'descargando';
-        dlVideoContainer.className = 'download-container ocultarframe';
-
-        const dlInfo = document.createElement('div');
-        dlInfo.className = 'download-info';
-        const dlText = document.createElement('span');
-        dlText.className = 'download-text';
-        dlText.textContent = 'Download Video And Please Wait...';
-        const dlQuality = document.createElement('span');
-        dlQuality.className = 'download-quality';
-        dlInfo.appendChild(dlText);
-        dlInfo.appendChild(dlQuality);
-
-        const dlActions = document.createElement('div');
-        dlActions.className = 'download-actions';
-        const dlBtn = document.createElement('button');
-        dlBtn.className = 'download-btn video-btn';
-        dlBtn.textContent = 'Download';
-        const retryBtn = document.createElement('button');
-        retryBtn.className = 'retry-btn';
-        retryBtn.style.display = 'none';
-        retryBtn.textContent = 'Retry';
-        dlActions.appendChild(dlBtn);
-        dlActions.appendChild(retryBtn);
-
-        const progressC = document.createElement('div');
-        progressC.className = 'progress-container';
-        progressC.style.display = 'none';
-        const progressBar = document.createElement('div');
-        progressBar.className = 'progress-bar';
-        const progressFill = document.createElement('div');
-        progressFill.className = 'progress-fill';
-        progressBar.appendChild(progressFill);
-        const progressText = document.createElement('span');
-        progressText.className = 'progress-text';
-        progressText.textContent = '0%';
-        progressC.appendChild(progressBar);
-        progressC.appendChild(progressText);
-
-        // progress-retry-btn and download-again-btn (required by startDownloadVideoOrAudio)
-        const progRetryBtn = document.createElement('button');
-        progRetryBtn.className = 'progress-retry-btn';
-        progRetryBtn.title = 'Retry';
-        progRetryBtn.style.display = 'none';
-        progRetryBtn.textContent = '↻';
-        const dlAgainBtn = document.createElement('button');
-        dlAgainBtn.className = 'download-again-btn';
-        dlAgainBtn.title = 'Download again';
-        dlAgainBtn.style.display = 'none';
-        dlAgainBtn.textContent = '⬇';
-
-        dlVideoContainer.appendChild(progRetryBtn);
-        dlVideoContainer.appendChild(dlAgainBtn);
-        dlVideoContainer.appendChild(dlInfo);
-        dlVideoContainer.appendChild(dlActions);
-        dlVideoContainer.appendChild(progressC);
-        videoSelectDiv.appendChild(dlVideoContainer);
-        videoForm.appendChild(videoSelectDiv);
-
-        // Download audio quality select
-        const audioForm = document.createElement('form');
-        audioForm.className = 'formulariodescargaaudio ocultarframe';
-        const audioSelectDiv = document.createElement('div');
-        audioSelectDiv.className = 'containerall';
-        const audioSelect = document.createElement('select');
-        audioSelect.className = 'selectcalidadesaudio ocultarframeaudio';
-        audioSelect.required = true;
-        [['', 'Audio Quality', true],
-        ['flac', 'Audio FLAC UHQ'], ['wav', 'Audio WAV UHQ'],
-        ['webm', 'Audio WEBM UHQ'], ['mp3', 'Audio MP3 Default'],
-        ['m4a', 'Audio M4A'], ['aac', 'Audio AAC'],
-        ['opus', 'Audio OPUS'], ['ogg', 'Audio OGG']
-        ].forEach(([val, text, dis]) => {
-            const opt = document.createElement('option');
-            opt.value = val;
-            opt.textContent = text;
-            if (dis) { opt.selected = true; opt.disabled = true; }
-            audioSelect.appendChild(opt);
-        });
-        audioSelectDiv.appendChild(audioSelect);
-
-        // Download audio container
-        const dlAudioContainer = document.createElement('div');
-        dlAudioContainer.id = 'descargandomp3';
-        dlAudioContainer.className = 'download-container ocultarframeaudio';
-
-        const dlInfoA = document.createElement('div');
-        dlInfoA.className = 'download-info';
-        const dlTextA = document.createElement('span');
-        dlTextA.className = 'download-text';
-        dlTextA.textContent = 'Download Audio And Please Wait...';
-        const dlQualityA = document.createElement('span');
-        dlQualityA.className = 'download-quality';
-        dlInfoA.appendChild(dlTextA);
-        dlInfoA.appendChild(dlQualityA);
-
-        const dlActionsA = document.createElement('div');
-        dlActionsA.className = 'download-actions';
-        const dlBtnA = document.createElement('button');
-        dlBtnA.className = 'download-btn audio-btn';
-        dlBtnA.textContent = 'Download';
-        const retryBtnA = document.createElement('button');
-        retryBtnA.className = 'retry-btn';
-        retryBtnA.style.display = 'none';
-        retryBtnA.textContent = 'Retry';
-        dlActionsA.appendChild(dlBtnA);
-        dlActionsA.appendChild(retryBtnA);
-
-        const progressCA = document.createElement('div');
-        progressCA.className = 'progress-container';
-        progressCA.style.display = 'none';
-        const progressBarA = document.createElement('div');
-        progressBarA.className = 'progress-bar';
-        const progressFillA = document.createElement('div');
-        progressFillA.className = 'progress-fill';
-        progressBarA.appendChild(progressFillA);
-        const progressTextA = document.createElement('span');
-        progressTextA.className = 'progress-text';
-        progressTextA.textContent = '0%';
-        progressCA.appendChild(progressBarA);
-        progressCA.appendChild(progressTextA);
-
-        // progress-retry-btn and download-again-btn for audio
-        const progRetryBtnA = document.createElement('button');
-        progRetryBtnA.className = 'progress-retry-btn';
-        progRetryBtnA.title = 'Retry';
-        progRetryBtnA.style.display = 'none';
-        progRetryBtnA.textContent = '↻';
-        const dlAgainBtnA = document.createElement('button');
-        dlAgainBtnA.className = 'download-again-btn';
-        dlAgainBtnA.title = 'Download again';
-        dlAgainBtnA.style.display = 'none';
-        dlAgainBtnA.textContent = '⬇';
-
-        dlAudioContainer.appendChild(progRetryBtnA);
-        dlAudioContainer.appendChild(dlAgainBtnA);
-        dlAudioContainer.appendChild(dlInfoA);
-        dlAudioContainer.appendChild(dlActionsA);
-        dlAudioContainer.appendChild(progressCA);
-        audioSelectDiv.appendChild(dlAudioContainer);
-        audioForm.appendChild(audioSelectDiv);
-
-        const collapsible = document.createElement('div');
-        collapsible.className = 'content_collapsible_colors';
-        collapsible.style.marginTop = '2px';
-        collapsible.appendChild(videoForm);
-        collapsible.appendChild(audioForm);
-
-        container.appendChild(form);
-        container.appendChild(collapsible);
-        main.appendChild(container);
-
-        return main;
-    }
-
-    function renderizarButtons() {
-        if (isYTMusic) {
-            // YouTube Music: inject ABOVE the tab header container (Tiếp theo/Lời nhạc/Liên quan)
-            const sidePanel = document.querySelector('#player-page #side-panel');
-            const tabHeaders = sidePanel && sidePanel.querySelector('.tab-header-container');
-            const addButton = tabHeaders || document.querySelector('#tab-renderer');
-
-            // YTM loads lazily - if element not found, retry
-            if (!addButton && validoBotones) {
-                if (!renderizarButtons._ytmRetries) renderizarButtons._ytmRetries = 0;
-                if (renderizarButtons._ytmRetries < 30) {
-                    renderizarButtons._ytmRetries++;
-                    setTimeout(renderizarButtons, 500);
-                }
-                return;
-            }
-            renderizarButtons._ytmRetries = 0;
-
-            if (addButton && validoBotones) {
-                validoBotones = false;
-
-                const sidePanel = document.querySelector('ytmusic-player-page #side-panel');
-                if (sidePanel) {
-                    // CREATE A COMMON WRAPPER FOR TOOLS AND TAB HEADERS (Top Box)
-                    let sideWrapper = $id('ytm-side-panel-wrapper');
-                    if (!sideWrapper) {
-                        sideWrapper = document.createElement('div');
-                        sideWrapper.id = 'ytm-side-panel-wrapper';
-                        sidePanel.insertBefore(sideWrapper, addButton);
-                    }
-
-                    const toolbar = buildYTMToolbar();
-                    sideWrapper.appendChild(toolbar);
-
-                    // ADD A LINE SEPARATOR
-                    const line = document.createElement('div');
-                    line.className = 'ytm-side-panel-divider';
-                    sideWrapper.appendChild(line);
-
-                    // MOVE THE TAB HEADER INTO THE TOP BOX
-                    sideWrapper.appendChild(addButton);
-                }
-            }
-        } else {
-            // Regular YouTube
-            const addButton = document.querySelector('.style-scope .ytd-watch-metadata');
-            const addButton2 = document.querySelector('#contents');
-
-            if (addButton && validoBotones) {
-                const isVisible = addButton.offsetParent !== null;
-
-                if (isVisible || addButton2) {
-                    validoBotones = false;
-                    const toolbar = buildYTMToolbar();
-                    // Insert before metadata to be above descriptions/comments
-                    addButton.parentNode.insertBefore(toolbar, addButton);
-                }
-            }
-        }
-
-        const formulariodescarga = $e('.formulariodescarga');
-        const formulariodescargaaudio = $e('.formulariodescargaaudio');
-        const btn1mp4 = $e('.btn1');
-        const btn2mp3 = $e('.btn2');
-        const btn3cancel = $e('.btn3');
-        const selectcalidades = $e('.selectcalidades');
-        const selectcalidadesaudio = $e('.selectcalidadesaudio');
-
-        [formulariodescarga, formulariodescargaaudio].forEach(form => {
-            if (!form) return;
-            if (form.dataset.ytToolsPreventDefault === '1') return;
-            form.addEventListener('click', e => e.preventDefault());
-            form.dataset.ytToolsPreventDefault = '1';
-        });
-
-        if (selectcalidades && selectcalidades.dataset.ytToolsBound !== '1') {
-            selectcalidades.dataset.ytToolsBound = '1';
-            selectcalidades.addEventListener('change', e => {
-                const quality = e.target.value;
-                if (!quality) return; // Don't proceed if no quality selected
-
-                const downloadContainer = $id('descargando');
-                const downloadText = downloadContainer.querySelector('.download-text');
-                const downloadQuality = downloadContainer.querySelector('.download-quality');
-                const downloadBtn = downloadContainer.querySelector('.download-btn');
-                const retryBtn = downloadContainer.querySelector('.retry-btn');
-                const progressContainer = downloadContainer.querySelector('.progress-container');
-
-                // Update UI
-                downloadContainer.classList.add('video');
-                downloadContainer.classList.remove('ocultarframe');
-                downloadText.textContent = `Download ${quality.toUpperCase()} And Please Wait...`;
-                downloadQuality.textContent = `${quality}p`;
-
-                // Show download button, hide progress
-                downloadBtn.style.display = 'block';
-                retryBtn.style.display = 'none';
-                progressContainer.style.display = 'none';
-
-                // Store quality for later use
-                downloadContainer.dataset.quality = quality;
-                downloadContainer.dataset.type = 'video';
-            });
-        }
-
-        if (selectcalidadesaudio && selectcalidadesaudio.dataset.ytToolsBound !== '1') {
-            selectcalidadesaudio.dataset.ytToolsBound = '1';
-            selectcalidadesaudio.addEventListener('change', e => {
-                const format = e.target.value;
-                if (!format) return; // Don't proceed if no format selected
-
-                const downloadContainer = $id('descargandomp3');
-                const downloadText = downloadContainer.querySelector('.download-text');
-                const downloadQuality = downloadContainer.querySelector('.download-quality');
-                const downloadBtn = downloadContainer.querySelector('.download-btn');
-                const retryBtn = downloadContainer.querySelector('.retry-btn');
-                const progressContainer = downloadContainer.querySelector('.progress-container');
-
-                // Update UI
-                downloadContainer.classList.add('audio');
-                downloadContainer.classList.remove('ocultarframeaudio');
-                downloadText.textContent = `Download ${format.toUpperCase()} And Please Wait...`;
-                downloadQuality.textContent = format.toUpperCase();
-
-                // Show download button, hide progress
-                downloadBtn.style.display = 'block';
-                retryBtn.style.display = 'none';
-                progressContainer.style.display = 'none';
-
-                // Store format for later use
-                downloadContainer.dataset.quality = format;
-                downloadContainer.dataset.type = 'audio';
-            });
-        }
-
-        if (btn3cancel && btn3cancel.dataset.ytToolsBound !== '1') {
-            btn3cancel.dataset.ytToolsBound = '1';
-            btn3cancel.addEventListener('click', () => {
-                // Hide all selects
-                selectcalidades?.classList.add('ocultarframe');
-                selectcalidadesaudio?.classList.add('ocultarframeaudio');
-
-                // Hide all download containers
-                const videoContainer = $id('descargando');
-                const audioContainer = $id('descargandomp3');
-
-                if (videoContainer) {
-                    videoContainer.classList.add('ocultarframe');
-                    videoContainer.classList.remove('video', 'audio', 'completed');
-                    videoContainer.removeAttribute('data-quality');
-                    videoContainer.removeAttribute('data-type');
-                    videoContainer.removeAttribute('data-downloading');
-                    videoContainer.removeAttribute('data-url-opened');
-                    videoContainer.removeAttribute('data-last-download-url');
-                    videoContainer.querySelector?.('.download-again-btn')?.style && (videoContainer.querySelector('.download-again-btn').style.display = 'none');
-                }
-
-                if (audioContainer) {
-                    audioContainer.classList.add('ocultarframeaudio');
-                    audioContainer.classList.remove('video', 'audio', 'completed');
-                    audioContainer.removeAttribute('data-quality');
-                    audioContainer.removeAttribute('data-type');
-                    audioContainer.removeAttribute('data-downloading');
-                    audioContainer.removeAttribute('data-url-opened');
-                    audioContainer.removeAttribute('data-last-download-url');
-                    audioContainer.querySelector?.('.download-again-btn')?.style && (audioContainer.querySelector('.download-again-btn').style.display = 'none');
-                }
-
-                // Hide all forms
-                if (formulariodescarga) formulariodescarga.style.setProperty('display', 'none', 'important');
-                if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'none', 'important');
-
-                // Reset forms
-                formulariodescarga?.reset();
-                formulariodescargaaudio?.reset();
-            });
-        }
-
-        // Add event listeners for download buttons (only once)
-        if (!__ytToolsRuntime.downloadClickHandlerInitialized) {
-            __ytToolsRuntime.downloadClickHandlerInitialized = true;
-            document.addEventListener('click', (e) => {
-                const target = e.target;
-                if (!(target instanceof Element)) return;
-
-                const clicked =
-                    target.closest('.download-btn') ||
-                    target.closest('.retry-btn') ||
-                    target.closest('.progress-retry-btn') ||
-                    target.closest('.download-again-btn');
-                if (!clicked) return;
-
-                const container = clicked.closest('.download-container');
-                if (!container) return;
-
-                const quality = container.dataset.quality;
-                const type = container.dataset.type;
-                // download-again just re-opens the last URL (no restart)
-                if (clicked.classList.contains('download-again-btn')) {
-                    const url = container.dataset.lastDownloadUrl;
-                    if (url) window.open(url);
-                    return;
-                }
-                if (!quality || !type) return;
-
-                if (clicked.classList.contains('progress-retry-btn')) {
-                    container.dataset.downloading = 'false';
-                    container.dataset.urlOpened = 'false';
-                    container.dataset.lastDownloadUrl = '';
-                    container.querySelector?.('.download-again-btn')?.style && (container.querySelector('.download-again-btn').style.display = 'none');
-                }
-                startDownloadVideoOrAudio(quality, container);
-            });
-        }
-
-
-
-        if (btn1mp4 && btn1mp4.dataset.ytToolsBound !== '1') {
-            btn1mp4.dataset.ytToolsBound = '1';
-            btn1mp4.addEventListener('click', () => {
-                // Show video select, hide audio select
-                selectcalidades?.classList.remove('ocultarframe');
-                selectcalidadesaudio?.classList.add('ocultarframeaudio');
-
-                // Hide all download containers
-                const videoContainer = $id('descargando');
-                const audioContainer = $id('descargandomp3');
-
-                if (videoContainer) {
-                    videoContainer.classList.add('ocultarframe');
-                    videoContainer.classList.remove('video', 'audio', 'completed');
-                    videoContainer.removeAttribute('data-quality');
-                    videoContainer.removeAttribute('data-type');
-                    videoContainer.removeAttribute('data-downloading');
-                    videoContainer.removeAttribute('data-url-opened');
-                }
-
-                if (audioContainer) {
-                    audioContainer.classList.add('ocultarframeaudio');
-                    audioContainer.classList.remove('video', 'audio', 'completed');
-                    audioContainer.removeAttribute('data-quality');
-                    audioContainer.removeAttribute('data-type');
-                    audioContainer.removeAttribute('data-downloading');
-                    audioContainer.removeAttribute('data-url-opened');
-                }
-
-                // Show video form, hide audio form
-                if (formulariodescarga) formulariodescarga.style.setProperty('display', 'flex', 'important');
-                if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'none', 'important');
-
-                // Reset forms
-                formulariodescarga?.reset();
-                formulariodescargaaudio?.reset();
-
-                // On YTM: auto-select 720p and show download button immediately
-                if (isYTMusic && selectcalidades) {
-                    selectcalidades.value = '720';
-                    selectcalidades.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            });
-        }
-
-        if (btn2mp3 && btn2mp3.dataset.ytToolsBound !== '1') {
-            btn2mp3.dataset.ytToolsBound = '1';
-            btn2mp3.addEventListener('click', () => {
-                // Show audio select, hide video select
-                selectcalidadesaudio?.classList.remove('ocultarframeaudio');
-                selectcalidades?.classList.add('ocultarframe');
-
-                // Hide all download containers
-                const videoContainer = $id('descargando');
-                const audioContainer = $id('descargandomp3');
-
-                if (videoContainer) {
-                    videoContainer.classList.add('ocultarframe');
-                    videoContainer.classList.remove('video', 'audio', 'completed');
-                    videoContainer.removeAttribute('data-quality');
-                    videoContainer.removeAttribute('data-type');
-                    videoContainer.removeAttribute('data-downloading');
-                    videoContainer.removeAttribute('data-url-opened');
-                }
-
-                if (audioContainer) {
-                    audioContainer.classList.add('ocultarframeaudio');
-                    audioContainer.classList.remove('video', 'audio', 'completed');
-                    audioContainer.removeAttribute('data-quality');
-                    audioContainer.removeAttribute('data-type');
-                    audioContainer.removeAttribute('data-downloading');
-                    audioContainer.removeAttribute('data-url-opened');
-                }
-
-                // Show audio form, hide video form
-                if (formulariodescargaaudio) formulariodescargaaudio.style.setProperty('display', 'flex', 'important');
-                if (formulariodescarga) formulariodescarga.style.setProperty('display', 'none', 'important');
-
-                // Reset forms
-                formulariodescargaaudio?.reset();
-                formulariodescarga?.reset();
-
-                // On YTM: auto-select MP3 and show download button immediately
-                if (isYTMusic && selectcalidadesaudio) {
-                    selectcalidadesaudio.value = 'mp3';
-                    selectcalidadesaudio.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            });
-        }
-        // Invertir contenido
-
-
-
-        const btnImagen = $e('#imagen');
-
-        // valido modo oscuro y venta de video
-        // Repeat video button
-        let countRepeat = 0; // count
-        const repeat = $e('#repeatvideo'); // Repeat button
-        const videoFull = isYTMusic
-            ? $e('video')
-            : $e('#movie_player > div.html5-video-container > video');
-        if (repeat != undefined) {
-
-            repeat.onclick = () => {
-                if (
-                    (isYTMusic ? videoFull : $e('#cinematics > div')) != undefined ||
-                    videoFull != undefined
-                ) {
-                    countRepeat += 1;
-                    switch (countRepeat) {
-                        case 1:
-                            const videoEl = isYTMusic ? $e('video') : document
-                                .querySelector('#movie_player > div.html5-video-container > video');
-                            videoEl?.setAttribute('loop', 'true');
-                            if (isYTMusic) {
-                                // On YTM, replace SVG icon using DOM API
-                                const newSvg = createSvgIcon([
-                                    'M0 0h24v24H0z',
-                                    'M4 12v-3c0 -1.336 .873 -2.468 2.08 -2.856m3.92 -.144h10m-3 -3l3 3l-3 3',
-                                    'M20 12v3a3 3 0 0 1 -.133 .886m-1.99 1.984a3 3 0 0 1 -.877 .13h-13m3 3l-3 -3l3 -3',
-                                    'M3 3l18 18'
-                                ]);
-                                repeat.replaceChildren(newSvg);
-                            } else {
-                                const imarepeat = $e('.icon-tabler-repeat');
-                                if (imarepeat) imarepeat.innerHTML = safeHTML(`  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-repeat-off" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                    <path d="M4 12v-3c0 -1.336 .873 -2.468 2.08 -2.856m3.92 -.144h10m-3 -3l3 3l-3 3"></path>
-                    <path d="M20 12v3a3 3 0 0 1 -.133 .886m-1.99 1.984a3 3 0 0 1 -.877 .13h-13m3 3l-3 -3l3 -3"></path>
-                    <path d="M3 3l18 18"></path>
-                 </svg> `);
-                            }
-                            break;
-                        case 2:
-                            countRepeat = 0;
-                            const videoEl2 = isYTMusic ? $e('video') : document
-                                .querySelector('#movie_player > div.html5-video-container > video');
-                            videoEl2?.removeAttribute('loop');
-                            if (isYTMusic) {
-                                const newSvg2 = createSvgIcon([
-                                    'M0 0h24v24H0z',
-                                    'M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3',
-                                    'M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3'
-                                ]);
-                                repeat.replaceChildren(newSvg2);
-                            } else {
-                                const imarepeat2 = $e('.icon-tabler-repeat');
-                                if (imarepeat2) imarepeat2.innerHTML = safeHTML(` <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-repeat" width="24"
-                    height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                    <path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"></path>
-                    <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"></path>
-                  </svg>`);
-                            }
-                            break;
-                    }
-                }
-            }
-        }
-
-        // Background transparent
-
-        const cinematica = $e('#cinematics > div');
-        if (cinematica != undefined) {
-            cinematica.style.cssText =
-                'position: fixed; inset: 0px; pointer-events: none; transform: scale(1.5, 2)';
-        }
-
-        if (btnImagen != undefined) {
-            btnImagen.onclick = () => {
-                if (
-                    $e('#cinematics > div') != undefined ||
-                    videoFull != undefined
-                ) {
-                    const parametrosURL = new URLSearchParams(window.location.search);
-                    let enlace = parametrosURL.get('v');
-
-                    const imageUrl = `https://i.ytimg.com/vi/${enlace}/maxresdefault.jpg`;
-
-                    fetch(imageUrl)
-                        .then((response) => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! Status: ${response.status}`);
-                            }
-                            return response.blob();
-                        })
-                        .then((blob) => {
-                            const imageSizeKB = blob.size / 1024;
-
-                            if (imageSizeKB >= 20) {
-                                window.open(
-                                    `https://i.ytimg.com/vi/${enlace}/maxresdefault.jpg`,
-                                    'popUpWindow',
-                                    'height=500,width=400,left=100,top=100,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no, status=yes'
-                                );
-                                const imageUrlObject = URL.createObjectURL(blob);
-
-                                const enlaceDescarga = $cl('a');
-                                enlaceDescarga.href = imageUrlObject;
-                                const titleVideo = isYTMusic
-                                    ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
-                                    : ($e('h1.style-scope.ytd-watch-metadata')?.innerText || 'video');
-                                enlaceDescarga.download = `${titleVideo}_maxresdefault.jpg`;
-                                enlaceDescarga.click();
-
-                                URL.revokeObjectURL(imageUrlObject);
-                            } else {
-                                console.log(
-                                    'La imagen no excede los 20 KB. No se descargará.'
-                                );
-                            }
-                        })
-                        .catch((error) => {
-                            alert('No found image');
-                            console.error('Error al obtener la imagen:', error);
-                        });
-                }
-            };
-        }
-        // [REMOVED] Duplicate background image handler — handled at end of script (line ~6648+).
-
-        const viewPictureToPicture = $e(
-            '.video_picture_to_picture'
-        );
-        if (viewPictureToPicture != undefined) {
-            viewPictureToPicture.onclick = () => {
-                const video = $e('video');
-                if ('pictureInPictureEnabled' in document) {
-                    if (!document.pictureInPictureElement) {
-
-                        video
-                            .requestPictureInPicture()
-                            .then(() => { })
-                            .catch((error) => {
-                                console.error(
-                                    'Error al activar el modo Picture-in-Picture:',
-                                    error
-                                );
-                            });
-                    } else {
-                        // video picture
-                    }
-                } else {
-                    alert('Picture-in-Picture not supported');
-                }
-            };
-        }
-        const screenShotVideo = $e('.screenshot_video');
-        if (screenShotVideo != undefined) {
-            screenShotVideo.onclick = () => {
-                const video = $e('video');
-                const canvas = $cl('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const imagenURL = canvas.toDataURL('image/png');
-                const enlaceDescarga = $cl('a');
-                enlaceDescarga.href = imagenURL;
-                const titleVideo = isYTMusic
-                    ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
-                    : ($e('h1.style-scope.ytd-watch-metadata')?.innerText || 'video');
-                enlaceDescarga.download = `${video.currentTime.toFixed(
-                    0
-                )}s_${titleVideo}.png`;
-                enlaceDescarga.click();
-            };
-        } else {
-            const containerButtons = $e('.containerButtons');
-
-            if (containerButtons != undefined) {
-                containerButtons.innerHTML = safeHTML('');
-            }
-        }
-        // [REMOVED] clearInterval(renderizarButtons) — was passing a function, not an interval ID.
-    }
-
+    const UPDATE_INTERVAL = 1000;
+    const STORAGE = {
+        USAGE: 'YT_TOTAL_USAGE',
+        VIDEO: 'YT_VIDEO_TIME',
+        SHORTS: 'YT_SHORTS_TIME'
+    };
+
+    let usageTime = GM_getValue(STORAGE.USAGE, 0);
+    let videoTime = GM_getValue(STORAGE.VIDEO, 0);
+    let shortsTime = GM_getValue(STORAGE.SHORTS, 0);
+    let lastUpdate = Date.now();
+    let activeVideo = null;
+    let activeType = null;
+
+    // Inicializar almacenamiento
+    GM_setValue(STORAGE.USAGE, usageTime);
+    GM_setValue(STORAGE.VIDEO, videoTime);
+    GM_setValue(STORAGE.SHORTS, shortsTime);
 
 
     console.log('Script en ejecución by: Akari');
@@ -9080,7 +9181,7 @@
         z-index: 3 !important;
       }
       ` : ''}
-      #content.ytmusic-app, 
+      #content.ytmusic-app,
       #page-manager.ytd-app,
       #columns.ytd-watch-flexy,
       ytd-browse,
@@ -9141,20 +9242,29 @@
       }
       ${isYTMusic ? `
       /* YTM Nav Bar: transparent at top, dark blurred when scrolled */
-      #nav-bar-background.ytmusic-app-layout {
+      body.ytm-style-transparent #nav-bar-background.ytmusic-app-layout,
+      body.ytm-ambient-active #nav-bar-background.ytmusic-app-layout {
         background: transparent !important;
         transition: background 0.3s ease, backdrop-filter 0.3s ease !important;
       }
-      ytmusic-nav-bar, #nav-bar-divider {
+      body.ytm-style-transparent ytmusic-nav-bar,
+      body.ytm-ambient-active ytmusic-nav-bar,
+      body.ytm-style-transparent #nav-bar-divider,
+      body.ytm-ambient-active #nav-bar-divider {
         background: transparent !important;
         border: none !important;
         transition: background 0.3s ease !important;
       }
-      ytmusic-nav-bar.scrolled,
-      #nav-bar-background.scrolled,
-      ytmusic-nav-bar[opened],
-      body[player-page-open] ytmusic-nav-bar,
-      body[player-page-open] #nav-bar-background {
+      body.ytm-style-transparent ytmusic-nav-bar.scrolled,
+      body.ytm-ambient-active ytmusic-nav-bar.scrolled,
+      body.ytm-style-transparent #nav-bar-background.scrolled,
+      body.ytm-ambient-active #nav-bar-background.scrolled,
+      body.ytm-style-transparent ytmusic-nav-bar[opened],
+      body.ytm-ambient-active ytmusic-nav-bar[opened],
+      body.ytm-style-transparent[player-page-open] ytmusic-nav-bar,
+      body.ytm-ambient-active[player-page-open] ytmusic-nav-bar,
+      body.ytm-style-transparent[player-page-open] #nav-bar-background,
+      body.ytm-ambient-active[player-page-open] #nav-bar-background {
         background: rgba(10, 10, 10, 0.4) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
@@ -9164,7 +9274,8 @@
         background: transparent !important;
       }
       /* YTM Player Bar: semi-transparent with blur - respect ambient */
-      ytmusic-player-bar {
+      body.ytm-style-transparent ytmusic-player-bar,
+      body.ytm-ambient-active ytmusic-player-bar {
         background: rgba(0, 0, 0, 0.2) !important;
         backdrop-filter: blur(30px) !important;
         -webkit-backdrop-filter: blur(30px) !important;
@@ -9175,9 +9286,12 @@
         border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
       }
       /* YTM Sidebar (Expanded & Collapsed): Glass with separator line - respect ambient */
-      tp-yt-app-drawer #contentContainer,
-      #mini-guide,
-      #mini-guide-renderer {
+      body.ytm-style-transparent tp-yt-app-drawer #contentContainer,
+      body.ytm-style-transparent #mini-guide,
+      body.ytm-style-transparent #mini-guide-renderer,
+      body.ytm-ambient-active tp-yt-app-drawer #contentContainer,
+      body.ytm-ambient-active #mini-guide,
+      body.ytm-ambient-active #mini-guide-renderer {
         background: rgba(0, 0, 0, 0.1) !important;
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
@@ -9189,9 +9303,12 @@
         background: transparent !important;
       }
       /* Standardized YTM Glass Buttons (Edit, Menu, Play, etc.) */
-      button.ytSpecButtonShapeNextHost,
-      yt-button-shape button,
-      .history-button #button {
+      body.ytm-style-transparent button.ytSpecButtonShapeNextHost,
+      body.ytm-style-transparent yt-button-shape button,
+      body.ytm-style-transparent .history-button #button,
+      body.ytm-ambient-active button.ytSpecButtonShapeNextHost,
+      body.ytm-ambient-active yt-button-shape button,
+      body.ytm-ambient-active .history-button #button {
         background: rgba(255, 255, 255, 0.15) !important;
         backdrop-filter: blur(12px) !important;
         -webkit-backdrop-filter: blur(12px) !important;
@@ -9233,7 +9350,7 @@
       ytmusic-play-button-renderer:hover .content-wrapper {
         background: rgba(255, 255, 255, 0.3) !important;
       }
-      ytmusic-play-button-renderer yt-icon, 
+      ytmusic-play-button-renderer yt-icon,
       ytmusic-play-button-renderer #icon,
       ytmusic-play-button-renderer .icon,
       ytmusic-play-button-renderer .icon.ytmusic-play-button-renderer,
@@ -9440,4 +9557,6 @@
             }
         }, 1500);
     }
+
 })();
+
