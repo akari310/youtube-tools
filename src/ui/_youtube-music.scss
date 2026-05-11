@@ -1,0 +1,235 @@
+/* === YouTube Music specific styles === */
+#ytm-side-panel-wrapper {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 0 0 12px 0 !important;
+  padding: 4px 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+}
+
+ytmusic-player-page #side-panel {
+  margin-left: 16px !important;
+  margin-bottom: 24px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ytm-side-panel-divider {
+  width: 92%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 4px 0;
+}
+
+/* Blur Mode (Standard with subtle blur) */
+body.ytm-style-blur #ytm-side-panel-wrapper,
+body.ytm-style-blur ytmusic-player-page #side-panel ytmusic-tab-renderer {
+  background: rgba(20, 20, 20, 0.6) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 16px !important;
+}
+
+/* Liquid Mode (Fixed Apple Style) */
+body.ytm-style-liquid #ytm-side-panel-wrapper,
+body.ytm-style-liquid ytmusic-player-page #side-panel ytmusic-tab-renderer {
+  background: rgba(25, 25, 25, 0.45) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+}
+
+/* Transparent Mode */
+body.ytm-style-transparent #ytm-side-panel-wrapper,
+body.ytm-style-transparent ytmusic-player-page #side-panel ytmusic-tab-renderer {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Inner Container Resets */
+html[dark] .yt-tools-container,
+ytmusic-app .yt-tools-container,
+ytmusic-app #side-panel ytmusic-tab-renderer,
+ytmusic-app ytmusic-search-box,
+ytmusic-app #side-panel > .tab-header-container,
+tp-yt-paper-tabs.tab-header-container,
+#tabsContainer.tp-yt-paper-tabs,
+tp-yt-paper-tab.tab-header,
+.tab-content.tp-yt-paper-tab {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+.yt-tools-container {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.tab-header-container {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px 0 !important;
+}
+
+/* Fix YTM side-panel queue layout */
+ytmusic-app #side-panel {
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+ytmusic-app #side-panel ytmusic-queue-header-renderer .container-name {
+  padding: 0 8px;
+}
+ytmusic-app #side-panel ytmusic-player-queue-item .song-info {
+  padding-right: 4px;
+}
+ytmusic-app #side-panel ytmusic-tab-renderer {
+  border-radius: 16px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 12px 0 12px 12px !important;
+  margin-bottom: 12px !important;
+}
+
+/* Make the YTM Search Box premium and glassmorphic (Feature requested by user) */
+ytmusic-app ytmusic-search-box {
+  border-radius: 16px !important;
+}
+html[dark] ytmusic-app ytmusic-search-box #input-box,
+ytmusic-app ytmusic-search-box #input-box {
+  background: transparent !important;
+}
+
+/* Tab headers — rounded corners & spacing */
+ytmusic-app #side-panel > .tab-header-container {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  padding: 4px 8px;
+  margin: 0 0 8px 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Compact button layout for narrow YTM side panel */
+ytmusic-app .containerButtons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+ytmusic-app .botones_div {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  padding: 5px 7px !important;
+  transition: all 0.2s ease !important;
+  line-height: 1 !important;
+}
+ytmusic-app .botones_div svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+ytmusic-app .botones_div:hover {
+  background: rgba(255, 0, 0, 0.25) !important;
+  border-color: rgba(255, 0, 0, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+ytmusic-player-page #side-panel select,
+ytmusic-player-page #side-panel select option {
+  background: #282828 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+ytmusic-app .selectcalidades,
+ytmusic-app .selectcalidadesaudio {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  padding: 8px 8px 6px !important; /* Asymmetric padding for vertical centering */
+  font-size: 12px !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  outline: none !important;
+  height: 32px !important;
+  line-height: normal !important;
+}
+
+ytmusic-app .download-container {
+  width: 100% !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 6px !important;
+  position: relative !important; /* Fix absolute positioned buttons (Retry/Again) */
+  padding: 10px !important;
+  box-sizing: border-box !important;
+  margin-bottom: 0 !important;
+}
+
+ytmusic-app .content_collapsible_colors {
+  margin-top: 8px !important;
+}
+
+.ytm-side-panel-divider {
+  margin: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 0;
+  width: 100%;
+}
+
+ytmusic-app .containerall {
+  padding-bottom: 10px !important;
+}
+
+ytmusic-app #toggle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 4px;
+}
+
+ytmusic-app #icon-menu-settings {
+  color: #fff;
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+ytmusic-app #icon-menu-settings:hover {
+  transform: rotate(90deg);
+  color: #ff4444;
+}
