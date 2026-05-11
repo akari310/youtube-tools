@@ -24,7 +24,7 @@
 // @description:ko 고품질 비디오/오디오 다운로드, 싫어요 표시, YouTube 및 YouTube Music을 위한 더 많은 VIP 기능.
 // @description:it Scarica video/audio di alta qualità, ripristina i dislike e altre funzioni VIP per YouTube e YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.5.4
+// @version      0.0.6.0
 // @author       Akari, DeveloperMDCM
 // @contributor  nvbangg
 // @match        *://www.youtube.com/*
@@ -38,4 +38,14 @@
 // @grant        unsafeWindow
 // @run-at       document-end
 // @grant        GM_registerMenuCommand
-// @require      https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js
+// @require      https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js
+// @compatible   chrome
+// @compatible   firefox
+// @compatible   opera
+// @compatible   safari
+// @compatible   edge
+// @license      GPL-3.0
+// @namespace    https://greasyfork.org/users/1597067-nguyen-ngocanh
+// @keywords     youtube, download, mp3, mp4, high quality, return dislikes, tools
+// @downloadURL none
+// ==/UserScript==
