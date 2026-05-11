@@ -1,17 +1,19 @@
 # Feature Parity Checklist
 
-## Modular Features (src/features/)
+**Updated:** May 11, 2026 | **Status:** 100% Modular — legacy codebase removed
 
-### bookmarks
+---
 
+## All Features (modular only — no more dual codebase)
+
+### bookmarks (`src/features/bookmarks.js`)
 - `getBookmarksForVideo()`
 - `saveBookmark()`
 - `deleteBookmark()`
 - `renderBookmarksPanel()`
 - `applyBookmarksIfEnabled()`
 
-### continue-watching
-
+### continue-watching (`src/features/continue-watching.js`)
 - `isWatchPage()`
 - `getMainVideoEl()`
 - `getCurrentVideoMeta()`
@@ -29,15 +31,13 @@
 - `renderContinueWatchingPanel()`
 - `setupContinueWatchingFeature()`
 
-### download
-
-- `startDownloadVideoOrAudio()`
+### download (`src/features/download.js`)
+- `startDownloadVideoOrAudio()` — SaveNow + Dubs fallback với exponential backoff
 - `setupDownloadClickHandler()`
 - `initDownloadFeature()`
 
-### like-dislike-bar
-
-- `parseCountText()`
+### like-dislike-bar (`src/features/like-dislike-bar.js`)
+- `parseCountText()` — locale-aware (đọc `hl` URL param)
 - `getLikesFromDom()`
 - `ensureDislikesForCurrentVideo()`
 - `updateLikeDislikeBar()`
@@ -46,161 +46,98 @@
 - `shortDislike()`
 - `applyLikeDislikeBarIfEnabled()`
 
-### lockup-cached-stats
-
+### lockup-cached-stats (`src/features/lockup-cached-stats.js`)
 - `setupLockupCachedStats()`
 
-### shorts-channel-name
+### shorts-channel-name (`src/features/shorts-channel-name.js`)
+- `setupShortsChannelNameFeature()` — IntersectionObserver + FetchQueue
 
-- `setupShortsChannelNameFeature()`
-
-### time-stats
-
-- `formatTime()`
+### time-stats (`src/features/time-stats.js`)
+- `formatTime()` — merged formatter with `{compact}` option
 - `updateUI()`
 - `initTimeStats()`
 
-### translate-comments
-
-- `traductor()`
+### translate-comments (`src/features/translate-comments.js`)
+- `traductor()` — đọc `settings.translateTarget`
 - `initTranslateComments()`
 
-### wave-visualizer
-
-- `cleanupWaveVisualizer()`
-- `hideCanvas()`
-- `showCanvas()`
+### wave-visualizer (`src/features/wave-visualizer.js`)
+- `cleanupWaveVisualizer()` — cleanup trên SPA navigate
+- `hideCanvas()` / `showCanvas()`
 - `setupWaveForVideo()`
 - `createVisualizerOverlay()`
 - `animate()`
 - `initWaveVisualizer()`
 
-### effects
-
+### effects (`src/features/effects.js`)
 - `initEffectsFeature()`
 - `cleanupEffects()`
 
-### player-size
-
+### player-size (`src/features/player-size.js`)
 - `applyPlayerSize()`
 - `resetPlayerSize()`
-- `initPlayerSize()`
+- `initPlayerSize()` — có SPA handler
 
-## Duplicates (both codebases have)
+### audio-only (`src/features/audio-only.js`)
+- Ẩn video, chỉ phát audio
 
-### bookmarks
+### avatar-download (`src/features/avatar-download.js`)
+- Tải avatar kênh YouTube
 
-- `getBookmarksForVideo()` — both have it
-- `saveBookmark()` — both have it
-- `deleteBookmark()` — both have it
-- `renderBookmarksPanel()` — both have it
-- `applyBookmarksIfEnabled()` — both have it
+### cinematic-lighting (`src/features/cinematic-lighting.js`)
+- Ambient lighting effect xung quanh video
 
-### continue-watching
+### comment-observer (`src/features/comment-observer.js`)
+- MutationObserver chung cho bình luận
 
-- `isWatchPage()` — both have it
-- `getMainVideoEl()` — both have it
-- `getCurrentVideoMeta()` — both have it
-- `ensureContinueWatchingMapLoaded()` — both have it
-- `pruneContinueWatchingMap()` — both have it
-- `scheduleContinueWatchingFlush()` — both have it
-- `clearContinueWatchingForVideo()` — both have it
-- `setContinueWatchingForVideo()` — both have it
-- `getContinueWatchingTime()` — both have it
-- `updateContinueWatchingButton()` — both have it
-- `cssEscapeLite()` — both have it
-- `navigateToWatchSpa()` — both have it
-- `updateContinueWatchingHistoryUi()` — both have it
-- `updateContinueWatchingPanelRow()` — both have it
-- `renderContinueWatchingPanel()` — both have it
-- `setupContinueWatchingFeature()` — both have it
+### disable-subtitles (`src/features/disable-subtitles.js`)
+- Tắt phụ đề tự động
 
-### download
+### download-description (`src/features/download-description.js`)
+- Tải mô tả video dạng text
 
-- `startDownloadVideoOrAudio()` — both have it
+### hide-comments (`src/features/hide-comments.js`)
+- Ẩn section bình luận
 
-### like-dislike-bar
+### hide-sidebar (`src/features/hide-sidebar.js`)
+- Ẩn sidebar
 
-- `parseCountText()` — both have it
-- `getLikesFromDom()` — both have it
-- `ensureDislikesForCurrentVideo()` — both have it
-- `updateLikeDislikeBar()` — both have it
-- `scheduleLikeBarUpdate()` — both have it
-- `videoDislike()` — both have it
-- `shortDislike()` — both have it
-- `applyLikeDislikeBarIfEnabled()` — both have it
+### nonstop-playback (`src/features/nonstop-playback.js`)
+- Tự động chuyển video tiếp theo khi kết thúc
 
-### lockup-cached-stats
+### reverse-mode (`src/features/reverse-mode.js`)
+- Đảo ngược layout giao diện
 
-- `setupLockupCachedStats()` — both have it
+### shorts-reel-buttons (`src/features/shorts-reel-buttons.js`)
+- Nút tùy chỉnh trên Shorts reel
 
-### shorts-channel-name
+### ytm-ambient-mode (`src/features/ytm-ambient-mode.js`)
+- YouTube Music ambient mode
 
-- `setupShortsChannelNameFeature()` — both have it
+---
 
-### time-stats
+## UI Components
 
-- `formatTime()` — both have it
-- `updateUI()` — both have it
+| Component          | File                        | Mô tả                                     |
+| ------------------ | --------------------------- | ----------------------------------------- |
+| Settings Panel     | `settings-panel.js`         | Entry point, import HTML + events + SCSS  |
+| Panel HTML         | `settings-panel-html.js`    | HTML template (857 dòng)                  |
+| Panel Events       | `settings-panel-events.js`  | Event handlers cho settings               |
+| Toolbar            | `toolbar.js`                | Download toolbar với progress UI          |
+| Gear Icon          | `gear-icon.js`              | Nút settings gear trên YT header          |
+| Video Info Panel   | `video-info-panel.js`       | Panel metadata video                      |
+| Theme Engine       | `theme-engine.js`           | Quản lý theme tập trung                   |
+| Theme Data         | `theme-data.js`             | Theme presets & colors                    |
 
-### translate-comments
+---
 
-- `traductor()` — both have it
+## Summary
 
-### wave-visualizer
-
-- `hideCanvas()` — both have it
-- `showCanvas()` — both have it
-
-### player-size
-
-- `applyPlayerSize()` — both have it
-
-## Legacy-Only Key Features
-
-- `addIcon()` — Gear icon in YT top bar + legacy panel toggle | legacy: ✅ | modular: ❌
-- `saveSettings()` — Save settings from legacy panel checkboxes | legacy: ✅ | modular: ❌
-- `applySettings()` — Apply all settings to DOM/features | legacy: ✅ | modular: ❌
-- `renderizarButtons()` — Download toolbar buttons | legacy: ✅ | modular: ❌
-- `toggleCinematicLighting()` — Cinematic lighting toggle | legacy: ✅ | modular: ❌
-- `hideCanvas()` — Wave visualizer hide | legacy: ✅ | modular: ✅
-- `showCanvas()` — Wave visualizer show | legacy: ✅ | modular: ✅
-- `createCanvasOverlay()` — Wave visualizer canvas | legacy: ✅ | modular: ❌
-- `setupAudioAnalyzer()` — Wave visualizer audio setup | legacy: ✅ | modular: ❌
-- `insertButtons()` — Shorts reel buttons | legacy: ❌ | modular: ❌
-- `checkForVideo()` — Video element detection | legacy: ✅ | modular: ❌
-- `hideComments()` — Hide comments section | legacy: ❌ | modular: ❌
-- `hideSidebar()` — Hide sidebar | legacy: ❌ | modular: ❌
-- `reverseMode()` — Reverse mode | legacy: ❌ | modular: ❌
-- `disableSubtitles()` — Disable subtitles | legacy: ❌ | modular: ❌
-- `playerSize()` — Player size slider | legacy: ❌ | modular: ❌
-- `videoDislike()` — Show dislikes on video | legacy: ✅ | modular: ✅
-- `shortDislike()` — Show dislikes on shorts | legacy: ✅ | modular: ✅
-- `traductor()` — Translate comments | legacy: ✅ | modular: ✅
-- `initializeHeaderButtons()` — Header share/import buttons | legacy: ✅ | modular: ❌
-- `updateUI()` — Stats UI update (legacy version) | legacy: ✅ | modular: ✅
-
-## Recommendation
-
-| Feature             | Keep        | Reason                                                       |
-| ------------------- | ----------- | ------------------------------------------------------------ |
-| Bookmarks           | **Modular** | Cleaner code, scoped DOM queries                             |
-| Continue Watching   | **Modular** | Better save logic, video metadata cache, pagehide handler    |
-| Download            | **Modular** | Retry logic, error UX, safe anchor download, fetchWithRetry  |
-| Like/Dislike Bar    | **Legacy**  | More robust DOM selectors, works on both video+shorts        |
-| Lockup Cached Stats | **Modular** | Clean implementation                                         |
-| Shorts Channel Name | **Modular** | IntersectionObserver, cache, deduplication                   |
-| Time Stats          | **Modular** | Per-video, daily, weekly chart, top videos, export           |
-| Translate Comments  | **Legacy**  | More mature, handles edge cases better                       |
-| Wave Visualizer     | **Legacy**  | Full audio analyzer, multiple styles, canvas management      |
-| Effects (Game)      | **Modular** | Legacy has no equivalent                                     |
-| Player Size         | **Modular** | CSS width resize, not transform scale                        |
-| Cinematic Lighting  | **Legacy**  | YTM ambient mode, complex toggle logic                       |
-| Hide Comments       | **Legacy**  | Simple but effective                                         |
-| Hide Sidebar        | **Legacy**  | Simple toggle                                                |
-| Reverse Mode        | **Legacy**  | No modular equivalent                                        |
-| Disable Subtitles   | **Legacy**  | No modular equivalent                                        |
-| Avatar Download     | **Legacy**  | No modular equivalent                                        |
-| Audio-only Mode     | **Legacy**  | Background art + video hide (just fixed)                     |
-| Settings Panel      | **Legacy**  | Full settings UI with themes, toggles, slider, import/export |
-| Stats Panel         | **Modular** | Clean stats-only panel with drag                             |
+| Category        | Count |
+| --------------- | ----- |
+| Feature modules | 21    |
+| UI components   | 8     |
+| Theme modules   | 2     |
+| Utils           | 7     |
+| Config/Settings | 3     |
+| **Total**       | **41**|

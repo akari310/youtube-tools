@@ -1,6 +1,6 @@
 # YouTube Tools Userscript
 
-**Version:** v2.4.3.2  
+**Version:** v2.4.4.2  
 **Author:** DeveloperMDCM  
 **License:** MIT
 
@@ -23,13 +23,24 @@ Công cụ YouTube tất cả trong một — userscript cho Tampermonkey/Grease
 | 📐 **Player Size**         | Điều chỉnh kích thước player                             |
 | 📺 **Shorts Channel Name** | Hiển thị tên kênh trên YouTube Shorts                    |
 | 📈 **Cached Stats**        | Thống kê lượt xem trên video cards                       |
+| 🔊 **Audio Only**          | Chế độ chỉ nghe nhạc, ẩn video                           |
+| 🎨 **Cinematic Lighting**  | Hiệu ứng ambient lighting xung quanh video               |
+| 🖼️ **Avatar Download**     | Tải avatar kênh YouTube                                  |
+| 🔄 **Nonstop Playback**    | Tự động chuyển video tiếp theo khi kết thúc              |
+| 🔀 **Reverse Mode**        | Đảo ngược layout giao diện                               |
+| 👁️ **Hide Sidebar**        | Ẩn sidebar                                              |
+| 💬 **Hide Comments**       | Ẩn section bình luận                                     |
+| 🎬 **Shorts Reel Buttons** | Nút tùy chỉnh trên Shorts reel                           |
+| 📝 **Download Description**| Tải mô tả video dạng text                                |
+| 🔤 **Disable Subtitles**   | Tắt phụ đề tự động                                       |
+| 🎵 **YTM Ambient Mode**    | Ambient mode cho YouTube Music                           |
 
 ---
 
 ## Hỗ trợ nền tảng
 
 - **youtube.com** — toàn bộ tính năng
-- **music.youtube.com** — thống kê nghe nhạc, download, dislike (một số tính năng bị giới hạn)
+- **music.youtube.com** — thống kê nghe nhạc, download, dislike, ambient mode
 - Tampermonkey / Greasemonkey / Violentmonkey (cần hỗ trợ GM API)
 
 ---
@@ -55,7 +66,7 @@ cd youtube-tools
 npm install
 
 # Build production
-npm run build:full
+npm run build
 
 # Output: dist/youtube-tools-userscript.user.js
 ```
@@ -68,27 +79,25 @@ Cài file `dist/youtube-tools-userscript.user.js` vào Tampermonkey.
 
 ### Scripts
 
-| Command                 | Mô tả                                                     |
-| ----------------------- | --------------------------------------------------------- |
-| `npm run dev`           | Dev mode với Rollup — watch `src/`, output IIFE           |
-| `npm run build`         | Production build với Vite + vite-plugin-monkey            |
-| `npm run build:full`    | Sync legacy + build production                            |
-| `npm run lint`          | ESLint check                                              |
-| `npm run lint:fix`      | ESLint auto-fix                                           |
-| `npm run format`        | Prettier format toàn bộ                                   |
-| `npm run format:check`  | Check Prettier                                            |
-| `npm run verify:parity` | Kiểm tra đồng bộ legacy ↔ modular                         |
-| `npm run verify`        | Build + verify parity + lint + format check (CI pipeline) |
+| Command              | Mô tả                                                     |
+| -------------------- | --------------------------------------------------------- |
+| `npm run dev`        | Dev mode với Rollup — watch `src/`, output `dist/dev.user.js` |
+| `npm run build`      | Production build với Vite + vite-plugin-monkey            |
+| `npm run lint`       | ESLint check                                              |
+| `npm run lint:fix`   | ESLint auto-fix                                           |
+| `npm run format`     | Prettier format toàn bộ                                   |
+| `npm run format:check` | Check Prettier                                          |
+| `npm run verify`     | Build + lint + format check (CI pipeline)                 |
 
 ### Cấu trúc build
 
-- **Dev mode** (`rollup.config.dev.js`): Input `src/legacy-full.js` → output `dist/dev.user.js` (IIFE + sourcemap inline)
+- **Dev mode** (`rollup.config.dev.js`): Input `src/main.js` → output `dist/dev.user.js` (IIFE + sourcemap inline)
 - **Production** (`vite.config.js`): Entry `src/main.js`, plugin `vite-plugin-monkey`, output userscript với đầy đủ header/grant/match
 
 ### Công nghệ
 
 - **Build:** Vite + Rollup + vite-plugin-monkey
-- **CSS:** SCSS (compile qua Vite)
+- **CSS:** SCSS (tách thành _youtube, _youtube-music, _variables, _stats)
 - **Lint/Format:** ESLint v9 + Prettier
 - **Dependencies:** iziToast (CDN, load qua `@require`)
 
@@ -98,36 +107,62 @@ Cài file `dist/youtube-tools-userscript.user.js` vào Tampermonkey.
 
 ```
 src/
-├── main.js                    # Entry point (dual import: modular + legacy)
-├── legacy-full.js             # 8,814-line legacy (đồng bộ từ script.js)
+├── main.js                       # Entry point (ES Modules)
 ├── config/
-│   ├── flags.js               # Feature flags
-│   └── constants.js           # API endpoints, hằng số
-├── features/
-│   ├── bookmarks.js           # Bookmark video
-│   ├── continue-watching.js   # Tiếp tục video đang xem
-│   ├── download.js            # Download engine MP3/MP4
-│   ├── effects.js             # Mini-game
-│   ├── like-dislike-bar.js    # ReturnYouTubeDislike
-│   ├── lockup-cached-stats.js # Stats trên video cards
-│   ├── player-size.js         # Điều chỉnh player size
-│   ├── shorts-channel-name.js # Tên kênh Shorts
-│   ├── time-stats.js          # Thống kê thời gian
-│   ├── translate-comments.js  # Dịch bình luận
-│   └── wave-visualizer.js     # Visualizer âm thanh
+│   ├── constants.js              # API endpoints, constants
+│   ├── flags.js                  # Feature flags
+│   └── settings-key.js           # Storage key constants
+├── features/                     # 21 tính năng modular
+│   ├── audio-only.js             # Chế độ chỉ nghe nhạc
+│   ├── avatar-download.js        # Tải avatar kênh
+│   ├── bookmarks.js              # Bookmark video
+│   ├── cinematic-lighting.js     # Ambient lighting effect
+│   ├── comment-observer.js       # MutationObserver chung
+│   ├── continue-watching.js      # Tiếp tục video đang xem
+│   ├── disable-subtitles.js      # Tắt phụ đề tự động
+│   ├── download.js               # Download engine MP3/MP4
+│   ├── download-description.js   # Tải mô tả video
+│   ├── effects.js                # Mini-game
+│   ├── hide-comments.js          # Ẩn bình luận
+│   ├── hide-sidebar.js           # Ẩn sidebar
+│   ├── like-dislike-bar.js       # ReturnYouTubeDislike
+│   ├── lockup-cached-stats.js    # Stats trên video cards
+│   ├── nonstop-playback.js       # Tự động chuyển video
+│   ├── player-size.js            # Điều chỉnh player size
+│   ├── reverse-mode.js           # Đảo ngược layout
+│   ├── shorts-channel-name.js    # Tên kênh Shorts
+│   ├── shorts-reel-buttons.js    # Nút Shorts reel
+│   ├── time-stats.js             # Thống kê thời gian
+│   ├── translate-comments.js     # Dịch bình luận
+│   ├── wave-visualizer.js        # Visualizer âm thanh
+│   └── ytm-ambient-mode.js       # YTM ambient mode
 ├── ui/
-│   ├── panel.js               # Panel UI + drag + settings
-│   └── styles.scss            # SCSS styles
-├── utils/
-│   ├── dom.js                 # DOM helpers ($e, $cl, $ap, $id)
-│   ├── helpers.js             # FormatterNumber, getCurrentVideoId
-│   ├── runtime.js             # __ytToolsRuntime global state
-│   ├── state.js               # State management
-│   ├── storage.js             # GM storage wrapper
-│   └── trusted-types.js       # Trusted Types / CSP compliance
-└── scripts/
-    ├── sync-legacy.mjs        # Đồng bộ script.js → legacy-full.js
-    └── verify-parity.mjs      # Kiểm tra parity
+│   ├── settings-panel.js         # Entry point settings panel
+│   ├── settings-panel-html.js    # HTML template
+│   ├── settings-panel-events.js  # Event handlers
+│   ├── settings-panel.scss       # Entry SCSS (@use 3 files)
+│   ├── _variables.scss           # CDN imports + CSS variables
+│   ├── _youtube.scss             # Styles cho YouTube (2,120 dòng)
+│   ├── _youtube-music.scss       # Styles cho YouTube Music (235 dòng)
+│   ├── _stats.scss               # Stats panel styles
+│   ├── toolbar.js                # Download toolbar
+│   ├── gear-icon.js              # Settings gear button
+│   └── video-info-panel.js       # Panel thông tin video
+├── settings/
+│   ├── defaults.js               # Default settings
+│   └── settings-manager.js       # Settings loader/saver
+├── themes/
+│   ├── theme-engine.js           # Theme management
+│   └── theme-data.js             # Theme presets
+└── utils/
+    ├── dom.js                    # DOM helpers
+    ├── helpers.js                # FormatterNumber, getCurrentVideoId
+    ├── logger.js                 # Centralized logging
+    ├── fetch-queue.js            # Bounded fetch queue
+    ├── runtime.js                # __ytToolsRuntime global state
+    ├── state.js                  # State cho wave visualizer
+    ├── storage.js                # GM storage wrapper
+    └── trusted-types.js          # Trusted Types / CSP compliance
 ```
 
 ---
@@ -145,24 +180,29 @@ src/
 
 ## Known Issues
 
-Dự án có 28 vấn đề đã được phân tích chi tiết: xem [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md) và [CHECKLIST.md](CHECKLIST.md).
+Dự án đã hoàn tất migration từ monolithic legacy sang kiến trúc modular 100%. Tất cả **28 issues** từ [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md) đã được resolved. Chi tiết xem [CHECKLIST.md](CHECKLIST.md).
 
-**Tóm tắt:**
+### Đã resolved (28/28) ✅
 
-- 🔴 3 Critical (kiến trúc dual codebase, lỗi scope, silent error)
-- 🟠 8 High (memory leak, storage inconsistency, locale parsing)
-- 🟡 11 Medium (duplicate code, hardcoded values, monolithic CSS)
-- 🟢 6 Minor (a11y, cleanup, .gitignore)
+- ✅ Dual Codebase — legacy-full.js đã bị xóa
+- ✅ State Fragmentation — đã đơn giản hóa
+- ✅ Memory leaks — FetchQueue class, RAF cleanup
+- ✅ Null-check gaps — tất cả feature có null guard
+- ✅ Và 24 issues khác
 
-**Đã fix:** 3/28 | **Partial:** 1/28 | **Chưa fix:** 24/28
+### Chưa có
+
+- ⬜ Test coverage — chưa có test framework
 
 ---
 
 ## Tài liệu
 
-- [PROJECT.md](PROJECT.md) — Kiến trúc chi tiết, luồng khởi tạo, state management, migration roadmap
+- [PROJECT.md](PROJECT.md) — Kiến trúc chi tiết, luồng khởi tạo, state management
 - [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md) — 28 issues phân loại theo severity
 - [CHECKLIST.md](CHECKLIST.md) — Checklist fix từng issue
+- [FEATURE_PARITY.md](FEATURE_PARITY.md) — So sánh tính năng
+- [AGENTS.md](AGENTS.md) — Hướng dẫn cho AI agent
 
 ---
 

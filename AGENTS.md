@@ -1,8 +1,8 @@
 # AGENTS.md — Hướng dẫn cho AI Agent
 
 > **Dự án:** YouTube Tools Userscript  
-> **Version:** v2.4.3.2  
-> **Ngày tạo:** 10/05/2026  
+> **Version:** v2.4.4.2  
+> **Ngày tạo:** 10/05/2026 | **Cập nhật:** 11/05/2026  
 > **Ngôn ngữ:** Tiếng Việt (primary), English (code/docs)
 
 ---
@@ -11,59 +11,89 @@
 
 Đây là một **userscript** đa năng cho YouTube, chạy trên **Tampermonkey / Greasemonkey / Violentmonkey**. Script bổ sung nhiều tính năng vào giao diện YouTube: tải video/audio, hiển thị dislike, thống kê thời gian xem, đánh dấu video, visualizer sóng nhạc, dịch bình luận, v.v.
 
-### Mục tiêu dài hạn
+### Trạng thái hiện tại
 
-- **Chuyển đổi kiến trúc:** Từ monolithic (`legacy-full.js` ~8800 dòng) sang **ES modules** (`src/features/*.js`)
-- **Loại bỏ dual codebase:** Hiện tại cả hai cùng chạy, cần xóa `legacy-full.js` sau khi migration hoàn tất
-- **Thêm test coverage:** Hiện chưa có test
+- ✅ **Migration hoàn tất** — `legacy-full.js` đã bị xóa, codebase 100% modular ES modules
+- ✅ **28/28 issues từ ERROR_ANALYSIS.md đã resolved**
+- ✅ **Hệ thống UI mới** — glassmorphic settings panel, toolbar, video info, theme engine
+- ⬜ **Chưa có test coverage**
 
 ---
 
 ## 2. Cấu trúc thư mục
 
 ```
-C:\Users\FPTSHOP\Downloads\Aji\
+youtube-tools/
 ├── src/
-│   ├── main.js                    # 🚀 Entry point (ES Modules) — import cả modular + legacy
-│   ├── legacy-full.js             # ⚠️ Monolithic legacy (~8800 dòng) — sẽ bị xóa sau migration
+│   ├── main.js                       # 🚀 Entry point (ES Modules)
 │   ├── config/
-│   │   ├── constants.js           # API endpoints, API key, constants sóng nhạc
-│   │   └── flags.js               # Feature flag: tắt wave visualizer trong modular
-│   ├── features/                  # 🎯 Các tính năng modular
-│   │   ├── bookmarks.js           # Đánh dấu timestamp trong video
-│   │   ├── continue-watching.js   # Tiếp tục xem video đang dở
-│   │   ├── download.js            # Tải video/audio (SaveNow + Dubs API)
-│   │   ├── effects.js             # Mini-game tương tác (né bom)
-│   │   ├── like-dislike-bar.js    # Thanh like/dislike (ReturnYouTubeDislike API)
-│   │   ├── lockup-cached-stats.js # Thống kê trên thumbnail video cards
-│   │   ├── player-size.js         # Điều chỉnh kích thước player
-│   │   ├── shorts-channel-name.js # Hiển thị tên kênh trên Shorts
-│   │   ├── time-stats.js          # Thống kê thời gian xem (usage, session, daily, top videos, weekly chart)
-│   │   ├── translate-comments.js  # Dịch bình luận (Google Translate API)
-│   │   └── wave-visualizer.js     # Sóng nhạc real-time (Web Audio API)
-│   ├── ui/
-│   │   ├── panel.js               # Giao diện panel thống kê (stats panel)
-│   │   └── styles.scss            # SCSS styles cho panel
+│   │   ├── constants.js              # API endpoints, API key, constants sóng nhạc
+│   │   ├── flags.js                  # Feature flags
+│   │   └── settings-key.js           # Storage key constants
+│   ├── features/                     # 🎯 21 tính năng modular
+│   │   ├── audio-only.js             # Chế độ chỉ nghe nhạc (ẩn video)
+│   │   ├── avatar-download.js        # Tải avatar kênh
+│   │   ├── bookmarks.js              # Đánh dấu timestamp trong video
+│   │   ├── cinematic-lighting.js     # Hiệu ứng ambient lighting
+│   │   ├── comment-observer.js       # MutationObserver chung cho bình luận
+│   │   ├── continue-watching.js      # Tiếp tục xem video đang dở
+│   │   ├── disable-subtitles.js      # Tắt phụ đề tự động
+│   │   ├── download.js               # Tải video/audio (SaveNow + Dubs API)
+│   │   ├── download-description.js   # Tải mô tả video
+│   │   ├── effects.js                # Mini-game tương tác (né bom)
+│   │   ├── hide-comments.js          # Ẩn bình luận
+│   │   ├── hide-sidebar.js           # Ẩn sidebar
+│   │   ├── like-dislike-bar.js       # Thanh like/dislike (ReturnYouTubeDislike API)
+│   │   ├── lockup-cached-stats.js    # Thống kê trên thumbnail video cards
+│   │   ├── nonstop-playback.js       # Tự động chuyển video tiếp theo
+│   │   ├── player-size.js            # Điều chỉnh kích thước player
+│   │   ├── reverse-mode.js           # Đảo ngược giao diện
+│   │   ├── shorts-channel-name.js    # Hiển thị tên kênh trên Shorts
+│   │   ├── shorts-reel-buttons.js    # Nút tùy chỉnh trên Shorts reel
+│   │   ├── time-stats.js             # Thống kê thời gian xem
+│   │   ├── translate-comments.js     # Dịch bình luận (Google Translate API)
+│   │   ├── wave-visualizer.js        # Sóng nhạc real-time (Web Audio API)
+│   │   └── ytm-ambient-mode.js       # YouTube Music ambient mode
+│   ├── ui/                           # 🖼️ Hệ thống UI mới
+│   │   ├── settings-panel.js         # Entry point settings panel
+│   │   ├── settings-panel-html.js    # HTML template (857 dòng)
+│   │   ├── settings-panel-events.js  # Event handlers
+│   │   ├── settings-panel.scss       # Entry SCSS (@use 3 file)
+│   │   ├── _variables.scss           # CDN imports + CSS variables (11 dòng)
+│   │   ├── _youtube.scss             # Styles cho YouTube (2,120 dòng)
+│   │   ├── _youtube-music.scss       # Styles cho YouTube Music (235 dòng)
+│   │   ├── _stats.scss               # Stats panel styles
+│   │   ├── toolbar.js                # Download toolbar với progress UI
+│   │   ├── gear-icon.js              # Nút settings gear
+│   │   └── video-info-panel.js       # Panel thông tin video
+│   ├── settings/
+│   │   ├── defaults.js               # Default settings values
+│   │   └── settings-manager.js       # Settings loader/saver
+│   ├── themes/
+│   │   ├── theme-engine.js           # Centralized theme management
+│   │   └── theme-data.js             # Theme presets & colors
 │   └── utils/
-│       ├── dom.js                 # DOM helpers: $e, $id, $m, $cl, $sp, $ap
-│       ├── helpers.js             # Notify, getCurrentVideoId, formatTimeShort, isVersionNewer, checkNewVersion
-│       ├── runtime.js             # 🧠 Global state object (__ytToolsRuntime)
-│       ├── state.js               # State riêng cho wave visualizer (54 getter/setter)
-│       ├── storage.js             # GM_getValue/GM_setValue wrapper + cache helpers
-│       └── trusted-types.js       # Trusted Types policy (CSP-safe HTML injection)
+│       ├── dom.js                    # DOM helpers: qs, qsAll, createEl, appendEl
+│       ├── helpers.js                # Notify, getCurrentVideoId, formatTimeShort
+│       ├── logger.js                 # Centralized logging (DEBUG/INFO/WARN/ERROR)
+│       ├── fetch-queue.js            # Bounded concurrent fetch queue
+│       ├── runtime.js                # 🧠 Global state object (__ytToolsRuntime)
+│       ├── state.js                  # State cho wave visualizer
+│       ├── storage.js                # GM_getValue/GM_setValue wrapper + cache
+│       └── trusted-types.js          # Trusted Types policy (CSP-safe HTML)
 ├── dist/
 │   └── youtube-tools-userscript.user.js  # Production build output
-├── scripts/
-│   ├── sync-legacy.mjs            # Đồng bộ code legacy ↔ modular (technical debt)
-│   └── verify-parity.mjs          # Kiểm tra tương đương output giữa Rollup và Vite
-├── script.js                      # ⚠️ Artifact cũ — standalone userscript
-├── rollup.config.dev.js           # Dev build: Rollup, entry: main.js
-├── vite.config.dev.js             # Dev build: Vite, entry: legacy-full.js
-├── vite.config.js                 # Production build: Vite, entry: legacy-full.js
-├── eslint.config.js               # ESLint v9 flat config
-├── package.json                   # Dependencies & scripts
-├── ERROR_ANALYSIS.md              # Báo cáo phân tích lỗi (28 issues)
-└── README.md                      # Tài liệu người dùng
+├── rollup.config.dev.js              # Dev build: Rollup, entry: main.js
+├── vite.config.js                    # Production build: Vite, entry: main.js
+├── vite.config.dev.js                # Dev build: Vite, entry: main.js
+├── eslint.config.js                  # ESLint v9 flat config
+├── package.json                      # Dependencies & scripts
+├── AGENTS.md                         # File này
+├── README.md                         # Tài liệu người dùng
+├── PROJECT.md                        # Tài liệu kiến trúc
+├── ERROR_ANALYSIS.md                 # Báo cáo phân tích lỗi (28 issues, all resolved)
+├── CHECKLIST.md                      # Checklist fix từng issue
+└── FEATURE_PARITY.md                 # So sánh tính năng modular
 ```
 
 ---
@@ -73,7 +103,7 @@ C:\Users\FPTSHOP\Downloads\Aji\
 | Công nghệ                        | Mục đích                                                                                         |
 | -------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **JavaScript ES6+** (ES Modules) | Code chính cho các tính năng                                                                     |
-| **SCSS**                         | CSS cho panel UI                                                                                 |
+| **SCSS**                         | CSS cho UI (tách thành _youtube, _youtube-music, _variables, _stats)                             |
 | **Rollup**                       | Dev build (watch mode) với `rollup.config.dev.js`                                                |
 | **Vite + vite-plugin-monkey**    | Production build, tự động tạo userscript header                                                  |
 | **GM APIs**                      | `GM_getValue`, `GM_setValue`, `GM_addStyle`, `GM_info`, `GM_registerMenuCommand`, `unsafeWindow` |
@@ -89,58 +119,67 @@ C:\Users\FPTSHOP\Downloads\Aji\
 
 ## 4. Luồng khởi tạo (Entry Point)
 
-### `src/main.js` — Modular Entry Point
+### `src/main.js` — Entry Point
 
 ```
-1. Import tất cả feature modules (bookmarks, download, time-stats, like-dislike, ...)
-2. Import './legacy-full.js' ← ⚠️ 8800 dòng duplicate logic, chạy song song
-3. loadSettings() — đọc cấu hình từ GM storage
-4. createPanel() — tạo giao diện panel
-5. initTimeStats() — bắt đầu theo dõi thời gian
-6. setupDownloadClickHandler() — gắn sự kiện download global
-7. Chạy từng feature với settings (có try-catch bọc lỗi)
-8. updateUI() — cập nhật stats
-9. setTimeout(checkNewVersion, 3000) — kiểm tra phiên bản mới
-10. Lắng nghe 'yt-navigate-finish' (SPA navigation) → reinit tất cả feature
-11. Lắng nghe 'yt-tools-settings-changed' → reinit với settings mới
+1. Import settings-manager (loadSettings)
+2. Import theme-engine (initThemeEngine)
+3. Import settings-panel (createPanel, initSettingsEvents)
+4. Import toolbar (initToolbar)
+5. Import gear-icon (initGearIcon)
+6. Import video-info-panel (initVideoInfoPanel)
+7. Import tất cả 21 feature modules
+8. loadSettings() — đọc cấu hình từ GM storage
+9. initThemeEngine(settings) — áp dụng theme
+10. createPanel() + initSettingsEvents() — tạo settings panel
+11. initToolbar() — tạo download toolbar
+12. initGearIcon() — gắn nút gear
+13. initVideoInfoPanel() — panel thông tin video
+14. initTimeStats() — bắt đầu theo dõi thời gian
+15. Chạy từng feature với settings (có try-catch bọc lỗi)
+16. setTimeout(checkNewVersion, 3000) — kiểm tra phiên bản mới
+17. Lắng nghe 'yt-navigate-finish' (SPA navigation) → reinit tất cả feature
+18. Lắng nghe 'yt-tools-settings-changed' → reinit với settings mới
 ```
 
 ### Cơ chế quan trọng
 
-- **`__ytToolsRuntime.settingsLoaded`** — flag ngăn `scheduleApplySettings` ghi đè config mặc định
+- **`__ytToolsRuntime`** — global state object, export ra `window.__ytToolsRuntime`
 - **`yt-navigate-finish`** — YouTube là SPA, event này phát ra khi chuyển trang
-- **`window.__ytToolsRuntime`** — export từ modular runtime.js để legacy code dùng chung
+- **`yt-tools-settings-changed`** — custom event khi user thay đổi settings trong panel
 
 ---
 
 ## 5. State Management
 
-State hiện phân mảnh ở **4 nơi**:
+State tập trung ở **2 nơi chính**:
 
-| Nơi                    | File            | Mô tả                                                                                                                   |
-| ---------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `__ytToolsRuntime`     | `runtime.js`    | Global state: settingsLoaded, bookmark state, continueWatching, shortsChannelName, dislikesCache, interval/observer IDs |
-| `state` object         | `state.js`      | State riêng cho wave visualizer: canvas, audioCtx, analyser, source, animationId, v.v. (54 getter/setter)               |
-| Module-level variables | `time-stats.js` | `usageTime`, `videoTime`, `shortsTime`, `detailedStats`, `dailyStats`                                                   |
-| GM storage             | `storage.js`    | Bookmarks, Continue Watching, Shorts Channel Cache, Likes/Dislikes Cache                                                |
+| Nơi                    | File            | Mô tả                                                                                          |
+| ---------------------- | --------------- | ---------------------------------------------------------------------------------------------- |
+| `__ytToolsRuntime`     | `runtime.js`    | Global state: settings, bookmark state, continueWatching, dislikesCache, interval/observer IDs |
+| GM storage             | `storage.js`    | Bookmarks, Continue Watching, Shorts Channel Cache, Likes/Dislikes Cache, Settings             |
 
-### Lưu ý khi sửa state
-
-- `runtime.js` đã export `__ytToolsRuntime` ra `window.__ytToolsRuntime`
-- `legacy-full.js` có bản sao `__ytToolsRuntime` riêng với thêm field `nonstopPlayback`, `audioOnly` — **chưa đồng bộ với runtime.js**
-- `state.js` có quá nhiều boilerplate getter/setter — dự định thay bằng Proxy/class
+Module-level variables trong `time-stats.js` và `state.js` dùng cho state cục bộ của từng feature.
 
 ---
 
 ## 6. Storage Keys
 
 ```js
-STORAGE_KEYS_MDCM = {
-  BOOKMARKS: 'ytBookmarksMDCM',
-  CONTINUE_WATCHING: 'ytContinueWatchingMDCM',
+STORAGE_KEYS = {
+  BOOKMARKS: 'YT_BOOKMARKS',
+  CONTINUE_VIDEO: 'YT_CONTINUE_VIDEO',
   SHORTS_CHANNEL_CACHE: 'ytShortsChannelCacheMDCM',
   LIKES_DISLIKES_CACHE: 'ytLikesDislikesCacheMDCM',
   VERSION_CHECK_LAST: 'ytVersionCheckLastMDCM',
+  SETTINGS_YT: 'ytSettingsMDCM',
+  SETTINGS_YTM: 'ytmSettingsMDCM',
+  TOTAL_USAGE: 'YT_TOTAL_USAGE',
+  VIDEO_TIME: 'YT_VIDEO_TIME',
+  SHORTS_TIME: 'YT_SHORTS_TIME',
+  DETAILED_STATS: 'YT_DETAILED_STATS',
+  DAILY_STATS: 'YT_DAILY_STATS',
+  SESSION_START: 'YT_SESSION_START',
 };
 ```
 
@@ -157,43 +196,36 @@ STORAGE_KEYS_MDCM = {
 
 ## 7. Các lệnh NPM quan trọng
 
-| Command                 | Mô tả                                                                |
-| ----------------------- | -------------------------------------------------------------------- |
-| `npm run dev`           | Dev mode với Rollup — watch `src/main.js`, output `dist/dev.user.js` |
-| `npm run build`         | Production build với Vite — entry `src/legacy-full.js`               |
-| `npm run build:full`    | Sync legacy + build production                                       |
-| `npm run lint`          | ESLint check                                                         |
-| `npm run lint:fix`      | ESLint auto-fix                                                      |
-| `npm run format`        | Prettier format                                                      |
-| `npm run verify:parity` | Kiểm tra đồng bộ output Rollup ↔ Vite                                |
-| `npm run verify`        | Build + verify parity + lint + format check                          |
+| Command              | Mô tả                                                                |
+| -------------------- | -------------------------------------------------------------------- |
+| `npm run dev`        | Dev mode với Rollup — watch `src/main.js`, output `dist/dev.user.js` |
+| `npm run build`      | Production build với Vite — entry `src/main.js`                      |
+| `npm run lint`       | ESLint check                                                         |
+| `npm run lint:fix`   | ESLint auto-fix                                                      |
+| `npm run format`     | Prettier format                                                      |
+| `npm run format:check` | Prettier check                                                    |
+| `npm run verify`     | Build + lint + format check (CI pipeline)                            |
 
 ---
 
 ## 8. Các vấn đề đã biết (Known Issues)
 
-Xem chi tiết trong `ERROR_ANALYSIS.md`. Tóm tắt:
+Xem chi tiết trong `ERROR_ANALYSIS.md`. **Tất cả 28 issues đã resolved** sau migration hoàn tất:
 
-### 🔴 Critical
+### Đã resolved (28/28) ✅
 
-1. **Dual Codebase** — `main.js` import cả modular lẫn `legacy-full.js`, mọi feature chạy 2 lần
-2. **Thiếu test hoàn toàn** — không có test framework
+- ✅ **Dual Codebase** — `legacy-full.js` đã bị xóa, codebase 100% modular
+- ✅ **State Fragmentation** — đã đơn giản hóa
+- ✅ **fetchChain memory leak** — thay bằng `FetchQueue` class
+- ✅ **RAF loop cleanup** — wave visualizer cleanup khi SPA navigate
+- ✅ **Null-check gaps** — tất cả feature có null guard
+- ✅ **Locale parsing** — dùng `hl` URL param để locale-aware parsing
+- ✅ **Download polling backoff** — exponential backoff
+- ✅ **Tất cả 28 issues** — xem CHECKLIST.md
 
-### 🟠 High
+### Chưa có
 
-3. **State fragmentation** — 4 nơi quản lý state
-4. **fetchChain memory leak** — `shorts-channel-name.js` Promise chain tích lũy
-5. **RAF loop không cleanup** — wave visualizer không hủy khi SPA navigate
-6. **Null-check gaps** — legacy code không có null guard
-7. **Locale parsing** — `parseCountText` sai với một số locale
-8. **Hai hệ thống build** — Rollup và Vite có thể tạo output khác nhau
-
-### Các lỗi đã fix gần đây
-
-- Panel scope error (5 ESLint errors) → đã fix
-- Unused variables trong main.js → đã fix
-- `window.open()` popup blocker → đã thay bằng `createElement('a')` + `click()`
-- DOM null-checks trong download.js → đã fix
+- ⬜ **Test coverage** — chưa có test framework
 
 ---
 
@@ -202,13 +234,7 @@ Xem chi tiết trong `ERROR_ANALYSIS.md`. Tóm tắt:
 ### Biến & Hàm
 
 ```js
-// ❌ KHÔNG dùng (đang tồn tại, cần đổi dần)
-const $e = el => document.querySelector(el); // quá ngắn, khó hiểu
-const $m = el => document.querySelectorAll(el);
-const $cl = el => document.createElement(el);
-const $ap = el => document.body.appendChild(el);
-
-// ✅ NÊN dùng (tên rõ ràng hơn)
+// ✅ NÊN dùng (tên rõ ràng)
 const qs = sel => document.querySelector(sel);
 const qsAll = sel => document.querySelectorAll(sel);
 const createEl = tag => document.createElement(tag);
@@ -219,9 +245,9 @@ const appendEl = el => document.body.appendChild(el);
 
 ```js
 // ✅ Dùng prefix [YT Tools] để dễ filter
-console.log('[YT Tools] Modular panel created');
+console.log('[YT Tools] Panel created');
 console.warn('[YT Tools] Init error:', e);
-console.error('[YT Tools] Failed to create panel:', e);
+console.error('[YT Tools] Failed:', e);
 ```
 
 ### Error Handling
@@ -233,21 +259,14 @@ try {
 } catch (e) {
   console.warn('[YT Tools] Feature init failed:', e);
 }
-
-// ❌ KHÔNG nuốt lỗi
-try {
-  fn(arg);
-} catch (_e) {} // ← không được dùng
 ```
 
 ### DOM Queries
 
 ```js
-// ✅ LUÔN null-check trước khi truy cập .style, .textContent, v.v.
+// ✅ LUÔN null-check trước khi truy cập .style, .textContent
 const el = document.querySelector('.selector');
-if (el) {
-  el.style.display = 'none';
-}
+if (el) el.style.display = 'none';
 
 // ✅ Dùng optional chaining
 const text = el?.textContent?.trim() ?? '';
@@ -259,31 +278,50 @@ const text = el?.textContent?.trim() ?? '';
 // ✅ Dùng GM_getValue/GM_setValue (GM storage)
 const settings = GM_getValue('ytSettingsMDCM', '{}');
 const parsed = JSON.parse(settings);
-
-// ❌ KHÔNG dùng localStorage (trong Tampermonkey, GM storage ≠ localStorage)
-// const settings = localStorage.getItem('ytSettingsMDCM'); // ← SAI
 ```
 
 ---
 
 ## 10. Feature Checklist
 
-| Feature             | Modular | Legacy | Ghi chú                                                   |
-| ------------------- | ------- | ------ | --------------------------------------------------------- |
-| Bookmarks           | ✅      | ✅     | Chạy 2 lần                                                |
-| Continue Watching   | ✅      | ✅     | Chạy 2 lần                                                |
-| Download            | ✅      | ✅     | Modular đã fix null-check + popup; legacy chưa            |
-| Like/Dislike Bar    | ✅      | ✅     | Chạy 2 lần                                                |
-| Shorts Channel Name | ✅      | ✅     | Chạy 2 lần                                                |
-| Time Stats          | ✅      | ✅     | Modular có thêm detailed stats, daily, weekly, top videos |
-| Translate Comments  | ✅      | ✅     | Modular dùng MutationObserver; legacy dùng setInterval    |
-| Wave Visualizer     | ✅      | ✅     | Modular có cleanup SPA; legacy chưa                       |
-| Effects (mini-game) | ✅      | ❌     | Chỉ có trong modular                                      |
-| Player Size         | ✅      | ❌     | Chỉ có trong modular                                      |
-| Lockup Cached Stats | ✅      | ✅     | Chạy 2 lần                                                |
-| Nonstop Playback    | ❌      | ✅     | Chỉ có trong legacy                                       |
-| Audio Only Mode     | ❌      | ✅     | Chỉ có trong legacy                                       |
-| Panel UI            | ✅      | ❌     | Panel stats mới trong modular                             |
+| Feature             | File                        | Ghi chú                                          |
+| ------------------- | --------------------------- | ------------------------------------------------ |
+| Audio Only          | `audio-only.js`             | Ẩn video, chỉ phát audio                         |
+| Avatar Download     | `avatar-download.js`        | Tải avatar kênh                                  |
+| Bookmarks           | `bookmarks.js`              | Đánh dấu timestamp                               |
+| Cinematic Lighting  | `cinematic-lighting.js`     | Ambient lighting effect                          |
+| Comment Observer    | `comment-observer.js`       | MutationObserver chung cho bình luận             |
+| Continue Watching   | `continue-watching.js`      | Resume video, metaCache, prune 200 entries       |
+| Disable Subtitles   | `disable-subtitles.js`      | Tắt phụ đề tự động                               |
+| Download            | `download.js`               | MP3/MP4, SaveNow + Dubs, exponential backoff     |
+| Download Description| `download-description.js`   | Tải mô tả video dạng text                        |
+| Effects (mini-game) | `effects.js`                | Game né bom                                      |
+| Hide Comments       | `hide-comments.js`          | Ẩn section bình luận                             |
+| Hide Sidebar        | `hide-sidebar.js`           | Ẩn sidebar                                       |
+| Like/Dislike Bar    | `like-dislike-bar.js`       | ReturnYouTubeDislike API, locale-aware parsing   |
+| Lockup Cached Stats | `lockup-cached-stats.js`    | Stats trên video cards                           |
+| Nonstop Playback    | `nonstop-playback.js`       | Auto-skip khi video kết thúc                     |
+| Player Size         | `player-size.js`            | Điều chỉnh kích thước player                     |
+| Reverse Mode        | `reverse-mode.js`           | Đảo ngược layout                                 |
+| Shorts Channel Name | `shorts-channel-name.js`    | Tên kênh trên Shorts, IntersectionObserver       |
+| Shorts Reel Buttons  | `shorts-reel-buttons.js`   | Nút tùy chỉnh trên Shorts reel                   |
+| Time Stats          | `time-stats.js`             | Usage, session, daily, weekly chart, top videos  |
+| Translate Comments  | `translate-comments.js`     | Google Translate API, MutationObserver           |
+| Wave Visualizer     | `wave-visualizer.js`        | Web Audio API, cleanup SPA navigate              |
+| YTM Ambient Mode    | `ytm-ambient-mode.js`       | YouTube Music ambient mode                       |
+
+### UI Components
+
+| Component          | File                        | Mô tả                                     |
+| ------------------ | --------------------------- | ----------------------------------------- |
+| Settings Panel     | `settings-panel.js`         | Entry point, import HTML + events + SCSS  |
+| Panel HTML         | `settings-panel-html.js`    | HTML template (857 dòng)                  |
+| Panel Events       | `settings-panel-events.js`  | Event handlers cho settings               |
+| Toolbar            | `toolbar.js`                | Download toolbar với progress UI          |
+| Gear Icon          | `gear-icon.js`              | Nút settings gear trên YT header          |
+| Video Info Panel   | `video-info-panel.js`       | Panel metadata video                      |
+| Theme Engine       | `theme-engine.js`           | Quản lý theme tập trung                   |
+| Theme Data         | `theme-data.js`             | Theme presets & colors                    |
 
 ---
 
@@ -292,7 +330,7 @@ const parsed = JSON.parse(settings);
 ### Panel không hiển thị
 
 1. Kiểm tra `createPanel()` trong `main.js` có được gọi không
-2. Kiểm tra `panel.js` import `styles.scss` chưa
+2. Kiểm tra `settings-panel.js` import `settings-panel.scss`
 3. Kiểm tra event listener `yt-navigate-finish` có reinit panel không
 
 ### Time stats không cập nhật
@@ -310,8 +348,7 @@ const parsed = JSON.parse(settings);
 ### Wave visualizer không hiển thị
 
 1. Kiểm tra `createWaveSource()` — YouTube có thể đã connect video vào AudioContext riêng
-2. Kiểm tra `PROCESSED_FLAG` — có thể legacy đã xử lý trước
-3. Kiểm tra `cleanupWaveVisualizer()` được gọi khi SPA navigate chưa
+2. Kiểm tra `cleanupWaveVisualizer()` được gọi khi SPA navigate chưa
 
 ---
 
@@ -320,28 +357,22 @@ const parsed = JSON.parse(settings);
 ### Rollup (Dev)
 
 - Config: `rollup.config.dev.js`
-- Entry: `src/main.js` (modular)
+- Entry: `src/main.js`
 - Output: `dist/dev.user.js`
 - Plugin: `@rollup/plugin-node-resolve`, `@rollup/plugin-terser`
 
 ### Vite (Production)
 
 - Config: `vite.config.js`
-- Entry: `src/legacy-full.js` (monolithic)
+- Entry: `src/main.js`
 - Output: `dist/youtube-tools-userscript.user.js`
 - Plugin: `vite-plugin-monkey` (tự động tạo `==UserScript==` header)
 
 ### Vite (Dev)
 
 - Config: `vite.config.dev.js`
-- Entry: `src/legacy-full.js`
+- Entry: `src/main.js`
 - Plugin: `vite-plugin-monkey`
-
-### ⚠️ Lưu ý quan trọng
-
-- **Rollup và Vite dùng entry point khác nhau** → rủi ro divergence
-- **Production build entry là `legacy-full.js`**, không phải `main.js`
-- Script `verify:parity` được dùng để kiểm tra output tương đương
 
 ---
 
@@ -350,12 +381,12 @@ const parsed = JSON.parse(settings);
 ```js
 // eslint.config.js — flat config
 export default [
-  { ignores: ['node_modules/**', 'dist/**', 'script.js', 'src/legacy-full.js'] },
+  { ignores: ['node_modules/**', 'dist/**', 'script.js'] },
   { languageOptions: { globals: { ...browserGlobals, ...userscriptGlobals } } },
 ];
 ```
 
-- **Các file bị ignore:** `dist/`, `node_modules/`, `script.js`, `src/legacy-full.js`
+- **Các file bị ignore:** `dist/`, `node_modules/`, `script.js`
 - **Globals được khai báo:** browser APIs + GM APIs + iziToast + unsafeWindow
 
 ---
@@ -364,9 +395,8 @@ export default [
 
 - [ ] `npm run lint` pass (0 errors, 0 warnings)
 - [ ] `npm run format:check` pass
-- [ ] `npm run build:full` thành công
+- [ ] `npm run build` thành công
 - [ ] File `dist/youtube-tools-userscript.user.js` được tạo
-- [ ] Không import thêm `legacy-full.js` vào code mới
 - [ ] Tất cả feature có try-catch bọc lỗi
 - [ ] DOM queries có null-check
 - [ ] Storage dùng `GM_getValue`/`GM_setValue`, không dùng `localStorage`
@@ -376,10 +406,13 @@ export default [
 ## 15. Liên hệ & Tài liệu tham khảo
 
 - **README.md** — Tài liệu người dùng
-- **ERROR_ANALYSIS.md** — Báo cáo phân tích lỗi chi tiết (28 issues)
+- **PROJECT.md** — Tài liệu kiến trúc chi tiết
+- **ERROR_ANALYSIS.md** — Báo cáo phân tích lỗi (28 issues, all resolved)
+- **CHECKLIST.md** — Checklist fix từng issue
+- **FEATURE_PARITY.md** — So sánh tính năng
 - **package.json** — Scripts & dependencies
 - **Repository:** https://github.com/DeveloperMDCM/youtube-tools
 
 ---
 
-_File này được tạo để giúp AI agent (như GitHub Copilot, Claude, Gemini, v.v.) nhanh chóng nắm bắt cấu trúc, luồng hoạt động, và các vấn đề cần lưu ý khi làm việc với dự án YouTube Tools._
+_File này được tạo để giúp AI agent nhanh chóng nắm bắt cấu trúc, luồng hoạt động, và các vấn đề cần lưu ý khi làm việc với dự án YouTube Tools._
