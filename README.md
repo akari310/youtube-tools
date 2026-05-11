@@ -76,7 +76,7 @@ Built with a modern **Node.js** modular workflow for maximum performance and mai
 
 Crafted with passion by:
 - [**Akari**](https://github.com/akari310) — Optimization & Development
-- [**DeveloperMDCM**](https://github.com/DeveloperMDCM) — Original Project Creator & Lead
+- [**DeveloperMDCM**](https://github.com/DeveloperMDCM) — Original Project Creator
 - [**nvbangg**](https://github.com/nvbangg) — Audio-only & Nonstop Features
 
 ## 📄 License
