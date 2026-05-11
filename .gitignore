@@ -14,3 +14,5 @@ dist/
 build/
 *.pyc
 *.min.user.js
+
+package-lock.json
