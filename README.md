@@ -75,7 +75,7 @@ Built with a modern **Node.js** modular workflow for maximum performance and mai
 ## 📜 Credits
 
 Crafted with passion by:
-- [**Akari**](https://github.com/akari310) — Lead Developer & UI Designer
+- [**Akari**](https://github.com/akari310) — Optimization & Development
 - [**DeveloperMDCM**](https://github.com/DeveloperMDCM) — Original Core Logic
 - [**nvbangg**](https://github.com/nvbangg) — Optimization & YTM Specialist
 
