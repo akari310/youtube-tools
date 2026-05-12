@@ -189,13 +189,27 @@ export async function ensureDislikesForCurrentVideo() {
   return null;
 }
 
+function ensureBarExists() {
+  if ($e('#yt-like-dislike-bar')) return true;
+  const container = $e('#top-level-buttons-computed');
+  if (!container) return false;
+  const bar = document.createElement('div');
+  bar.id = 'yt-like-dislike-bar';
+  bar.style.cssText =
+    'display:none;height:6px;background:#333;border-radius:3px;margin:8px 0;overflow:hidden;';
+  bar.innerHTML =
+    '<div class="yt-like-part" style="height:100%;float:left;"></div><div class="yt-dislike-part" style="height:100%;float:left;"></div>';
+  container.insertAdjacentElement('afterend', bar);
+  return true;
+}
+
 export function updateLikeDislikeBar(likes, dislikes) {
   if (likes == null || dislikes == null) return;
   const total = likes + dislikes;
   if (total <= 0) return;
   const likePercent = (likes / total) * 100;
+  if (!ensureBarExists()) return;
   const bar = $e('#yt-like-dislike-bar');
-  if (!bar) return;
   bar.style.display = 'block';
   const likePart = bar.querySelector('.yt-like-part');
   const dislikePart = bar.querySelector('.yt-dislike-part');
@@ -274,13 +288,16 @@ export function applyLikeDislikeBarIfEnabled(settings) {
 
   if (enabled) {
     scheduleLikeBarUpdate(settings, 6);
-    if (!isYTMusic) {
-      setTimeout(async () => {
-        await videoDislike();
-        await shortDislike();
-      }, 1500);
-    }
   }
+}
+
+export function applyDislikeDisplayIfEnabled(settings) {
+  if (!settings?.dislikes) return;
+  if (isYTMusic) return;
+  setTimeout(async () => {
+    await videoDislike();
+    await shortDislike();
+  }, 1500);
 }
 
 // Hook navigation
@@ -290,6 +307,9 @@ if (typeof window !== 'undefined') {
     try {
       const settings = loadSettings();
       if (settings.likeDislikeBar) {
+        scheduleLikeBarUpdate(settings, 4);
+      }
+      if (settings.dislikes) {
         setTimeout(async () => {
           await videoDislike();
           await shortDislike();
