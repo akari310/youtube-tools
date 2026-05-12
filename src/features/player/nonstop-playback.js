@@ -1,5 +1,5 @@
 // Feature: Nonstop Playback — prevents YouTube from pausing when tab loses focus
-import { __ytToolsRuntime } from '../utils/runtime.js';
+import { __ytToolsRuntime } from '../../utils/runtime.js';
 
 export function applyNonstopPlayback(enabled) {
   const rt = __ytToolsRuntime.nonstopPlayback;

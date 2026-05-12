@@ -24,7 +24,7 @@ const userscriptHeader = `// ==UserScript==
 `;
 
 export default defineConfig({
-  input: 'src/legacy-full.js',
+  input: 'src/main.js',
   output: {
     file: 'dist/dev.user.js',
     format: 'iife',

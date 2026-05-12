@@ -1,5 +1,5 @@
-import { $e } from '../utils/dom.js';
-import { __ytToolsRuntime } from '../utils/runtime.js';
+import { $e } from '../../utils/dom.js';
+import { __ytToolsRuntime } from '../../utils/runtime.js';
 
 const DEFAULT_SIZE = 100;
 

@@ -30,48 +30,70 @@ youtube-tools/
 │   │   ├── constants.js              # API endpoints, API key, constants sóng nhạc
 │   │   ├── flags.js                  # Feature flags
 │   │   └── settings-key.js           # Storage key constants
-│   ├── features/                     # 🎯 21 tính năng modular
-│   │   ├── audio-only.js             # Chế độ chỉ nghe nhạc (ẩn video)
+│   ├── features/                     # 🎯 23 tính năng modular
 │   │   ├── avatar-download.js        # Tải avatar kênh
 │   │   ├── bookmarks.js              # Đánh dấu timestamp trong video
-│   │   ├── cinematic-lighting.js     # Hiệu ứng ambient lighting
-│   │   ├── comment-observer.js       # MutationObserver chung cho bình luận
+│   │   ├── comments/                 # Comment-related features
+│   │   │   ├── comment-observer.js   # MutationObserver chung cho bình luận
+│   │   │   ├── hide-comments.js     # Ẩn bình luận
+│   │   │   └── translate-comments.js # Dịch bình luận (Google Translate API)
 │   │   ├── continue-watching.js      # Tiếp tục xem video đang dở
-│   │   ├── disable-subtitles.js      # Tắt phụ đề tự động
 │   │   ├── download.js               # Tải video/audio (SaveNow + Dubs API)
 │   │   ├── download-description.js   # Tải mô tả video
 │   │   ├── effects.js                # Mini-game tương tác (né bom)
-│   │   ├── hide-comments.js          # Ẩn bình luận
 │   │   ├── hide-sidebar.js           # Ẩn sidebar
 │   │   ├── like-dislike-bar.js       # Thanh like/dislike (ReturnYouTubeDislike API)
 │   │   ├── lockup-cached-stats.js    # Thống kê trên thumbnail video cards
-│   │   ├── nonstop-playback.js       # Tự động chuyển video tiếp theo
-│   │   ├── player-size.js            # Điều chỉnh kích thước player
-│   │   ├── reverse-mode.js           # Đảo ngược giao diện
-│   │   ├── shorts-channel-name.js    # Hiển thị tên kênh trên Shorts
-│   │   ├── shorts-reel-buttons.js    # Nút tùy chỉnh trên Shorts reel
+│   │   ├── player/                  # Player-related features
+│   │   │   ├── audio-only.js         # Chế độ chỉ nghe nhạc (ẩn video)
+│   │   │   ├── cinematic-lighting.js # Hiệu ứng ambient lighting
+│   │   │   ├── disable-subtitles.js  # Tắt phụ đề tự động
+│   │   │   ├── nonstop-playback.js  # Tự động chuyển video tiếp theo
+│   │   │   ├── player-size.js       # Điều chỉnh kích thước player
+│   │   │   └── reverse-mode.js       # Đảo ngược giao diện
+│   │   ├── shorts/                  # Shorts-related features
+│   │   │   ├── shorts-channel-name.js # Hiển thị tên kênh trên Shorts
+│   │   │   └── shorts-reel-buttons.js # Nút tùy chỉnh trên Shorts reel
 │   │   ├── time-stats.js             # Thống kê thời gian xem
-│   │   ├── translate-comments.js     # Dịch bình luận (Google Translate API)
 │   │   ├── wave-visualizer.js        # Sóng nhạc real-time (Web Audio API)
 │   │   └── ytm-ambient-mode.js       # YouTube Music ambient mode
 │   ├── ui/                           # 🖼️ Hệ thống UI mới
-│   │   ├── settings-panel.js         # Entry point settings panel
-│   │   ├── settings-panel-html.js    # HTML template (857 dòng)
-│   │   ├── settings-panel-events.js  # Event handlers
-│   │   ├── settings-panel.scss       # Entry SCSS (@use 3 file)
-│   │   ├── _variables.scss           # CDN imports + CSS variables (11 dòng)
-│   │   ├── _youtube.scss             # Styles cho YouTube (2,120 dòng)
-│   │   ├── _youtube-music.scss       # Styles cho YouTube Music (235 dòng)
-│   │   ├── _stats.scss               # Stats panel styles
-│   │   ├── toolbar.js                # Download toolbar với progress UI
+│   │   ├── components/
+│   │   │   ├── settings-panel/       # Settings panel module
+│   │   │   │   ├── index.js          # Entry point
+│   │   │   │   ├── template.js       # HTML template (38,429 bytes)
+│   │   │   │   ├── events.js         # Event handlers
+│   │   │   │   └── style.scss        # SCSS styles
+│   │   │   ├── shared/               # Shared UI components
+│   │   │   ├── theme-selector/       # Theme selector component
+│   │   │   │   ├── index.js          # Theme selector UI
+│   │   │   │   └── style.scss        # Theme selector styles
+│   │   │   ├── toolbar/              # Download toolbar
+│   │   │   └── video-info-panel/     # Panel thông tin video
+│   │   ├── styles/                   # SCSS stylesheets
+│   │   │   ├── _variables.scss       # CDN imports + CSS variables (11 dòng)
+│   │   │   ├── _youtube.scss         # Styles cho YouTube (2,120 dòng)
+│   │   │   ├── _youtube-music.scss   # Styles cho YouTube Music (235 dòng)
+│   │   │   └── _stats.scss           # Stats panel styles
 │   │   ├── gear-icon.js              # Nút settings gear
 │   │   └── video-info-panel.js       # Panel thông tin video
 │   ├── settings/
 │   │   ├── defaults.js               # Default settings values
-│   │   └── settings-manager.js       # Settings loader/saver
+│   │   ├── settings-manager.js       # Settings loader/saver
+│   │   ├── settings-dom.js           # Shared settings state
+│   │   ├── persistence.js           # Settings persistence
+│   │   └── storage-key.js           # Storage key constants
 │   ├── themes/
-│   │   ├── theme-engine.js           # Centralized theme management
-│   │   └── theme-data.js             # Theme presets & colors
+│   │   ├── core/                     # Core theme functionality
+│   │   └── index.js             # Core theme exports
+│   │   ├── presets/                   # Theme presets
+│   │   └── index.js             # 8 theme presets + utilities
+│   │   ├── utils/                     # Theme utilities
+│   │   └── theme-manager.js       # Advanced theme management class
+│   │   ├── theme-engine.js           # Enhanced theme engine
+│   │   ├── theme-data.js             # Legacy theme data
+│   │   ├── applier.js               # Theme application logic
+│   │   └── apply-settings.js        # Circular dependency fix
 │   └── utils/
 │       ├── dom.js                    # DOM helpers: qs, qsAll, createEl, appendEl
 │       ├── helpers.js                # Notify, getCurrentVideoId, formatTimeShort
@@ -103,7 +125,7 @@ youtube-tools/
 | Công nghệ                        | Mục đích                                                                                         |
 | -------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **JavaScript ES6+** (ES Modules) | Code chính cho các tính năng                                                                     |
-| **SCSS**                         | CSS cho UI (tách thành _youtube, _youtube-music, _variables, _stats)                             |
+| **SCSS**                         | CSS cho UI (tách thành \_youtube, \_youtube-music, \_variables, \_stats)                         |
 | **Rollup**                       | Dev build (watch mode) với `rollup.config.dev.js`                                                |
 | **Vite + vite-plugin-monkey**    | Production build, tự động tạo userscript header                                                  |
 | **GM APIs**                      | `GM_getValue`, `GM_setValue`, `GM_addStyle`, `GM_info`, `GM_registerMenuCommand`, `unsafeWindow` |
@@ -154,10 +176,10 @@ youtube-tools/
 
 State tập trung ở **2 nơi chính**:
 
-| Nơi                    | File            | Mô tả                                                                                          |
-| ---------------------- | --------------- | ---------------------------------------------------------------------------------------------- |
-| `__ytToolsRuntime`     | `runtime.js`    | Global state: settings, bookmark state, continueWatching, dislikesCache, interval/observer IDs |
-| GM storage             | `storage.js`    | Bookmarks, Continue Watching, Shorts Channel Cache, Likes/Dislikes Cache, Settings             |
+| Nơi                | File         | Mô tả                                                                                          |
+| ------------------ | ------------ | ---------------------------------------------------------------------------------------------- |
+| `__ytToolsRuntime` | `runtime.js` | Global state: settings, bookmark state, continueWatching, dislikesCache, interval/observer IDs |
+| GM storage         | `storage.js` | Bookmarks, Continue Watching, Shorts Channel Cache, Likes/Dislikes Cache, Settings             |
 
 Module-level variables trong `time-stats.js` và `state.js` dùng cho state cục bộ của từng feature.
 
@@ -196,15 +218,15 @@ STORAGE_KEYS = {
 
 ## 7. Các lệnh NPM quan trọng
 
-| Command              | Mô tả                                                                |
-| -------------------- | -------------------------------------------------------------------- |
-| `npm run dev`        | Dev mode với Rollup — watch `src/main.js`, output `dist/dev.user.js` |
-| `npm run build`      | Production build với Vite — entry `src/main.js`                      |
-| `npm run lint`       | ESLint check                                                         |
-| `npm run lint:fix`   | ESLint auto-fix                                                      |
-| `npm run format`     | Prettier format                                                      |
-| `npm run format:check` | Prettier check                                                    |
-| `npm run verify`     | Build + lint + format check (CI pipeline)                            |
+| Command                | Mô tả                                                                |
+| ---------------------- | -------------------------------------------------------------------- |
+| `npm run dev`          | Dev mode với Rollup — watch `src/main.js`, output `dist/dev.user.js` |
+| `npm run build`        | Production build với Vite — entry `src/main.js`                      |
+| `npm run lint`         | ESLint check                                                         |
+| `npm run lint:fix`     | ESLint auto-fix                                                      |
+| `npm run format`       | Prettier format                                                      |
+| `npm run format:check` | Prettier check                                                       |
+| `npm run verify`       | Build + lint + format check (CI pipeline)                            |
 
 ---
 
@@ -284,44 +306,44 @@ const parsed = JSON.parse(settings);
 
 ## 10. Feature Checklist
 
-| Feature             | File                        | Ghi chú                                          |
-| ------------------- | --------------------------- | ------------------------------------------------ |
-| Audio Only          | `audio-only.js`             | Ẩn video, chỉ phát audio                         |
-| Avatar Download     | `avatar-download.js`        | Tải avatar kênh                                  |
-| Bookmarks           | `bookmarks.js`              | Đánh dấu timestamp                               |
-| Cinematic Lighting  | `cinematic-lighting.js`     | Ambient lighting effect                          |
-| Comment Observer    | `comment-observer.js`       | MutationObserver chung cho bình luận             |
-| Continue Watching   | `continue-watching.js`      | Resume video, metaCache, prune 200 entries       |
-| Disable Subtitles   | `disable-subtitles.js`      | Tắt phụ đề tự động                               |
-| Download            | `download.js`               | MP3/MP4, SaveNow + Dubs, exponential backoff     |
-| Download Description| `download-description.js`   | Tải mô tả video dạng text                        |
-| Effects (mini-game) | `effects.js`                | Game né bom                                      |
-| Hide Comments       | `hide-comments.js`          | Ẩn section bình luận                             |
-| Hide Sidebar        | `hide-sidebar.js`           | Ẩn sidebar                                       |
-| Like/Dislike Bar    | `like-dislike-bar.js`       | ReturnYouTubeDislike API, locale-aware parsing   |
-| Lockup Cached Stats | `lockup-cached-stats.js`    | Stats trên video cards                           |
-| Nonstop Playback    | `nonstop-playback.js`       | Auto-skip khi video kết thúc                     |
-| Player Size         | `player-size.js`            | Điều chỉnh kích thước player                     |
-| Reverse Mode        | `reverse-mode.js`           | Đảo ngược layout                                 |
-| Shorts Channel Name | `shorts-channel-name.js`    | Tên kênh trên Shorts, IntersectionObserver       |
-| Shorts Reel Buttons  | `shorts-reel-buttons.js`   | Nút tùy chỉnh trên Shorts reel                   |
-| Time Stats          | `time-stats.js`             | Usage, session, daily, weekly chart, top videos  |
-| Translate Comments  | `translate-comments.js`     | Google Translate API, MutationObserver           |
-| Wave Visualizer     | `wave-visualizer.js`        | Web Audio API, cleanup SPA navigate              |
-| YTM Ambient Mode    | `ytm-ambient-mode.js`       | YouTube Music ambient mode                       |
+| Feature              | File                      | Ghi chú                                         |
+| -------------------- | ------------------------- | ----------------------------------------------- |
+| Audio Only           | `audio-only.js`           | Ẩn video, chỉ phát audio                        |
+| Avatar Download      | `avatar-download.js`      | Tải avatar kênh                                 |
+| Bookmarks            | `bookmarks.js`            | Đánh dấu timestamp                              |
+| Cinematic Lighting   | `cinematic-lighting.js`   | Ambient lighting effect                         |
+| Comment Observer     | `comment-observer.js`     | MutationObserver chung cho bình luận            |
+| Continue Watching    | `continue-watching.js`    | Resume video, metaCache, prune 200 entries      |
+| Disable Subtitles    | `disable-subtitles.js`    | Tắt phụ đề tự động                              |
+| Download             | `download.js`             | MP3/MP4, SaveNow + Dubs, exponential backoff    |
+| Download Description | `download-description.js` | Tải mô tả video dạng text                       |
+| Effects (mini-game)  | `effects.js`              | Game né bom                                     |
+| Hide Comments        | `hide-comments.js`        | Ẩn section bình luận                            |
+| Hide Sidebar         | `hide-sidebar.js`         | Ẩn sidebar                                      |
+| Like/Dislike Bar     | `like-dislike-bar.js`     | ReturnYouTubeDislike API, locale-aware parsing  |
+| Lockup Cached Stats  | `lockup-cached-stats.js`  | Stats trên video cards                          |
+| Nonstop Playback     | `nonstop-playback.js`     | Auto-skip khi video kết thúc                    |
+| Player Size          | `player-size.js`          | Điều chỉnh kích thước player                    |
+| Reverse Mode         | `reverse-mode.js`         | Đảo ngược layout                                |
+| Shorts Channel Name  | `shorts-channel-name.js`  | Tên kênh trên Shorts, IntersectionObserver      |
+| Shorts Reel Buttons  | `shorts-reel-buttons.js`  | Nút tùy chỉnh trên Shorts reel                  |
+| Time Stats           | `time-stats.js`           | Usage, session, daily, weekly chart, top videos |
+| Translate Comments   | `translate-comments.js`   | Google Translate API, MutationObserver          |
+| Wave Visualizer      | `wave-visualizer.js`      | Web Audio API, cleanup SPA navigate             |
+| YTM Ambient Mode     | `ytm-ambient-mode.js`     | YouTube Music ambient mode                      |
 
 ### UI Components
 
-| Component          | File                        | Mô tả                                     |
-| ------------------ | --------------------------- | ----------------------------------------- |
-| Settings Panel     | `settings-panel.js`         | Entry point, import HTML + events + SCSS  |
-| Panel HTML         | `settings-panel-html.js`    | HTML template (857 dòng)                  |
-| Panel Events       | `settings-panel-events.js`  | Event handlers cho settings               |
-| Toolbar            | `toolbar.js`                | Download toolbar với progress UI          |
-| Gear Icon          | `gear-icon.js`              | Nút settings gear trên YT header          |
-| Video Info Panel   | `video-info-panel.js`       | Panel metadata video                      |
-| Theme Engine       | `theme-engine.js`           | Quản lý theme tập trung                   |
-| Theme Data         | `theme-data.js`             | Theme presets & colors                    |
+| Component        | File                       | Mô tả                                    |
+| ---------------- | -------------------------- | ---------------------------------------- |
+| Settings Panel   | `settings-panel.js`        | Entry point, import HTML + events + SCSS |
+| Panel HTML       | `settings-panel-html.js`   | HTML template (857 dòng)                 |
+| Panel Events     | `settings-panel-events.js` | Event handlers cho settings              |
+| Toolbar          | `toolbar.js`               | Download toolbar với progress UI         |
+| Gear Icon        | `gear-icon.js`             | Nút settings gear trên YT header         |
+| Video Info Panel | `video-info-panel.js`      | Panel metadata video                     |
+| Theme Engine     | `theme-engine.js`          | Quản lý theme tập trung                  |
+| Theme Data       | `theme-data.js`            | Theme presets & colors                   |
 
 ---
 

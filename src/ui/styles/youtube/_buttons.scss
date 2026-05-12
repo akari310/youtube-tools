@@ -1,0 +1,365 @@
+// ===========================================
+// YouTube Button Styles
+// ===========================================
+
+.buttons-tranlate,
+.select-traductor {
+  background: #000;
+  font-size: 10px;
+  border: none;
+  color: #fbf4f4 !important;
+  padding: 3px 0;
+  margin-left: 10px;
+  width: 70px;
+  border-radius: 10px;
+}
+.buttons-tranlate:hover {
+  cursor: pointer;
+  background-color: #6b6b6b;
+}
+button.botones_div {
+  margin: 0;
+  padding: 0;
+}
+button.botones_div:hover {
+  cursor: pointer;
+  color: #6b6b6b !important;
+}
+
+.tab-button:hover {
+  background-color: #ec3203 !important;
+  color: #ffffff !important;
+  cursor: pointer;
+}
+
+.traductor-container {
+  display: inline-block;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+#eyes {
+  opacity: 0;
+  position: absolute;
+  height: 24px;
+  left: 0;
+  width: 24px;
+}
+
+.containerButtons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.containerButtons > button:hover {
+  cursor: pointer;
+}
+
+/* Download Container Styles */
+.download-container {
+  width: 90% !important;
+  max-width: 450px !important;
+  padding: 16px !important;
+  border-radius: 12px !important;
+  margin: 10px auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.download-container.video {
+  background: linear-gradient(135deg, #ff4444, #cc0000);
+  color: white;
+}
+
+.download-container.audio {
+  background: linear-gradient(135deg, #00cc44, #009933);
+  color: white;
+}
+
+.download-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.download-text {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.download-quality {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 30px;
+}
+
+.download-footer {
+  font-size: 10px;
+  opacity: 0.7;
+  text-align: center;
+}
+.download-footer a {
+  text-decoration: none;
+  color: #fff;
+}
+
+.download-container.completed {
+  color: #fff;
+  background: linear-gradient(135deg, #00cc44, #009933) !important;
+}
+
+.download-container.completed .download-text {
+  font-weight: 700;
+}
+
+/* Like vs dislike bar (under likes/dislikes) */
+#yt-like-dislike-bar-mdcm {
+  display: flex;
+  direction: ltr;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  max-width: 305px;
+}
+#yt-like-dislike-bar-mdcm .like {
+  height: 100%;
+  min-width: 0;
+  background: #22c55e !important;
+  flex: 0 0 auto;
+}
+#yt-like-dislike-bar-mdcm .dislike {
+  height: 100%;
+  min-width: 0;
+  background: #ef4444 !important;
+  flex: 0 0 auto;
+}
+
+.progress-retry-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: auto;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.progress-retry-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.download-again-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: auto;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.35);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.download-again-btn:hover {
+  background: rgba(34, 197, 94, 0.5);
+  transform: scale(1.1);
+}
+
+.download-container {
+  position: relative;
+}
+
+.download-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.download-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.download-btn.video-btn {
+  background: linear-gradient(135deg, #ff6666, #ff4444);
+}
+
+.download-btn.audio-btn {
+  background: linear-gradient(135deg, #00dd55, #00cc44);
+}
+
+.download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.download-info {
+  padding-left: 28px !important; /* Space for buttons on the left */
+}
+
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.retry-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffaa00, #ff8800);
+  color: white;
+}
+
+.retry-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Quality buttons */
+.containerall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding-bottom: 30px;
+  max-width: 800px;
+  margin: auto;
+}
+.container .botoncalidades {
+  margin: 3px 2px;
+  width: 24.6%;
+}
+
+.botoncalidades:first-child {
+  background-color: #0af;
+}
+
+.botoncalidades:last-child {
+  background-color: red;
+  width: 100px;
+}
+
+.selectcalidades,
+.botoncalidades,
+.selectcalidadesaudio {
+  width: 50%;
+  height: 27.8px;
+  background-color: #fff;
+  color: #000;
+  font-size: 25px;
+  text-align: center;
+  border: 1px solid black;
+  border-radius: 10px;
+  border: none;
+  font-size: 20px;
+  margin: 2px 2px;
+}
+
+.botoncalidades {
+  width: 70px;
+  height: 30px;
+  background-color: rgb(4, 156, 22);
+  border: 0px solid #000;
+  color: #fff;
+  font-size: 20px;
+  border-radius: 10px;
+  margin: 2px 2px;
+}
+
+.botoncalidades:hover,
+.bntcontainer:hover {
+  cursor: pointer;
+}
+
+.ocultarframe,
+.ocultarframeaudio {
+  display: none;
+}
+.checked_updates {
+  cursor: pointer;
+}
+
+/* Export / Import config buttons */
+#export-config,
+#import-config {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: var(--yt-enhance-menu-accent, var(--primary-custom)) !important;
+  color: #ffffff;
+  border: none;
+  padding: 5px;
+}
+#export-config:hover,
+#import-config:hover {
+  background-color: #ff0000;
+  color: #ffffff;
+  cursor: pointer;
+}

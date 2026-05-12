@@ -2,9 +2,19 @@
 // Settings Panel Events
 // Extracted from legacy-full.js lines 5800-6400
 // ===========================================
-import { $id, $m, $e, $sp } from '../utils/dom.js';
-import { saveSettings, applySettings, setMenuColor } from '../themes/theme-engine.js';
-import { updateVideoInfoPanel } from './video-info-panel.js'; // Need to be careful to import if exists, or handle gracefully
+import { $id, $e, $sp } from '../../utils/dom.js';
+import { saveSettingsFromDOM, applySettings, setMenuColor } from '../../themes/theme-engine.js';
+import { loadSettings } from '../../settings/settings-manager.js';
+import { onWaveStyleChange } from '../../features/wave-visualizer.js';
+import { updateVideoInfoPanel } from '../video-info-panel/index.js';
+import { SETTINGS_KEY } from '../../settings/storage-key.js';
+
+/** Persist + theme pass, then tell `main.js` to re-run feature inits (wave visualizer, etc.). */
+function persistApplyAndNotifyFeatures() {
+  saveSettingsFromDOM();
+  applySettings();
+  document.dispatchEvent(new CustomEvent('yt-tools-settings-changed', { detail: loadSettings() }));
+}
 
 export function setupSettingsPanelEvents(panelDOM) {
   if (!panelDOM) return;
@@ -60,8 +70,11 @@ export function setupSettingsPanelEvents(panelDOM) {
   const inputs = panelDOM.querySelectorAll('input, select');
   inputs.forEach(input => {
     input.addEventListener('change', () => {
-      saveSettings();
-      applySettings();
+      if (input.id === 'select-wave-visualizer-select') {
+        onWaveStyleChange(input.value, saveSettingsFromDOM);
+        return;
+      }
+      persistApplyAndNotifyFeatures();
     });
   });
 
@@ -94,7 +107,7 @@ export function setupSettingsPanelEvents(panelDOM) {
           .forEach(el => el.classList.remove('selected'));
         box.classList.add('selected');
       }
-      saveSettings();
+      saveSettingsFromDOM();
     });
   });
 
@@ -106,8 +119,7 @@ export function setupSettingsPanelEvents(panelDOM) {
   if (playerSizeSlider && playerSizeValue) {
     playerSizeSlider.addEventListener('input', () => {
       playerSizeValue.textContent = playerSizeSlider.value;
-      saveSettings();
-      applySettings();
+      persistApplyAndNotifyFeatures();
     });
   }
 
@@ -116,8 +128,7 @@ export function setupSettingsPanelEvents(panelDOM) {
       e.preventDefault();
       playerSizeSlider.value = 100;
       playerSizeValue.textContent = '100';
-      saveSettings();
-      applySettings();
+      persistApplyAndNotifyFeatures();
     });
   }
 
@@ -151,6 +162,92 @@ export function setupSettingsPanelEvents(panelDOM) {
       if (importExportArea) {
         importExportArea.classList.remove('active');
       }
+    });
+  }
+
+  // 6. Background Image Upload
+  const backgroundImagePreview = panelDOM.querySelector('#background-image-preview');
+  const backgroundImageInput = panelDOM.querySelector('#background_image');
+  const removeBackgroundImageBtn = panelDOM.querySelector('#remove-background-image');
+
+  console.log('[YT Tools] Background image elements found:', {
+    preview: !!backgroundImagePreview,
+    input: !!backgroundImageInput,
+    removeBtn: !!removeBackgroundImageBtn,
+  });
+
+  if (backgroundImagePreview && backgroundImageInput) {
+    // Restore background image preview from saved settings
+    console.log('[YT Tools] Loading settings for background image restore...');
+    const settings = loadSettings();
+    console.log('[YT Tools] Loaded settings:', settings);
+    console.log('[YT Tools] Background image in settings:', !!settings.backgroundImage);
+
+    if (settings.backgroundImage) {
+      console.log('[YT Tools] Restoring background image preview from settings');
+      console.log('[YT Tools] Background image URL length:', settings.backgroundImage.length);
+      backgroundImagePreview.style.backgroundImage = `url(${settings.backgroundImage})`;
+      backgroundImagePreview.classList.add('has-image');
+      console.log('[YT Tools] Background image preview restored successfully');
+    } else {
+      console.log('[YT Tools] No background image found in settings to restore');
+    }
+
+    backgroundImagePreview.addEventListener('click', () => {
+      console.log('[YT Tools] Background preview clicked, triggering file input');
+      backgroundImageInput.click();
+    });
+
+    backgroundImageInput.addEventListener('change', e => {
+      console.log('[YT Tools] File input change event triggered');
+      const file = e.target.files[0];
+      console.log('[YT Tools] Selected file:', file);
+
+      if (file) {
+        console.log('[YT Tools] Reading file as data URL');
+        const reader = new FileReader();
+        reader.onload = event => {
+          const imageUrl = event.target.result;
+          console.log('[YT Tools] File loaded, image URL length:', imageUrl.length);
+
+          backgroundImagePreview.style.backgroundImage = `url(${imageUrl})`;
+          backgroundImagePreview.classList.add('has-image');
+
+          // Save to settings
+          const settings = loadSettings();
+          console.log('[YT Tools] Current settings before save:', settings);
+          console.log('[YT Tools] Using SETTINGS_KEY:', SETTINGS_KEY);
+          settings.backgroundImage = imageUrl;
+          console.log('[YT Tools] Saving backgroundImage to settings with key:', SETTINGS_KEY);
+          GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+          console.log('[YT Tools] Settings saved, applying settings');
+          applySettings();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        console.log('[YT Tools] No file selected');
+      }
+    });
+  } else {
+    console.error('[YT Tools] Background image elements not found:', {
+      preview: !!backgroundImagePreview,
+      input: !!backgroundImageInput,
+    });
+  }
+
+  if (removeBackgroundImageBtn) {
+    removeBackgroundImageBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      backgroundImagePreview.style.backgroundImage = '';
+      backgroundImagePreview.classList.remove('has-image');
+      backgroundImageInput.value = '';
+
+      // Remove from settings
+      const settings = loadSettings();
+      delete settings.backgroundImage;
+      console.log('[YT Tools] Removing backgroundImage with key:', SETTINGS_KEY);
+      GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+      applySettings();
     });
   }
 }

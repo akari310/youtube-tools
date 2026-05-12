@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS = {
   lineColorPicker: '#ff0000',
   timeColorPicker: '#ffffff',
   progressbarColorPicker: '#ff0000',
+  backgroundImage: '',
 
   ambientMode: false,
   cinematicLighting: false,
@@ -39,6 +40,7 @@ export const DEFAULT_SETTINGS = {
   bookmarks: true,
   likeDislike: true,
   waveVisualizer: true,
+  waveVisualizerSelected: 'dinamica',
   shortsChannelName: true,
   lockupStats: true,
   languagesComments: 'vi',

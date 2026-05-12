@@ -1,0 +1,267 @@
+/* ===========================================
+   YouTube Glass Background Effect v2
+   DRY CSS Custom Properties + GPU Optimized
+   =========================================== */
+
+/* === Mode Custom Properties === */
+body.yt-style-blur {
+  --yt-glass-blur: 20px;
+  --yt-glass-saturate: 1;
+  --yt-glass-bg-masthead: rgba(15, 15, 15, 0.55);
+  --yt-glass-bg-sidebar: rgba(15, 15, 15, 0.5);
+  --yt-glass-bg-guide: rgba(15, 15, 15, 0.45);
+  --yt-glass-bg-search: rgba(15, 15, 15, 0.4);
+  --yt-glass-bg-miniguide: rgba(15, 15, 15, 0.45);
+  --yt-glass-bg-watch: rgba(15, 15, 15, 0.35);
+  --yt-glass-blur-guide: 14px;
+  --yt-glass-blur-search: 12px;
+  --yt-glass-blur-sidebar: 16px;
+  --yt-glass-border: rgba(255, 255, 255, 0.08);
+  --yt-glass-border-top: transparent;
+  --yt-glass-shadow: none;
+  --yt-glass-inset: none;
+}
+
+body.yt-style-liquid {
+  --yt-glass-blur: 24px;
+  --yt-glass-saturate: 1.8;
+  --yt-glass-bg-masthead: rgba(20, 20, 20, 0.4);
+  --yt-glass-bg-sidebar: rgba(25, 25, 25, 0.35);
+  --yt-glass-bg-guide: rgba(18, 18, 18, 0.35);
+  --yt-glass-bg-search: rgba(18, 18, 18, 0.3);
+  --yt-glass-bg-miniguide: rgba(18, 18, 18, 0.35);
+  --yt-glass-bg-watch: rgba(20, 20, 20, 0.3);
+  --yt-glass-blur-guide: 20px;
+  --yt-glass-blur-search: 20px;
+  --yt-glass-blur-sidebar: 24px;
+  --yt-glass-border: rgba(255, 255, 255, 0.12);
+  --yt-glass-border-top: rgba(255, 255, 255, 0.2);
+  --yt-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --yt-glass-inset: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+body.yt-style-transparent {
+  --yt-glass-blur: 0px;
+  --yt-glass-saturate: 1;
+  --yt-glass-bg-masthead: transparent;
+  --yt-glass-bg-sidebar: transparent;
+  --yt-glass-bg-guide: transparent;
+  --yt-glass-bg-search: transparent;
+  --yt-glass-bg-miniguide: transparent;
+  --yt-glass-bg-watch: transparent;
+  --yt-glass-blur-guide: 0px;
+  --yt-glass-blur-search: 0px;
+  --yt-glass-blur-sidebar: 0px;
+  --yt-glass-border: transparent;
+  --yt-glass-border-top: transparent;
+  --yt-glass-shadow: none;
+  --yt-glass-inset: none;
+}
+
+/* === Unified Glass Selectors (single block, no duplication) === */
+
+/* Masthead / Header */
+body.yt-style-blur ytd-masthead,
+body.yt-style-blur #masthead-container,
+body.yt-style-liquid ytd-masthead,
+body.yt-style-liquid #masthead-container,
+body.yt-style-transparent ytd-masthead,
+body.yt-style-transparent #masthead-container {
+  background: var(--yt-glass-bg-masthead) !important;
+  backdrop-filter: blur(var(--yt-glass-blur)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur)) saturate(var(--yt-glass-saturate)) !important;
+  border-bottom: 1px solid var(--yt-glass-border) !important;
+  border-top: 1px solid var(--yt-glass-border-top) !important;
+  box-shadow: var(--yt-glass-shadow) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease,
+    border-color 0.6s ease;
+  will-change: backdrop-filter;
+}
+
+/* Page content areas */
+body.yt-style-blur #page-manager,
+body.yt-style-blur ytd-watch-flexy,
+body.yt-style-blur ytd-browse,
+body.yt-style-liquid #page-manager,
+body.yt-style-liquid ytd-watch-flexy,
+body.yt-style-liquid ytd-browse,
+body.yt-style-transparent #page-manager,
+body.yt-style-transparent ytd-watch-flexy,
+body.yt-style-transparent ytd-browse {
+  background: transparent !important;
+}
+
+body.yt-style-blur #columns,
+body.yt-style-blur #primary,
+body.yt-style-blur #secondary,
+body.yt-style-liquid #columns,
+body.yt-style-liquid #primary,
+body.yt-style-liquid #secondary,
+body.yt-style-transparent #columns,
+body.yt-style-transparent #primary,
+body.yt-style-transparent #secondary {
+  background: transparent !important;
+}
+
+/* Sidebar */
+body.yt-style-blur #secondary-inner,
+body.yt-style-liquid #secondary-inner,
+body.yt-style-transparent #secondary-inner {
+  background: var(--yt-glass-bg-sidebar) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  border: 1px solid var(--yt-glass-border) !important;
+  border-top: 1px solid var(--yt-glass-border-top) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--yt-glass-shadow), var(--yt-glass-inset) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease,
+    border-color 0.6s ease;
+  will-change: backdrop-filter;
+}
+
+/* Guide / Drawer */
+body.yt-style-blur ytd-guide-renderer,
+body.yt-style-blur #guide-content,
+body.yt-style-blur #guide-wrapper,
+body.yt-style-liquid ytd-guide-renderer,
+body.yt-style-liquid #guide-content,
+body.yt-style-liquid #guide-wrapper,
+body.yt-style-transparent ytd-guide-renderer,
+body.yt-style-transparent #guide-content,
+body.yt-style-transparent #guide-wrapper {
+  background: var(--yt-glass-bg-guide) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
+  border-right: 1px solid var(--yt-glass-border) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease,
+    border-color 0.6s ease;
+  will-change: backdrop-filter;
+}
+
+/* Mini Guide */
+body.yt-style-blur ytd-mini-guide-renderer,
+body.yt-style-blur #mini-guide,
+body.yt-style-liquid ytd-mini-guide-renderer,
+body.yt-style-liquid #mini-guide,
+body.yt-style-transparent ytd-mini-guide-renderer,
+body.yt-style-transparent #mini-guide {
+  background: var(--yt-glass-bg-miniguide) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease;
+  will-change: backdrop-filter;
+}
+
+/* Search Box */
+body.yt-style-blur ytd-searchbox #search-form,
+body.yt-style-blur #search-form,
+body.yt-style-liquid ytd-searchbox #search-form,
+body.yt-style-liquid #search-form,
+body.yt-style-transparent ytd-searchbox #search-form,
+body.yt-style-transparent #search-form {
+  background: var(--yt-glass-bg-search) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  border: 1px solid var(--yt-glass-border) !important;
+  border-top: 1px solid var(--yt-glass-border-top) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--yt-glass-shadow) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease,
+    border-color 0.6s ease;
+  will-change: backdrop-filter;
+}
+
+body.yt-style-blur ytd-searchbox #container,
+body.yt-style-blur #container.ytd-searchbox,
+body.yt-style-liquid ytd-searchbox #container,
+body.yt-style-liquid #container.ytd-searchbox,
+body.yt-style-transparent ytd-searchbox #container,
+body.yt-style-transparent #container.ytd-searchbox {
+  background: transparent !important;
+}
+
+/* Chips / Filter bar */
+body.yt-style-blur #chips-wrapper,
+body.yt-style-blur ytd-feed-filter-chip-bar-renderer,
+body.yt-style-liquid #chips-wrapper,
+body.yt-style-liquid ytd-feed-filter-chip-bar-renderer,
+body.yt-style-transparent #chips-wrapper,
+body.yt-style-transparent ytd-feed-filter-chip-bar-renderer {
+  background: transparent !important;
+}
+
+/* Rich grid / Home feed */
+body.yt-style-blur ytd-rich-grid-renderer,
+body.yt-style-blur #contents.ytd-rich-grid-renderer,
+body.yt-style-liquid ytd-rich-grid-renderer,
+body.yt-style-liquid #contents.ytd-rich-grid-renderer,
+body.yt-style-transparent ytd-rich-grid-renderer,
+body.yt-style-transparent #contents.ytd-rich-grid-renderer {
+  background: transparent !important;
+}
+
+/* === Watch Page Coverage (NEW) === */
+
+/* Video info area */
+body.yt-style-blur ytd-watch-flexy #primary-inner,
+body.yt-style-liquid ytd-watch-flexy #primary-inner,
+body.yt-style-transparent ytd-watch-flexy #primary-inner {
+  background: var(--yt-glass-bg-watch) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  border-radius: 12px !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease;
+  will-change: backdrop-filter;
+}
+
+/* Comments section */
+body.yt-style-blur ytd-watch-flexy #below,
+body.yt-style-liquid ytd-watch-flexy #below,
+body.yt-style-transparent ytd-watch-flexy #below {
+  background: var(--yt-glass-bg-watch) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  border-radius: 12px !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease;
+  will-change: backdrop-filter;
+}
+
+/* Engagement panels */
+body.yt-style-blur ytd-engagement-panel-section-list-renderer,
+body.yt-style-liquid ytd-engagement-panel-section-list-renderer,
+body.yt-style-transparent ytd-engagement-panel-section-list-renderer {
+  background: var(--yt-glass-bg-sidebar) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
+  border: 1px solid var(--yt-glass-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--yt-glass-shadow) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease,
+    border-color 0.6s ease;
+}
+
+/* Transparent mode: disable will-change to free GPU memory */
+body.yt-style-transparent ytd-masthead,
+body.yt-style-transparent #secondary-inner,
+body.yt-style-transparent ytd-guide-renderer,
+body.yt-style-transparent ytd-searchbox #search-form,
+body.yt-style-transparent ytd-watch-flexy #primary-inner,
+body.yt-style-transparent ytd-watch-flexy #below {
+  will-change: auto !important;
+}

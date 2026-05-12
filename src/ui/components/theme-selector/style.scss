@@ -1,0 +1,245 @@
+// ===========================================
+// Theme Selector Styles
+// ===========================================
+
+.theme-selector-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.theme-selector-header h4 {
+  color: var(--yt-spec-text-primary, #fff);
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.theme-selector-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-selector-actions button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--yt-spec-text-primary, #fff);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.theme-selector-actions button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.theme-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.theme-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.theme-card.custom {
+  border-color: rgba(76, 175, 80, 0.5);
+}
+
+.theme-preview {
+  height: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-preview-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.theme-preview-content {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.theme-preview-text {
+  height: 8px;
+  background: currentColor;
+  opacity: 0.7;
+  border-radius: 2px;
+}
+
+.theme-preview-button {
+  width: 40px;
+  height: 20px;
+  background: var(--yt-spec-static-brand-red, #ff0000);
+  border-radius: 4px;
+  margin-top: auto;
+}
+
+.theme-info {
+  padding: 12px;
+}
+
+.theme-name {
+  font-weight: 600;
+  color: var(--yt-spec-text-primary, #fff);
+  margin-bottom: 4px;
+}
+
+.theme-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.theme-description {
+  font-size: 12px;
+  color: var(--yt-spec-text-secondary, #ccc);
+  opacity: 0.8;
+}
+
+.theme-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.theme-actions button {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-apply {
+  background: var(--yt-spec-static-brand-red, #ff0000);
+  color: white;
+}
+
+.btn-apply:hover {
+  background: #e63900;
+}
+
+.btn-preview {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--yt-spec-text-primary, #fff);
+}
+
+.btn-preview:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-delete {
+  background: rgba(244, 67, 54, 0.8);
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #d32f2f;
+}
+
+.theme-custom-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .theme-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .theme-selector-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .theme-selector-actions {
+    align-self: stretch;
+    justify-content: flex-end;
+  }
+}
+
+// Dark mode adjustments
+@media (prefers-color-scheme: dark) {
+  .theme-selector-container {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .theme-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+}

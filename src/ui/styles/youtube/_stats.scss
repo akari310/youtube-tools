@@ -19,12 +19,6 @@
   --stat-bg: var(--ytp-accent-soft);
 }
 
-
-
-
-
-
-
 .stats-container {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -313,8 +307,6 @@
   background: #b91c1c;
   border-color: #b91c1c;
 }
-
-
 
 /* Audio-only mode - hide video */
 .yt-tools-audio-only-video {

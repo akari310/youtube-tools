@@ -1,4 +1,4 @@
-import { $e, $id } from '../utils/dom.js';
+import { pageWindow, pageDocument } from '../utils/dom.js';
 import {
   getState,
   setCanvas,
@@ -15,19 +15,69 @@ import {
   setWaveStyle,
 } from '../utils/state.js';
 import { SMOOTHING_FACTOR, CANVAS_HEIGHT, SCALE, PROCESSED_FLAG } from '../config/constants.js';
+import { saveSettingsFromDOM } from '../settings/persistence.js';
+
+const PW = pageWindow;
+const PD = pageDocument;
 
 const s = getState();
+/** After a failed tap into the video graph, avoid hammering setup on every DOM mutation (YouTube is noisy). */
+const WAVE_FAIL_RETRY_MS = 4000;
 let waveVisualizerUnloadBound = false;
 let videoObserver = null;
 let observerDebounce = null;
-let controlPanel = null;
+/** Last settings object passed to `initWaveVisualizer` — used by `checkForVideo` / observer. */
+let waveSettingsSnapshot = null;
+
+function ensureWaveMutationObserver() {
+  if (!waveSettingsSnapshot?.waveVisualizer || videoObserver) return;
+  videoObserver = new MutationObserver(() => {
+    clearTimeout(observerDebounce);
+    observerDebounce = setTimeout(() => checkForVideo(), 200);
+  });
+  videoObserver.observe(PD().body, { childList: true, subtree: true });
+}
+
+/**
+ * Legacy-style gate: only attach the analyzer on real watch surfaces (watch URL, shorts, live, miniplayer).
+ * Recreates graph when the primary `<video>` changes or setup is incomplete; otherwise nudges visibility.
+ */
+function checkForVideo() {
+  const settings = waveSettingsSnapshot;
+  if (!settings?.waveVisualizer) {
+    cleanupWaveVisualizer(true);
+    return;
+  }
+
+  const href = PW().location.href;
+  const video = PD().querySelector('video');
+  const miniPlayer = PD().querySelector('.ytp-miniplayer-ui');
+  const urlMatchesPlayer =
+    href.includes('watch') || href.includes('/shorts/') || /youtube\.com\/live\//.test(href);
+  const inContext = (video && urlMatchesPlayer) || !!miniPlayer;
+
+  if (!inContext || !video) {
+    cleanupWaveVisualizer(false);
+    ensureWaveMutationObserver();
+    return;
+  }
+
+  if (video !== s.currentVideo || !s.isSetup) {
+    cleanupWaveVisualizer(false);
+    setupWaveForVideo(video);
+  } else if (!video.paused) {
+    showCanvas();
+  }
+
+  ensureWaveMutationObserver();
+}
 
 function bindWaveVisualizerUnload() {
   if (waveVisualizerUnloadBound) return;
-  window.addEventListener('beforeunload', cleanupWaveVisualizer);
-  window.addEventListener('pagehide', cleanupWaveVisualizer);
-  window.addEventListener('yt-navigate-finish', () => {
-    cleanupWaveVisualizer();
+  PW().addEventListener('beforeunload', () => cleanupWaveVisualizer(true));
+  PW().addEventListener('pagehide', () => cleanupWaveVisualizer(true));
+  PW().addEventListener('yt-navigate-finish', () => {
+    cleanupWaveVisualizer(false);
     waveVisualizerUnloadBound = false;
   });
   waveVisualizerUnloadBound = true;
@@ -57,7 +107,7 @@ function createWaveSource(audioCtx, video) {
 
 function updateCanvasSize() {
   if (s.canvas) {
-    s.canvas.width = window.innerWidth;
+    s.canvas.width = PW().innerWidth;
     s.canvas.height = CANVAS_HEIGHT;
   }
 }
@@ -67,38 +117,49 @@ function resetAudioState() {
   setCurrentVideo(null);
 }
 
-export function cleanupWaveVisualizer() {
+export function cleanupWaveVisualizer(isUnload = false) {
   resetAudioState();
-  if (s.audioCtx && s.audioCtx.state !== 'closed') {
-    try {
-      s.audioCtx.close();
-    } catch (_) {}
-  }
-  setAudioCtx(null);
-  window.__ytModularWaveActive = false;
 
+  // Close AudioContext only on full unload
+  if (isUnload) {
+    if (s.audioCtx && s.audioCtx.state !== 'closed') {
+      try {
+        s.audioCtx.close();
+      } catch (_) {}
+    }
+    setAudioCtx(null);
+    // Clear cached sources on full unload
+    PD()
+      .querySelectorAll('video')
+      .forEach(v => {
+        delete v.__ytToolsAudioSource;
+      });
+  }
+
+  PW().__ytModularWaveActive = false;
+
+  // Remove canvas
   if (s.canvas && s.canvas.parentNode) {
     s.canvas.parentNode.removeChild(s.canvas);
   }
   setCanvas(null);
   setCtx(null);
 
-  if (controlPanel && controlPanel.parentNode) {
-    controlPanel.parentNode.removeChild(controlPanel);
-  }
-  controlPanel = null;
+  // Remove video event listeners
+  PD()
+    .querySelectorAll('video')
+    .forEach(v => {
+      v.removeEventListener('play', showCanvas);
+      v.removeEventListener('pause', hideCanvas);
+      v.removeEventListener('ended', hideCanvas);
+      delete v._ytWaveFail;
+      delete v._ytWaveRetryAfter;
+      delete v[PROCESSED_FLAG];
+    });
 
-  document.querySelectorAll('video').forEach(v => {
-    v.removeEventListener('play', showCanvas);
-    v.removeEventListener('pause', hideCanvas);
-    v.removeEventListener('ended', hideCanvas);
-    delete v._ytWaveFail;
-    delete v.__ytToolsAudioSource;
-    delete v[PROCESSED_FLAG];
-  });
+  PW().removeEventListener('resize', updateCanvasSize);
 
-  window.removeEventListener('resize', updateCanvasSize);
-
+  // Clean up observer
   if (videoObserver) {
     videoObserver.disconnect();
     videoObserver = null;
@@ -108,23 +169,19 @@ export function cleanupWaveVisualizer() {
 }
 
 export function hideCanvas() {
-  const canvas = $id('wave-visualizer-canvas');
+  const canvas = PD().getElementById('wave-visualizer-canvas');
   if (canvas) {
     canvas.style.opacity = '0';
-    if (controlPanel) {
-      controlPanel.style.opacity = '0';
-    }
   }
 }
 
 export function showCanvas() {
   if (s.audioCtx && s.audioCtx.state === 'suspended') {
-    s.audioCtx.resume();
+    s.audioCtx.resume().catch(() => {});
   }
-  const canvas = $id('wave-visualizer-canvas');
+  const canvas = PD().getElementById('wave-visualizer-canvas');
   if (canvas) {
     canvas.style.opacity = '1';
-    if (controlPanel) controlPanel.style.opacity = '1';
   }
 }
 
@@ -132,6 +189,9 @@ function teardownSource() {
   if (s.source) {
     try {
       s.source.disconnect();
+      if (s.audioCtx && s.audioCtx.state !== 'closed') {
+        s.source.connect(s.audioCtx.destination);
+      }
     } catch (_) {}
     setSource(null);
   }
@@ -142,28 +202,38 @@ function teardownSource() {
     setAnalyser(null);
   }
   if (s.animationId) {
-    cancelAnimationFrame(s.animationId);
+    PW().cancelAnimationFrame(s.animationId);
     setAnimationId(null);
   }
+
+  // CRITICAL: We should NOT delete video.__ytToolsAudioSource here if we want to reuse it,
+  // because createMediaElementSource can only be called ONCE per video element.
+  // We only disconnect it from the previous analyser.
+  const video = s.currentVideo;
+  if (video) {
+    video.removeEventListener('play', showCanvas);
+    video.removeEventListener('pause', hideCanvas);
+    video.removeEventListener('ended', hideCanvas);
+  }
+
   setIsSetup(false);
 }
 
 export function setupWaveForVideo(video) {
   if (!video || video[PROCESSED_FLAG]) return;
-  video[PROCESSED_FLAG] = true;
+  if (video._ytWaveRetryAfter && Date.now() < video._ytWaveRetryAfter) return;
 
   teardownSource();
   setCurrentVideo(video);
 
   createVisualizerOverlay();
-  createControlPanelWave();
 
   try {
     // Reuse existing AudioContext if possible (suspend/resume pattern)
     if (!s.audioCtx || s.audioCtx.state === 'closed') {
-      setAudioCtx(new (window.AudioContext || window.webkitAudioContext)());
+      setAudioCtx(new (PW().AudioContext || PW().webkitAudioContext)());
     } else if (s.audioCtx.state === 'suspended') {
-      s.audioCtx.resume();
+      s.audioCtx.resume().catch(() => {});
     }
 
     const analyser = s.audioCtx.createAnalyser();
@@ -175,8 +245,8 @@ export function setupWaveForVideo(video) {
     setSmoothedData(new Array(len).fill(128));
 
     let sourceNode;
-    // Reuse cached source if video already has one (createMediaElementSource is one-shot per element)
-    if (video.__ytToolsAudioSource) {
+    // Reuse cached source ONLY if it belongs to the SAME AudioContext
+    if (video.__ytToolsAudioSource && video.__ytToolsAudioSource.context === s.audioCtx) {
       sourceNode = video.__ytToolsAudioSource;
       try {
         sourceNode.disconnect();
@@ -190,8 +260,13 @@ export function setupWaveForVideo(video) {
 
     if (!sourceNode) {
       video._ytWaveFail = true;
+      video._ytWaveRetryAfter = Date.now() + WAVE_FAIL_RETRY_MS;
+      // Do not mark PROCESSED_FLAG — allow retry after navigation, new video, or user gesture unlock.
       return;
     }
+
+    delete video._ytWaveRetryAfter;
+    video[PROCESSED_FLAG] = true;
 
     sourceNode.connect(analyser);
     analyser.connect(s.audioCtx.destination);
@@ -207,9 +282,14 @@ export function setupWaveForVideo(video) {
     video.addEventListener('pause', hideCanvas);
     video.addEventListener('ended', hideCanvas);
 
+    // If video is already playing, show the canvas immediately
+    if (!video.paused && !video.ended) {
+      showCanvas();
+    }
+
     // Ensure resize handler is wired
-    window.removeEventListener('resize', updateCanvasSize);
-    window.addEventListener('resize', updateCanvasSize);
+    PW().removeEventListener('resize', updateCanvasSize);
+    PW().addEventListener('resize', updateCanvasSize);
 
     draw();
     setIsSetup(true);
@@ -220,39 +300,34 @@ export function setupWaveForVideo(video) {
   }
 }
 
-function createControlPanelWave() {
-  if (controlPanel) return;
-  controlPanel = document.createElement('div');
-  controlPanel.id = 'wave-visualizer-control';
-  controlPanel.style.cssText =
-    'position:fixed;bottom:20px;right:20px;z-index:10001;pointer-events:auto;';
-}
-
+/**
+ * Legacy equivalent: `createCanvasOverlay` — fixed full-width canvas, pointer-events none.
+ */
 export function createVisualizerOverlay() {
-  const existing = $e('#wave-visualizer-canvas');
+  const existing = PD().querySelector('#wave-visualizer-canvas');
   if (existing) {
     existing.style.cssText =
       'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:10000;opacity:0;background:transparent;transition:opacity 0.3s;';
-    existing.width = window.innerWidth;
+    existing.width = PW().innerWidth;
     existing.height = CANVAS_HEIGHT;
     setCanvas(existing);
     setCtx(existing.getContext('2d'));
     return;
   }
 
-  const newCanvas = document.createElement('canvas');
+  const newCanvas = PD().createElement('canvas');
   newCanvas.id = 'wave-visualizer-canvas';
-  newCanvas.width = window.innerWidth;
+  newCanvas.width = PW().innerWidth;
   newCanvas.height = CANVAS_HEIGHT;
   newCanvas.style.cssText =
     'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:10000;opacity:0;background:transparent;transition:opacity 0.3s;';
-  document.body.appendChild(newCanvas);
+  PD().body.appendChild(newCanvas);
   setCanvas(newCanvas);
   setCtx(newCanvas.getContext('2d'));
 }
 
 function draw() {
-  setAnimationId(requestAnimationFrame(draw));
+  setAnimationId(PW().requestAnimationFrame(draw));
 
   if (!s.isSetup || !s.analyser || !s.ctx || !s.canvas) return;
   if (parseFloat(s.canvas.style.opacity) <= 0) return;
@@ -381,21 +456,23 @@ function draw() {
 
 export function onWaveStyleChange(value, saveSettingsFn) {
   setWaveStyle(value);
-  const selectAppend = $id('select-wave-visualizer-select');
+  const selectAppend = PD().getElementById('select-wave-visualizer-select');
   if (selectAppend) selectAppend.value = value;
   if (typeof saveSettingsFn === 'function') saveSettingsFn();
 }
 
 export function initWaveVisualizer(settings) {
   bindWaveVisualizerUnload();
+  waveSettingsSnapshot = settings;
 
   if (!settings?.waveVisualizer) {
     cleanupWaveVisualizer();
+    waveSettingsSnapshot = null;
     return;
   }
 
   // Tell legacy code to skip its wave visualizer BEFORE touching any video
-  window.__ytModularWaveActive = true;
+  PW().__ytModularWaveActive = true;
 
   // Apply saved wave style from settings
   if (settings.waveVisualizerSelected) {
@@ -405,21 +482,40 @@ export function initWaveVisualizer(settings) {
   // Resume suspended AudioContext (autoplay policy) on first user interaction
   const unlock = () => {
     if (s.audioCtx && s.audioCtx.state === 'suspended') {
-      s.audioCtx.resume();
+      s.audioCtx
+        .resume()
+        .then(() => {
+          console.warn('[WaveViz] AudioContext resumed via user gesture');
+          // Re-setup all videos now that we have permission
+          PD()
+            .querySelectorAll('video')
+            .forEach(v => {
+              delete v[PROCESSED_FLAG];
+              delete v._ytWaveRetryAfter;
+            });
+          checkForVideo();
+        })
+        .catch(() => {});
     }
   };
-  document.addEventListener('click', unlock, { once: true });
-  document.addEventListener('keydown', unlock, { once: true });
+  PD().addEventListener('mousedown', unlock, { once: true });
+  PD().addEventListener('keydown', unlock, { once: true });
+  PD().addEventListener('touchstart', unlock, { once: true });
 
-  document.querySelectorAll('video').forEach(video => setupWaveForVideo(video));
+  checkForVideo();
 
-  if (!videoObserver) {
-    videoObserver = new MutationObserver(() => {
-      clearTimeout(observerDebounce);
-      observerDebounce = setTimeout(() => {
-        document.querySelectorAll('video').forEach(video => setupWaveForVideo(video));
-      }, 200);
-    });
-    videoObserver.observe(document.body, { childList: true, subtree: true });
+  // Fallback: if the video wasn't ready when checkForVideo() first ran, retry after a delay.
+  // YouTube is an SPA — the <video> element may not exist yet on page reload.
+  let retryCount = 0;
+  const maxRetries = 5;
+  function retryCheck() {
+    if (s.isSetup) return; // already set up, stop retrying
+    if (retryCount >= maxRetries) return;
+    retryCount++;
+    setTimeout(() => {
+      checkForVideo();
+      retryCheck();
+    }, 2000);
   }
+  retryCheck();
 }

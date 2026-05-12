@@ -1,0 +1,24 @@
+// ===========================================
+// Minimal CSS Reset
+// ===========================================
+/* 
+  Reset only for our components. 
+  Global reset on * is dangerous on existing sites.
+*/
+.yt-tools-app-container,
+.container-mdcm,
+#yt-enhancement-panel * {
+  box-sizing: border-box;
+}
+
+.container-mdcm img,
+.video-info-panel-mdcm img {
+  max-width: 100%;
+  display: block;
+}
+
+.container-mdcm button,
+.yt-tools-btn {
+  font: inherit;
+  cursor: pointer;
+}

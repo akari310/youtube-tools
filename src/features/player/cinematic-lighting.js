@@ -1,5 +1,5 @@
 // Feature: Cinematic/Ambient Lighting toggle
-import { $e, $m } from '../utils/dom.js';
+import { $e, $m } from '../../utils/dom.js';
 
 const isYTMusic = location.hostname === 'music.youtube.com';
 

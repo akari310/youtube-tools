@@ -1,9 +1,9 @@
-import { __ytToolsRuntime } from '../utils/runtime.js';
+import { __ytToolsRuntime } from '../../utils/runtime.js';
 import {
   getShortsChannelFromPersistedCache,
   setShortsChannelToPersistedCache,
-} from '../utils/storage.js';
-import { FetchQueue } from '../utils/fetch-queue.js';
+} from '../../utils/storage.js';
+import { FetchQueue } from '../../utils/fetch-queue.js';
 
 // ------------------------------
 // Feature: Show channel name on Shorts list (Home / feeds)

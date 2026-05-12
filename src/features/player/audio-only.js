@@ -1,6 +1,6 @@
 // Feature: Audio-only Mode — hides video, shows background art
-import { __ytToolsRuntime } from '../utils/runtime.js';
-import { $id } from '../utils/dom.js';
+import { __ytToolsRuntime } from '../../utils/runtime.js';
+import { $id } from '../../utils/dom.js';
 
 const AUDIO_ONLY_TAB_OVERRIDE_KEY = 'ytToolsAudioOnlyTabOverrideMDCM';
 const isYTMusic = location.hostname === 'music.youtube.com';

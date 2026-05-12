@@ -10,30 +10,31 @@ Công cụ YouTube tất cả trong một — userscript cho Tampermonkey/Grease
 
 ## Tính năng
 
-| Tính năng                  | Mô tả                                                    |
-| -------------------------- | -------------------------------------------------------- |
-| 📥 **Download MP3/MP4**    | Tải video/audio chất lượng cao qua SaveNow và Dubs API   |
-| 👎 **Return Dislike**      | Hiển thị lượt dislike qua ReturnYouTubeDislike API       |
-| 📊 **Thống kê xem**        | Tổng thời gian, session, today, top videos, weekly chart |
-| 🔖 **Bookmarks**           | Đánh dấu timestamp trong video                           |
-| ▶️ **Continue Watching**   | Tiếp tục video đang xem dở                               |
-| 🌊 **Wave Visualizer**     | Hiển thị sóng âm thanh real-time (Web Audio API)         |
-| 💬 **Translate Comments**  | Dịch bình luận qua Google Translate API                  |
-| 🎮 **Effects Mini-game**   | Game nhỏ trong panel                                     |
-| 📐 **Player Size**         | Điều chỉnh kích thước player                             |
-| 📺 **Shorts Channel Name** | Hiển thị tên kênh trên YouTube Shorts                    |
-| 📈 **Cached Stats**        | Thống kê lượt xem trên video cards                       |
-| 🔊 **Audio Only**          | Chế độ chỉ nghe nhạc, ẩn video                           |
-| 🎨 **Cinematic Lighting**  | Hiệu ứng ambient lighting xung quanh video               |
-| 🖼️ **Avatar Download**     | Tải avatar kênh YouTube                                  |
-| 🔄 **Nonstop Playback**    | Tự động chuyển video tiếp theo khi kết thúc              |
-| 🔀 **Reverse Mode**        | Đảo ngược layout giao diện                               |
-| 👁️ **Hide Sidebar**        | Ẩn sidebar                                              |
-| 💬 **Hide Comments**       | Ẩn section bình luận                                     |
-| 🎬 **Shorts Reel Buttons** | Nút tùy chỉnh trên Shorts reel                           |
-| 📝 **Download Description**| Tải mô tả video dạng text                                |
-| 🔤 **Disable Subtitles**   | Tắt phụ đề tự động                                       |
-| 🎵 **YTM Ambient Mode**    | Ambient mode cho YouTube Music                           |
+| Tính năng                   | Mô tả                                                           |
+| --------------------------- | --------------------------------------------------------------- |
+| 📥 **Download MP3/MP4**     | Tải video/audio chất lượng cao qua SaveNow và Dubs API          |
+| 👎 **Return Dislike**       | Hiển thị lượt dislike qua ReturnYouTubeDislike API              |
+| 📊 **Thống kê xem**         | Tổng thời gian, session, today, top videos, weekly chart        |
+| 🔖 **Bookmarks**            | Đánh dấu timestamp trong video                                  |
+| ▶️ **Continue Watching**    | Tiếp tục video đang xem dở                                      |
+| 🌊 **Wave Visualizer**      | Hiển thị sóng âm thanh real-time (Web Audio API)                |
+| 💬 **Translate Comments**   | Dịch bình luận qua Google Translate API                         |
+| 🎮 **Effects Mini-game**    | Game nhỏ trong panel                                            |
+| 📐 **Player Size**          | Điều chỉnh kích thước player                                    |
+| 📺 **Shorts Channel Name**  | Hiển thị tên kênh trên YouTube Shorts                           |
+| 📈 **Cached Stats**         | Thống kê lượt xem trên video cards                              |
+| 🔊 **Audio Only**           | Chế độ chỉ nghe nhạc, ẩn video                                  |
+| 🎨 **Cinematic Lighting**   | Hiệu ứng ambient lighting xung quanh video                      |
+| 🖼️ **Avatar Download**      | Tải avatar kênh YouTube                                         |
+| 🔄 **Nonstop Playback**     | Tự động chuyển video tiếp theo khi kết thúc                     |
+| 🔀 **Reverse Mode**         | Đảo ngược layout giao diện                                      |
+| 👁️ **Hide Sidebar**         | Ẩn sidebar                                                      |
+| 💬 **Hide Comments**        | Ẩn section bình luận                                            |
+| 🎬 **Shorts Reel Buttons**  | Nút tùy chỉnh trên Shorts reel                                  |
+| 📝 **Download Description** | Tải mô tả video dạng text                                       |
+| 🔤 **Disable Subtitles**    | Tắt phụ đề tự động                                              |
+| 🎵 **YTM Ambient Mode**     | Ambient mode cho YouTube Music                                  |
+| 🎨 **Enhanced Themes**      | Theme system nâng cao với presets, custom themes, export/import |
 
 ---
 
@@ -79,27 +80,29 @@ Cài file `dist/youtube-tools-userscript.user.js` vào Tampermonkey.
 
 ### Scripts
 
-| Command              | Mô tả                                                     |
-| -------------------- | --------------------------------------------------------- |
-| `npm run dev`        | Dev mode với Rollup — watch `src/`, output `dist/dev.user.js` |
-| `npm run build`      | Production build với Vite + vite-plugin-monkey            |
-| `npm run lint`       | ESLint check                                              |
-| `npm run lint:fix`   | ESLint auto-fix                                           |
-| `npm run format`     | Prettier format toàn bộ                                   |
-| `npm run format:check` | Check Prettier                                          |
-| `npm run verify`     | Build + lint + format check (CI pipeline)                 |
+| Command                | Mô tả                                                         |
+| ---------------------- | ------------------------------------------------------------- |
+| `npm run dev`          | Dev mode với Rollup — watch `src/`, output `dist/dev.user.js` |
+| `npm run build`        | Production build với Vite + vite-plugin-monkey                |
+| `npm run lint`         | ESLint check                                                  |
+| `npm run lint:fix`     | ESLint auto-fix                                               |
+| `npm run format`       | Prettier format toàn bộ                                       |
+| `npm run format:check` | Check Prettier                                                |
+| `npm run verify`       | Build + lint + format check (CI pipeline)                     |
 
 ### Cấu trúc build
 
 - **Dev mode** (`rollup.config.dev.js`): Input `src/main.js` → output `dist/dev.user.js` (IIFE + sourcemap inline)
 - **Production** (`vite.config.js`): Entry `src/main.js`, plugin `vite-plugin-monkey`, output userscript với đầy đủ header/grant/match
+- **Alternative Dev** (`vite.config.dev.js`): Vite-based dev build với watch mode
 
 ### Công nghệ
 
 - **Build:** Vite + Rollup + vite-plugin-monkey
-- **CSS:** SCSS (tách thành _youtube, _youtube-music, _variables, _stats)
+- **CSS:** SCSS (tách thành \_youtube, \_youtube-music, \_variables, \_stats)
 - **Lint/Format:** ESLint v9 + Prettier
 - **Dependencies:** iziToast (CDN, load qua `@require`)
+- **Runtime:** ES6 Modules, GM APIs, Web Audio API, MutationObserver
 
 ---
 
@@ -112,48 +115,69 @@ src/
 │   ├── constants.js              # API endpoints, constants
 │   ├── flags.js                  # Feature flags
 │   └── settings-key.js           # Storage key constants
-├── features/                     # 21 tính năng modular
-│   ├── audio-only.js             # Chế độ chỉ nghe nhạc
+├── features/                     # 23 tính năng modular
 │   ├── avatar-download.js        # Tải avatar kênh
 │   ├── bookmarks.js              # Bookmark video
-│   ├── cinematic-lighting.js     # Ambient lighting effect
-│   ├── comment-observer.js       # MutationObserver chung
+│   ├── comments/                 # Comment-related features
+│   │   ├── comment-observer.js   # MutationObserver chung
+│   │   ├── hide-comments.js     # Ẩn bình luận
+│   │   └── translate-comments.js # Dịch bình luận
 │   ├── continue-watching.js      # Tiếp tục video đang xem
-│   ├── disable-subtitles.js      # Tắt phụ đề tự động
 │   ├── download.js               # Download engine MP3/MP4
 │   ├── download-description.js   # Tải mô tả video
 │   ├── effects.js                # Mini-game
-│   ├── hide-comments.js          # Ẩn bình luận
 │   ├── hide-sidebar.js           # Ẩn sidebar
-│   ├── like-dislike-bar.js       # ReturnYouTubeDislike
-│   ├── lockup-cached-stats.js    # Stats trên video cards
-│   ├── nonstop-playback.js       # Tự động chuyển video
-│   ├── player-size.js            # Điều chỉnh player size
-│   ├── reverse-mode.js           # Đảo ngược layout
-│   ├── shorts-channel-name.js    # Tên kênh Shorts
-│   ├── shorts-reel-buttons.js    # Nút Shorts reel
-│   ├── time-stats.js             # Thống kê thời gian
-│   ├── translate-comments.js     # Dịch bình luận
-│   ├── wave-visualizer.js        # Visualizer âm thanh
-│   └── ytm-ambient-mode.js       # YTM ambient mode
+│   ├── like-dislike-bar.js       # Thanh like/dislike
+│   ├── lockup-cached-stats.js    # Thống kê trên thumbnails
+│   ├── player/                  # Player-related features
+│   │   ├── audio-only.js         # Chế độ chỉ nghe nhạc
+│   │   ├── cinematic-lighting.js # Hiệu ứng ambient lighting
+│   │   ├── disable-subtitles.js  # Tắt phụ đề tự động
+│   │   ├── nonstop-playback.js  # Tự động chuyển video
+│   │   ├── player-size.js       # Điều chỉnh kích thước player
+│   │   └── reverse-mode.js       # Đảo ngược giao diện
+│   ├── shorts/                  # Shorts-related features
+│   │   ├── shorts-channel-name.js # Hiển thị tên kênh
+│   │   └── shorts-reel-buttons.js # Nút tùy chỉnh
+│   ├── time-stats.js             # Thống kê thời gian xem
+│   ├── wave-visualizer.js        # Sóng nhạc real-time
+│   └── ytm-ambient-mode.js       # YouTube Music ambient mode
 ├── ui/
-│   ├── settings-panel.js         # Entry point settings panel
-│   ├── settings-panel-html.js    # HTML template
-│   ├── settings-panel-events.js  # Event handlers
-│   ├── settings-panel.scss       # Entry SCSS (@use 3 files)
-│   ├── _variables.scss           # CDN imports + CSS variables
-│   ├── _youtube.scss             # Styles cho YouTube (2,120 dòng)
-│   ├── _youtube-music.scss       # Styles cho YouTube Music (235 dòng)
-│   ├── _stats.scss               # Stats panel styles
-│   ├── toolbar.js                # Download toolbar
+│   ├── components/
+│   │   ├── settings-panel/       # Settings panel module
+│   │   │   ├── index.js          # Entry point
+│   │   │   ├── template.js       # HTML template (38,429 bytes)
+│   │   │   └── events.js         # Event handlers
+│   │   ├── shared/               # Shared UI components
+│   │   ├── theme-selector/       # Theme selector component
+│   │   │   ├── index.js          # Theme selector UI
+│   │   │   └── style.scss        # Theme selector styles
+│   │   ├── toolbar/              # Download toolbar
+│   │   └── video-info-panel/     # Panel thông tin video
+│   ├── styles/                   # SCSS stylesheets
+│   │   ├── _variables.scss       # CDN imports + CSS variables
+│   │   ├── _youtube.scss         # Styles cho YouTube (2,120 dòng)
+│   │   ├── _youtube-music.scss   # Styles cho YouTube Music (235 dòng)
+│   │   └── _stats.scss           # Stats panel styles
 │   ├── gear-icon.js              # Settings gear button
 │   └── video-info-panel.js       # Panel thông tin video
 ├── settings/
-│   ├── defaults.js               # Default settings
-│   └── settings-manager.js       # Settings loader/saver
+│   ├── defaults.js               # Default settings (56 dòng)
+│   ├── settings-manager.js       # Settings loader/saver
+│   ├── settings-dom.js           # Shared settings state
+│   ├── persistence.js           # Settings persistence
+│   └── storage-key.js           # Storage key constants
 ├── themes/
-│   ├── theme-engine.js           # Theme management
-│   └── theme-data.js             # Theme presets
+│   ├── core/                     # Core theme functionality
+│   │   └── index.js             # Core theme exports
+│   ├── presets/                   # Theme presets
+│   │   └── index.js             # 8 theme presets + utilities
+│   ├── utils/                     # Theme utilities
+│   │   └── theme-manager.js       # Advanced theme management class
+│   ├── theme-engine.js           # Enhanced theme engine
+│   ├── theme-data.js             # Legacy theme data
+│   ├── applier.js               # Theme application logic
+│   └── apply-settings.js        # Circular dependency fix
 └── utils/
     ├── dom.js                    # DOM helpers
     ├── helpers.js                # FormatterNumber, getCurrentVideoId

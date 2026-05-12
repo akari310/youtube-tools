@@ -2,7 +2,7 @@
 // Comment Observer (smart IntersectionObserver + MutationObserver)
 // Extracted from legacy-full.js lines 7523-7578
 // ===========================================
-import { isYTMusic } from '../utils/dom.js';
+import { isYTMusic } from '../../utils/dom.js';
 
 let _commentIO = null;
 let _commentMO = null;

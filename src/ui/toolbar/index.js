@@ -2,7 +2,7 @@
 // Toolbar (buttons below video / YTM side panel)
 // Extracted from legacy-full.js lines 8226-8600
 // ===========================================
-import { $e, $id, $cl, isYTMusic } from '../utils/dom.js';
+import { $e, $id, $cl, isYTMusic } from '../../utils/dom.js';
 
 let validoBotones = true;
 

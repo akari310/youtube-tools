@@ -1,4 +1,4 @@
-import { SETTINGS_KEY } from '../config/settings-key.js';
+import { SETTINGS_KEY } from './storage-key.js';
 import { DEFAULT_SETTINGS } from './defaults.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 

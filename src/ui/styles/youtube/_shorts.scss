@@ -1,0 +1,253 @@
+// ===========================================
+// YouTube Shorts Styles
+// ===========================================
+
+/* Shorts channel name label (Home/feed Shorts lockups) */
+html:not([data-mdcm-shorts-channel-name='1']) .yt-tools-shorts-channel-name {
+  display: none !important;
+}
+.yt-tools-shorts-channel-name {
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--yt-spec-text-secondary, #aaa);
+  margin-bottom: 2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yt-tools-shorts-stats-wrap {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--yt-spec-text-secondary, #aaa);
+}
+.yt-tools-shorts-stats-wrap .yt-tools-shorts-stats-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+/* Shorts action bar: keep icons/labels stable at browser zoom levels like 125%. */
+ytd-shorts reel-action-bar-view-model .yt-spec-button-shape-with-label,
+ytd-reel-video-renderer reel-action-bar-view-model .yt-spec-button-shape-with-label,
+reel-action-bar-view-model .yt-spec-button-shape-with-label {
+  width: 58px !important;
+  min-width: 58px !important;
+  max-width: 58px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+ytd-shorts reel-action-bar-view-model .yt-spec-button-shape-next--icon-button,
+ytd-reel-video-renderer reel-action-bar-view-model .yt-spec-button-shape-next--icon-button,
+reel-action-bar-view-model .yt-spec-button-shape-next--icon-button {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  max-width: 48px !important;
+  max-height: 48px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 48px !important;
+}
+
+ytd-shorts reel-action-bar-view-model .yt-spec-button-shape-next__icon,
+ytd-reel-video-renderer reel-action-bar-view-model .yt-spec-button-shape-next__icon,
+reel-action-bar-view-model .yt-spec-button-shape-next__icon,
+ytd-shorts reel-action-bar-view-model .yt-icon-shape,
+ytd-reel-video-renderer reel-action-bar-view-model .yt-icon-shape,
+reel-action-bar-view-model .yt-icon-shape {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+ytd-shorts reel-action-bar-view-model .yt-spec-button-shape-with-label__label,
+ytd-reel-video-renderer reel-action-bar-view-model .yt-spec-button-shape-with-label__label,
+reel-action-bar-view-model .yt-spec-button-shape-with-label__label {
+  width: 58px !important;
+  min-width: 58px !important;
+  max-width: 58px !important;
+  margin-top: 0 !important;
+  text-align: center !important;
+  overflow: hidden !important;
+}
+
+ytd-shorts reel-action-bar-view-model .yt-spec-button-shape-with-label__label span,
+ytd-reel-video-renderer reel-action-bar-view-model .yt-spec-button-shape-with-label__label span,
+reel-action-bar-view-model .yt-spec-button-shape-with-label__label span,
+ytd-shorts reel-action-bar-view-model [role='text'],
+ytd-reel-video-renderer reel-action-bar-view-model [role='text'],
+reel-action-bar-view-model [role='text'] {
+  display: block !important;
+  max-width: 58px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: center !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 600 !important;
+}
+
+ytd-shorts reel-action-bar-view-model [data-yt-tools-shorts-views] [role='text'],
+ytd-shorts reel-action-bar-view-model [data-yt-tools-shorts-rating] [role='text'],
+reel-action-bar-view-model [data-yt-tools-shorts-views] [role='text'],
+reel-action-bar-view-model [data-yt-tools-shorts-rating] [role='text'] {
+  font-size: 11px !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop {
+  gap: 8px !important;
+  align-items: center !important;
+  transform-origin: bottom center !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop .ytSpecButtonShapeWithLabelHost {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 3px !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop .ytSpecButtonShapeNextIconButton {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
+  padding: 0 !important;
+  flex: 0 0 44px !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop .ytSpecButtonShapeNextIcon,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop .ytIconWrapperHost,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop .ytSpecIconShapeHost,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop yt-icon {
+  width: 23px !important;
+  height: 23px !important;
+  min-width: 23px !important;
+  min-height: 23px !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop .ytSpecButtonShapeWithLabelLabel,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  .yt-spec-button-shape-with-label__label {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  margin-top: 0 !important;
+  overflow: hidden !important;
+  text-align: center !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop .ytAttributedStringHost,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  .yt-spec-button-shape-with-label__label
+  span,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop [role='text'] {
+  display: block !important;
+  max-width: 52px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: center !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  font-weight: 600 !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-classic]
+  .yt-spec-button-shape-with-label__label,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-classic]
+  .ytSpecButtonShapeWithLabelLabel {
+  display: none !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-classic]
+  .ytSpecButtonShapeWithLabelHost,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-views]
+  .ytSpecButtonShapeWithLabelHost,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-rating]
+  .ytSpecButtonShapeWithLabelHost,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-classic]
+  .yt-spec-button-shape-with-label,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-views]
+  .yt-spec-button-shape-with-label,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-rating]
+  .yt-spec-button-shape-with-label {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-classic]
+  .ytSpecButtonShapeNextIconButton,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-views]
+  .ytSpecButtonShapeNextIconButton,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-rating]
+  .ytSpecButtonShapeNextIconButton,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-classic]
+  .yt-spec-button-shape-next--icon-button,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-views]
+  .yt-spec-button-shape-next--icon-button,
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop
+  [data-yt-tools-shorts-rating]
+  .yt-spec-button-shape-next--icon-button {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  flex-basis: 40px !important;
+}
+
+reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop pivot-button-view-model a {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
+}
+
+@media (max-height: 780px) {
+  reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop {
+    transform: scale(0.92) !important;
+  }
+}
+
+@media (max-height: 700px) {
+  reel-action-bar-view-model.ytwReelActionBarViewModelHostDesktop {
+    transform: scale(0.86) !important;
+  }
+}

@@ -79,6 +79,8 @@ export function addIcon() {
   icon.id = 'icon-menu-settings';
   icon.classList.add('fa-solid', 'fa-gear');
   icon.style.fontSize = '20px';
+  // Masthead contrast before applySettings runs; applier.js still overrides via !important when themes load.
+  icon.style.color = 'var(--yt-spec-text-primary, var(--yt-spec-icon-inactive, #f2f2f2))';
 
   toggleButton.appendChild(icon);
 

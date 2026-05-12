@@ -1,0 +1,56 @@
+// ===========================================
+// YouTube Comments Styles
+// ===========================================
+
+body {
+  padding: 0;
+  margin: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+.style-scope.ytd-comments {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: auto;
+}
+ytd-comment-view-model[is-reply]
+  #author-thumbnail.ytd-comment-view-model
+  yt-img-shadow.ytd-comment-view-model,
+ytd-comment-view-model[is-creator-reply]
+  #author-thumbnail.ytd-comment-view-model
+  yt-img-shadow.ytd-comment-view-model {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+#author-thumbnail img.yt-img-shadow {
+  border-radius: 50% !important;
+}
+#author-thumbnail.ytd-comment-view-model yt-img-shadow.ytd-comment-view-model {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: visible;
+}
+ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer {
+  --ytd-item-section-item-margin: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: auto;
+}
+.right-section.ytcp-header {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 45px;
+  justify-content: end;
+}
+#meta.ytd-playlist-panel-video-renderer {
+  min-width: 0;
+  padding: 0 8px;
+  /* display: flexbox; */
+  display: flex;
+  flex-direction: column-reverse;
+  flex: 1;
+  flex-basis: 0.000000001px;
+}

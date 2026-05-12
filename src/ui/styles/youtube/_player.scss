@@ -1,0 +1,269 @@
+// ===========================================
+// YouTube Player & Video Info Styles
+// ===========================================
+
+.video-info-panel-mdcm {
+  padding: 14px;
+  margin: 0 14px 12px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.video-info-empty-mdcm {
+  padding: 18px 10px;
+  text-align: center;
+  color: var(--text-custom-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.video-info-hero-mdcm {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.video-info-thumb-mdcm {
+  width: 112px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.video-info-title-mdcm {
+  margin: 0 0 6px;
+  color: var(--yt-enhance-menu-text, var(--text-custom));
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.video-info-channel-mdcm {
+  margin: 0;
+  color: var(--text-custom-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-info-grid-mdcm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.video-info-item-mdcm {
+  min-width: 0;
+  padding: 9px 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 9px;
+}
+
+.video-info-label-mdcm {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-custom-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.video-info-value-mdcm {
+  display: block;
+  color: var(--yt-enhance-menu-text, var(--text-custom));
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-info-progress-mdcm {
+  grid-column: 1 / -1;
+  height: 5px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.video-info-progress-fill-mdcm {
+  width: 0;
+  height: 100%;
+  background: var(--yt-enhance-menu-accent, var(--primary-custom));
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.video-info-actions-mdcm {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.video-info-copy-mdcm {
+  min-height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--yt-enhance-menu-text, var(--text-custom));
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.video-info-copy-mdcm:hover {
+  background: var(--yt-enhance-menu-accent, var(--primary-custom));
+  border-color: var(--yt-enhance-menu-accent, var(--primary-custom));
+}
+
+@media (max-width: 520px) {
+  .container-mdcm {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .container-mdcm .options-mdcm {
+    grid-template-columns: 1fr;
+  }
+
+  .video-info-hero-mdcm,
+  .video-info-grid-mdcm,
+  .video-info-actions-mdcm {
+    grid-template-columns: 1fr;
+  }
+
+  .video-info-thumb-mdcm {
+    width: 100%;
+  }
+}
+
+/* Regular YouTube specific spacing (VIP) */
+ytd-watch-metadata .yt-tools-inner-container {
+  gap: 10px !important;
+}
+
+ytd-watch-metadata .containerall {
+  gap: 0px !important;
+  padding-bottom: 0 !important;
+}
+
+ytd-watch-metadata .yt-tools-container {
+  margin-bottom: -8px !important;
+}
+
+ytd-watch-metadata .content_collapsible_colors {
+  margin-top: 0 !important;
+}
+
+ytd-watch-metadata .download-container {
+  width: 90% !important;
+  max-width: 450px !important;
+  padding: 7px !important;
+  border-radius: 12px !important;
+  margin: 5px auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* YT Stats overlay */
+#yt-stats {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  background: #1a1a1a;
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  font-family: Arial, sans-serif;
+  display: none;
+}
+#yt-stats-toggle {
+  font-size: 12px;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.stat-row {
+  margin: 15px 0;
+}
+.progress {
+  height: 6px;
+  overflow: hidden;
+  background: #333;
+  border-radius: 3px;
+  margin: 8px 0;
+}
+.progress-bar {
+  height: 100%;
+  transition: width 0.3s;
+}
+.total-bar {
+  background: #44aaff !important;
+}
+.video-bar {
+  background: #00ff88 !important;
+}
+.shorts-bar {
+  background: #ff4444 !important;
+}
+#cinematics {
+  position: absolute !important;
+  width: 90vw !important;
+  height: 100vh;
+}
+#cinematics div {
+  position: fixed;
+  inset: 0px;
+  pointer-events: none;
+  transform: scale(1.5, 2);
+}
+#cinematics > div > div > canvas:nth-child(1),
+#cinematics > div > div > canvas:nth-child(2) {
+  position: absolute !important;
+  width: 90vw !important;
+  height: 100vh;
+}
+
+/* Feed filter chip */
+ytd-feed-filter-chip-bar-renderer[not-sticky] #chips-wrapper.ytd-feed-filter-chip-bar-renderer {
+  padding: 10px;
+}
+.text-description-download {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 10px;
+}
+/* === FIX: Center toolbar when Cinematic Mode is enabled === */
+ytd-watch-flexy[cinematic-container-initialized] #primary-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+ytd-watch-flexy[cinematic-container-initialized] .yt-tools-container {
+  width: 100%;
+  max-width: var(--ytd-watch-flexy-max-player-width, 1280px);
+}

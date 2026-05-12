@@ -233,3 +233,67 @@ ytmusic-app #icon-menu-settings:hover {
   transform: rotate(90deg);
   color: #ff4444;
 }
+
+/* === YouTube Music Glass-morphism UI === */
+:root {
+  --ytm-glass-bg: rgba(15, 15, 15, 0.2);
+  --ytm-glass-bg-scrolled: rgba(15, 15, 15, 0.45);
+  --ytm-glass-blur: 18px;
+}
+
+/* Core Navbar Glass Effect */
+ytmusic-nav-bar {
+  background-color: var(--ytm-glass-bg) !important;
+  backdrop-filter: blur(var(--ytm-glass-blur)) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(var(--ytm-glass-blur)) saturate(1.2) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition:
+    background-color 0.3s ease,
+    backdrop-filter 0.3s ease !important;
+}
+
+/* Scrolled State */
+ytmusic-nav-bar.scrolled {
+  background-color: var(--ytm-glass-bg-scrolled) !important;
+  backdrop-filter: blur(calc(var(--ytm-glass-blur) + 6px)) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(calc(var(--ytm-glass-blur) + 6px)) saturate(1.3) !important;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+#nav-bar-background {
+  background: transparent !important;
+}
+#nav-bar-divider {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Layout & Containers */
+ytmusic-app-layout {
+  background: var(--ytmusic-background, transparent) !important;
+}
+
+/* Sidebar/Guide Glass */
+ytmusic-guide-renderer,
+tp-yt-app-drawer {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Dynamic Artwork Backgrounds */
+ytmusic-fullbleed-thumbnail-renderer[is-background],
+.immersive-background {
+  display: block !important;
+  opacity: 0.35 !important;
+  filter: blur(25px) saturate(1.2) brightness(0.8) !important;
+}
+
+/* Player Bar Glass */
+ytmusic-player-bar {
+  background-color: rgba(10, 10, 12, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.2) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.2) !important;
+}

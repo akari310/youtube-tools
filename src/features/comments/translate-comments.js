@@ -1,6 +1,6 @@
-import { $id, $m } from '../utils/dom.js';
-import { safeHTML } from '../utils/trusted-types.js';
-import { apiGoogleTranslate } from '../config/constants.js';
+import { $id, $m } from '../../utils/dom.js';
+import { safeHTML } from '../../utils/trusted-types.js';
+import { apiGoogleTranslate } from '../../config/constants.js';
 
 // ------------------------------
 // Feature: Translate Comments

@@ -3,7 +3,7 @@
 // Extracted from legacy-full.js lines 6100-6420
 // ===========================================
 import { $e, isYTMusic } from '../utils/dom.js';
-import { SETTINGS_KEY } from '../config/settings-key.js';
+import { SETTINGS_KEY } from '../settings/storage-key.js';
 
 export const ytmAmbientMode = {
   active: false,
@@ -202,6 +202,9 @@ export const ytmAmbientMode = {
   _startTracker() {
     if (this._trackerId) cancelAnimationFrame(this._trackerId);
     const self = this;
+    let lastTop = 0,
+      lastHeight = 0,
+      lastLeft = 0;
     function track() {
       if (!self.active) {
         self._trackerId = null;
@@ -220,10 +223,18 @@ export const ytmAmbientMode = {
         const wrapperRect = wrapper.getBoundingClientRect();
         let leftPos = wrapperRect.right;
         if (leftPos <= 0 || !leftPos) leftPos = drawer.hasAttribute('opened') ? 240 : 72;
-        self.dividerEl.style.top = navRect.bottom + 'px';
-        self.dividerEl.style.height = playerRect.top - navRect.bottom + 'px';
-        self.dividerEl.style.left = leftPos + 'px';
-        self.dividerEl.classList.add('active');
+        const top = navRect.bottom;
+        const height = playerRect.top - navRect.bottom;
+        // Only update DOM if values actually changed
+        if (top !== lastTop || height !== lastHeight || leftPos !== lastLeft) {
+          lastTop = top;
+          lastHeight = height;
+          lastLeft = leftPos;
+          self.dividerEl.style.top = top + 'px';
+          self.dividerEl.style.height = height + 'px';
+          self.dividerEl.style.left = leftPos + 'px';
+          self.dividerEl.classList.add('active');
+        }
       }
       self._trackerId = requestAnimationFrame(track);
     }
