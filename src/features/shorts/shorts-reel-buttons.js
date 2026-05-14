@@ -178,4 +178,30 @@ export function initShortsReelButtons() {
       });
     });
   }
+
+  // Shorts DOM observer (YT only) – guarded via __ytToolsRuntime.shortsObserver
+  if (!isYTMusic) {
+    const contentScrollable = $e(
+      '.anchored-panel.style-scope.ytd-shorts #contents.style-scope.ytd-item-section-renderer.style-scope.ytd-item-section-renderer'
+    );
+    if (contentScrollable) {
+      // Disconnect previous Shorts observer if it exists
+      if (__ytToolsRuntime.shortsObserver) {
+        try {
+          __ytToolsRuntime.shortsObserver.disconnect();
+        } catch (e) {}
+        __ytToolsRuntime.shortsObserver = null;
+      }
+      let domTimeout;
+      __ytToolsRuntime.shortsObserver = new MutationObserver(() => {
+        if (domTimeout) clearTimeout(domTimeout);
+        domTimeout = setTimeout(() => {
+          insertReelBarButtons();
+          // addIcon(); // If addIcon is needed, it should be implemented or called here.
+        }, 300);
+      });
+
+      __ytToolsRuntime.shortsObserver.observe(contentScrollable, { childList: true, subtree: true });
+    }
+  }
 }

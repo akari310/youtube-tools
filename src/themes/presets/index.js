@@ -132,6 +132,95 @@ export const THEME_PRESETS = {
       progress: '#ff00ff',
     },
   },
+
+  // Modern themes
+  aurora: {
+    name: 'Aurora Borealis',
+    colors: {
+      background: 'linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)',
+      primary: '#1a1a1a',
+      secondary: '#ffffff',
+      header: 'rgba(255,255,255,0.15)',
+      icons: '#1a1a1a',
+      menu: 'rgba(255,255,255,0.15)',
+      accent: '#00ff88',
+      progress: '#00ccff',
+    },
+  },
+
+  midnight: {
+    name: 'Midnight Purple',
+    colors: {
+      background: 'linear-gradient(135deg, #2e1a47 0%, #4a148c 100%)',
+      primary: '#ffffff',
+      secondary: '#e1bee7',
+      header: 'rgba(255,255,255,0.1)',
+      icons: '#ffffff',
+      menu: 'rgba(255,255,255,0.1)',
+      accent: '#9c27b0',
+      progress: '#7b1fa2',
+    },
+  },
+
+  // Seasonal themes
+  spring: {
+    name: 'Spring Blossom',
+    colors: {
+      background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+      primary: '#2e7d32',
+      secondary: '#81c784',
+      header: 'rgba(255,255,255,0.9)',
+      icons: '#2e7d32',
+      menu: 'rgba(255,255,255,0.9)',
+      accent: '#ff6f00',
+      progress: '#4caf50',
+    },
+  },
+
+  autumn: {
+    name: 'Autumn Harvest',
+    colors: {
+      background: 'linear-gradient(135deg, #ff9a56 0%, #ff6a00 100%)',
+      primary: '#ffffff',
+      secondary: '#ffe0b2',
+      header: 'rgba(255,255,255,0.1)',
+      icons: '#ffffff',
+      menu: 'rgba(255,255,255,0.1)',
+      accent: '#ff6f00',
+      progress: '#ff9800',
+    },
+  },
+
+  // Premium themes
+  galaxy: {
+    name: 'Galaxy Premium',
+    colors: {
+      background: 'linear-gradient(135deg, #000428 0%, #004e92 100%)',
+      primary: '#ffffff',
+      secondary: '#64b5f6',
+      header: 'rgba(255,255,255,0.05)',
+      icons: '#ffffff',
+      menu: 'rgba(255,255,255,0.05)',
+      accent: '#ffd700',
+      progress: '#00bcd4',
+      animation: true,
+    },
+  },
+
+  crystal: {
+    name: 'Crystal Glass',
+    colors: {
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+      primary: '#333333',
+      secondary: '#666666',
+      header: 'rgba(255,255,255,0.8)',
+      icons: '#333333',
+      menu: 'rgba(255,255,255,0.8)',
+      accent: '#2196f3',
+      progress: '#1976d2',
+      glass: true,
+    },
+  },
 };
 
 export function getThemePreset(name) {

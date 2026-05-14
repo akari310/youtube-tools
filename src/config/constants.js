@@ -39,12 +39,11 @@ export const languagesTranslate = {
   it: 'Italian',
 };
 
-// Settings storage keys (shared across features)
-export const SETTINGS_KEY_YT = 'ytSettingsMDCM';
-export const SETTINGS_KEY_YTM = 'ytmSettingsMDCM';
-
 // Wave visualizer constants
 export const PROCESSED_FLAG = 'wave_visualizer_processed';
 export const SMOOTHING_FACTOR = 0.05;
 export const CANVAS_HEIGHT = 240;
 export const SCALE = CANVAS_HEIGHT / 90;
+
+// Note: Storage keys have been moved to src/config/storage-keys.js
+// Import from there instead of defining here

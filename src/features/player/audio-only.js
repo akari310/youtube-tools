@@ -64,7 +64,7 @@ function setAudioOnlyBackground(url) {
     document.documentElement.appendChild(style);
   }
   style.textContent = url
-    ? `.yt-tools-audio-only-player{background-image:url("${url}")!important;}`
+    ? `.yt-tools-audio-only-player{background-image:url("${url}")!important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;}`
     : '';
 }
 
@@ -91,11 +91,9 @@ export async function applyAudioOnlyMode(enabled) {
   }
 
   const video = getActiveAudioOnlyVideo();
-  if (video) {
-    video.classList.add('yt-tools-audio-only-video');
-    const player = video.closest('#movie_player') || video.closest('#player-container');
-    if (player) player.classList.add('yt-tools-audio-only-player');
-  }
+  const player = video?.parentNode?.parentNode || video?.parentElement || null;
+  if (video) video.classList.add('yt-tools-audio-only-video');
+  if (player) player.classList.add('yt-tools-audio-only-player');
 
   const artUrl = await getAudioOnlyThumbnailUrl();
   if (artUrl && artUrl !== rt.lastArtUrl) {

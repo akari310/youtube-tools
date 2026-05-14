@@ -14,3 +14,12 @@ export {
 // Advanced theme management
 export { themeManager, ThemeManager } from './utils/theme-manager.js';
 export { getThemePreset, getAllThemePresets, THEME_PRESETS } from './presets/index.js';
+
+// Theme animations and transitions
+export { initThemeAnimations, playThemeTransition } from './animations.js';
+
+// Theme customization
+export { getThemeCustomizer, applyCustomTheme } from './customizer.js';
+
+// Color utilities
+export { generateColorPalette, adjustColorBrightness } from './customizer.js';

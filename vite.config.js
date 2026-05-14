@@ -9,7 +9,7 @@ export default defineConfig({
       userscript: {
         name: 'Youtube Tools All in one local download mp3 mp4 HIGT QUALITY return dislikes and more',
         namespace: 'npm/vite-plugin-monkey',
-        version: '2.4.3.2',
+        version: '2.4.4.2',
         author: 'DeveloperMDCM',
         description:
           'Công cụ Youtube Tất cả trong một cục bộ Tải xuống mp4, MP3 - HIGH QUALITY return dislikes and more',

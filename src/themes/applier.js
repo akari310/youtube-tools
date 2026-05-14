@@ -258,6 +258,10 @@ export function applySettings() {
     if (to) to.style.display = 'block';
   }
 
+  // Smooth theme transition
+  document.body.classList.add('transition-theme');
+  setTimeout(() => document.body.classList.remove('transition-theme'), 400);
+
   if (settings.themes && isDarkMode === 'dark' && !isThemeCustom) {
     // Apply selected preset theme
     $sp('--yt-spec-base-background', selectedTheme.gradient);
@@ -267,11 +271,15 @@ export function applySettings() {
     $sp('--yt-spec-icon-inactive', selectedTheme.textColor);
     $sp('--yt-spec-raised-background', selectedTheme.raised);
     $sp('--yt-spec-static-brand-red', selectedTheme.CurrentProgressVideo);
+    $sp('--yt-spec-brand-icon-active', selectedTheme.textColor);
+    $sp('--yt-spec-brand-icon-inactive', selectedTheme.textColor + '80');
+    $sp('--yt-spec-icon-active-other', selectedTheme.textColor);
     addCss(`#background.ytd-masthead { background: ${selectedTheme.gradient} !important; }`);
     addCss(`.ytp-swatch-background-color { background: ${selectedTheme.gradient} !important; }`);
     addCss(
       `.botones_div { background-color: transparent; border: none; color: #999 !important; user-select: none; }`
     );
+    addCss(`ytd-shorts[is-shorts] #cinematics { display: none !important; }`);
 
     if (isYTMusic) {
       let sliderColor = selectedTheme.CurrentProgressVideo;
@@ -298,6 +306,12 @@ export function applySettings() {
     $sp('--yt-spec-icon-inactive', settings.iconsColorPicker);
     $sp('--yt-spec-raised-background', settings.headerColorPicker);
     $sp('--yt-spec-static-brand-red', settings.lineColorPicker);
+    $sp('--yt-spec-brand-icon-active', settings.primaryColorPicker);
+    $sp('--yt-spec-brand-icon-inactive', settings.secondaryColorPicker);
+    $sp('--yt-spec-icon-active-other', settings.iconsColorPicker);
+    $sp('--ytd-searchbox-background', settings.menuColorPicker);
+    $sp('--ytd-searchbox-text-color', settings.primaryColorPicker);
+    $sp('--ytd-searchbox-border-color', settings.primaryColorPicker + '30');
     // Navbar color handled separately - remove auto-application
     addCss(
       `.ytp-swatch-background-color { background: ${settings.progressbarColorPicker} !important; }`
@@ -305,6 +319,7 @@ export function applySettings() {
     addCss(
       `.botones_div { background-color: transparent; border: none; color: ${settings.iconsColorPicker} !important; user-select: none; }`
     );
+    addCss(`ytd-shorts[is-shorts] #cinematics { display: none !important; }`);
 
     if (isYTMusic) {
       applyYTMThemeVars(
@@ -330,6 +345,12 @@ export function applySettings() {
       '--yt-spec-raised-background',
       '--yt-spec-static-brand-red',
       '--yt-spec-static-brand-white',
+      '--yt-spec-brand-icon-active',
+      '--yt-spec-brand-icon-inactive',
+      '--yt-spec-icon-active-other',
+      '--ytd-searchbox-background',
+      '--ytd-searchbox-text-color',
+      '--ytd-searchbox-border-color',
     ];
     props.forEach(p => document.documentElement.style.removeProperty(p));
     addCss(
@@ -355,8 +376,11 @@ export function applySettings() {
   if (settings.backgroundImage) {
     console.log('[YT Tools] Applying background image:', isYTMusic ? 'YouTube Music' : 'YouTube');
     if (isYTMusic) {
-      // YouTube Music: apply to content-wrapper
+      // YouTube Music: apply to content-wrapper with transparency chain + dark overlay
       const bgStyle = `
+        html, body, ytmusic-app, ytmusic-app-layout, #layout {
+          background: transparent !important;
+        }
         #content-wrapper.style-scope.ytmusic-browse-response,
         #content-wrapper.style-scope.ytmusic-item-section-renderer,
         #content-wrapper.style-scope.ytmusic-nav-bar,
@@ -364,24 +388,23 @@ export function applySettings() {
         .ytmusic-item-section-renderer,
         ytmusic-browse-response,
         ytmusic-item-section-renderer {
-          background-image: url(${settings.backgroundImage}) !important;
-          background-size: cover !important;
-          background-position: center !important;
-          background-attachment: fixed !important;
-          background-repeat: no-repeat !important;
+          background:
+            linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+            url(${settings.backgroundImage}) center/cover fixed no-repeat !important;
         }
       `;
       addCss(bgStyle);
       console.log('[YT Tools] Background image CSS applied for YouTube Music');
     } else {
-      // YouTube: apply to body
+      // YouTube: apply to body with transparency chain + dark overlay
       const bgStyle = `
+        html, ytd-app {
+          background: transparent !important;
+        }
         body {
-          background-image: url(${settings.backgroundImage}) !important;
-          background-size: cover !important;
-          background-position: center !important;
-          background-attachment: fixed !important;
-          background-repeat: no-repeat !important;
+          background:
+            linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+            url(${settings.backgroundImage}) center/cover fixed no-repeat !important;
         }
       `;
       addCss(bgStyle);
@@ -390,6 +413,9 @@ export function applySettings() {
   } else {
     console.log('[YT Tools] No background image to apply');
   }
+
+  // Apply advanced theme CSS
+  applyAdvancedThemeCSS(selectedTheme, settings, addCss);
 
   setDynamicCss(dynamicCssArray.join('\n'));
 
@@ -403,6 +429,218 @@ export function applySettings() {
 
   if (__ytToolsRuntime.settingsLoaded) {
     saveSettingsFromDOM();
+  }
+}
+
+// Advanced Theme CSS Application
+function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
+  const hasBgImage = !!settings.backgroundImage;
+
+  // YouTube-specific advanced CSS
+  if (!isYTMusic) {
+    if (hasBgImage) {
+      addCss(`
+        ytd-app,
+        #content.ytd-app,
+        #page-manager.ytd-app,
+        ytd-browse,
+        ytd-watch-flexy,
+        ytd-two-column-browse-results-renderer,
+        #primary.ytd-two-column-browse-results-renderer,
+        #secondary.ytd-two-column-browse-results-renderer,
+        ytd-rich-grid-renderer,
+        #contents.ytd-rich-grid-renderer,
+        ytd-item-section-renderer,
+        ytd-comments-header-renderer,
+        ytd-comment-simplebox-renderer,
+        ytd-comment-thread-renderer,
+        ytd-comment-renderer,
+        #header.ytd-item-section-renderer,
+        #body.ytd-comment-renderer,
+        #author-thumbnail.ytd-comment-simplebox-renderer,
+        #cinematic-shorts-scrim.ytd-shorts,
+        ytd-comment-view-model,
+        ytd-comment-engagement-bar,
+        ytd-comment-replies-renderer,
+        #anchored-panel.ytd-shorts,
+        #cinematic-container.ytd-reel-video-renderer,
+        #shorts-cinematic-container,
+        .short-video-container.ytd-reel-video-renderer,
+        ytd-reel-video-renderer,
+        .navigation-container.ytd-shorts,
+        .navigation-button.ytd-shorts {
+          background: transparent !important;
+        }
+      `);
+    }
+    addCss(`
+      /* Completely hide the cinematic glow in shorts if it's causing black blocks */
+      #cinematic-container.ytd-reel-video-renderer,
+      #shorts-cinematic-container,
+      #cinematic-shorts-scrim.ytd-shorts {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+      }
+
+      /* Use theme colors on major components without breaking layout */
+      #masthead-container.ytd-app,
+      #background.ytd-masthead {
+        background: ${selectedTheme.gradient} !important;
+      }
+
+      /* Revert chip bar to near-native but themed */
+      #header.ytd-rich-grid-renderer,
+      ytd-feed-filter-chip-bar-renderer,
+      #chips-wrapper.ytd-feed-filter-chip-bar-renderer {
+        background: transparent !important;
+      }
+
+      /* Improve Shorts Navigation: Center 'Next' button if it's the first Short */
+      ytd-shorts[is-watch-while-mode] .navigation-container.ytd-shorts,
+      .navigation-container.ytd-shorts {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        gap: 12px !important;
+        height: 100% !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        background-color: transparent !important;
+      }
+      .navigation-button.ytd-shorts {
+        margin: 0 !important;
+      }
+      /* Ensure hidden buttons don't take up space in the flex container */
+      #navigation-button-up[aria-hidden="true"],
+      #navigation-button-up[aria-hidden=""],
+      #navigation-button-up[hidden],
+      #navigation-button-up[aria-hidden="true"],
+      #navigation-button-up[aria-hidden=""],
+      #navigation-button-up[hidden],
+      #navigation-button-down[aria-hidden="true"],
+      #navigation-button-down[aria-hidden=""],
+      #navigation-button-down[hidden] {
+        display: none !important;
+      }
+
+      /* Restore the 'frosted-glass' look but with the theme gradient */
+      #frosted-glass.ytd-app {
+        background: ${selectedTheme.gradient} !important;
+        opacity: 0.8 !important;
+      }
+
+      ytd-engagement-panel-section-list-renderer { 
+        background: ${selectedTheme.gradient} !important; 
+        backdrop-filter: blur(12px) !important; 
+      }
+      ytd-engagement-panel-title-header-renderer[shorts-panel] #header.ytd-engagement-panel-title-header-renderer {
+        background: ${selectedTheme.gradient}  !important;
+      }
+      .buttons-tranlate {
+        background: ${selectedTheme.btnTranslate || selectedTheme.accent} !important;
+      }
+      .badge-shape-wiz--thumbnail-default {
+        color: ${selectedTheme.videoDuration || selectedTheme.primary} !important;
+        background: ${selectedTheme.gradient} !important;
+      }
+      #logo-icon {
+        color: ${selectedTheme.textLogo || selectedTheme.primary} !important;
+      }
+      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text {
+        color: ${selectedTheme.colorIcons || selectedTheme.primary} !important;
+      }
+      .ytd-topbar-menu-button-renderer #button.ytd-topbar-menu-button-renderer {
+        color: ${selectedTheme.colorIcons || selectedTheme.primary} !important;
+      }
+      .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon {
+        color: ${selectedTheme.colorIcons || selectedTheme.primary} !important;
+      }
+      .ytp-svg-fill {
+        fill: ${selectedTheme.colorIcons || selectedTheme.primary} !important;
+      }
+      #ytp-id-30,#ytp-id-17,#ytp-id-19,#ytp-id-20{
+        fill: ${selectedTheme.colorIcons || selectedTheme.primary} !important;
+      }
+    `);
+
+    console.log('[YT Tools] Advanced YouTube CSS applied');
+  }
+
+  // YouTube Music-specific advanced CSS
+  if (isYTMusic) {
+    const ytmSliderSolidColor = selectedTheme.progress || selectedTheme.accent;
+    addCss(`
+      html, body, ytmusic-app {
+        background-color: ${hasBgImage ? 'transparent' : '#030303'} !important;
+        background-image: ${hasBgImage ? 'none' : selectedTheme.gradient} !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
+      }
+      ytmusic-player-bar {
+        background: ${hasBgImage ? 'transparent' : selectedTheme.gradient} !important;
+        ${hasBgImage ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
+      }
+      ytmusic-nav-bar {
+        background: transparent !important;
+        transition: background 0.4s ease-in-out !important;
+      }
+      ytmusic-nav-bar.scrolled,
+      ytmusic-nav-bar[opened],
+      body[player-page-open] ytmusic-nav-bar {
+        background: ${selectedTheme.gradient} !important;
+        ${hasBgImage ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
+      }
+      ytmusic-search-box #input-box { background: ${selectedTheme.gradient} !important; }
+      ytmusic-browse-response,
+      ytmusic-header-renderer,
+      ytmusic-tabbed-browse-renderer,
+      ytmusic-detail-header-renderer,
+      ytmusic-section-list-renderer,
+      ytmusic-carousel-shelf-renderer,
+      ytmusic-grid-renderer,
+      ytmusic-item-section-renderer,
+      #content.ytmusic-app,
+      #shorts-container, ytd-shorts, #shorts-inner-container, ytd-reel-player-overlay, #overlay.ytd-reel-video-renderer, ytmusic-app-layout, #mini-guide-background, #guide-wrapper.ytmusic-app-layout, ytmusic-browse-response #background, ytmusic-browse-response .background, ytmusic-app-layout #background, ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer, ytmusic-chip-cloud-chip-renderer, ytmusic-chip-cloud-renderer, ytmusic-player-page, ytmusic-player-page #background { background: transparent !important; }
+
+      /* Neutralize default YTM gradients */
+      ytmusic-browse-response #background,
+      ytmusic-header-renderer #background,
+      ytmusic-tabbed-browse-renderer #background,
+      ytmusic-player-page #background,
+      ytmusic-player-page .background,
+      .background-gradient.ytmusic-browse-response,
+      #background.style-scope.ytmusic-browse-response,
+      #header.style-scope.ytmusic-browse-response,
+      ytmusic-browse-response [id="background"],
+      ytmusic-header-renderer [id="background"], #mini-guide-background, #guide-spacer, .immersive-background, ytmusic-fullbleed-thumbnail-renderer[is-background] {
+        background: transparent !important;
+        background-image: none !important;
+      }
+      .immersive-background, ytmusic-fullbleed-thumbnail-renderer[is-background] {
+        display: none !important;
+      }
+
+      #layout { background: transparent !important; }
+      .content.ytmusic-player-page { background: transparent !important; }
+
+      ytmusic-player-bar .title, ytmusic-player-bar .byline {
+        color: ${selectedTheme.textColor} !important;
+      }
+      .ytmusic-player-bar .yt-spec-icon-shape, .ytmusic-player-bar svg {
+        color: ${selectedTheme.colorIcons || selectedTheme.textColor} !important;
+        fill: ${selectedTheme.colorIcons || selectedTheme.textColor} !important;
+      }
+      #progress-bar {
+        --paper-slider-active-color: ${ytmSliderSolidColor} !important;
+        --paper-slider-knob-color: ${ytmSliderSolidColor} !important;
+        --paper-slider-secondary-color: ${ytmSliderSolidColor}80 !important;
+      }
+    `);
+    console.log('[YT Tools] Advanced YouTube Music CSS applied');
   }
 }
 

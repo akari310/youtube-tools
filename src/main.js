@@ -23,8 +23,8 @@ import { reverseMode } from './features/player/reverse-mode.js';
 import { disableSubtitles } from './features/player/disable-subtitles.js';
 import { applyNonstopPlayback } from './features/player/nonstop-playback.js';
 import { applyAudioOnlyMode, getEffectiveAudioOnly } from './features/player/audio-only.js';
-import { applyCinematicLighting } from './features/player/cinematic-lighting.js';
-import { setupAvatarDownload } from './features/avatar-download.js';
+import { applyCinematicLighting, setupThumbnailDownloadButton } from './features/player/cinematic-lighting.js';
+import { setupAvatarDownload } from './features/comments/avatar-download.js';
 import { initWaveVisualizer } from './features/wave-visualizer.js';
 import { initShortsReelButtons } from './features/shorts/shorts-reel-buttons.js';
 import { initDownloadDescription } from './features/download-description.js';
@@ -83,6 +83,7 @@ import { checkNewVersion } from './utils/helpers.js';
     [applyNonstopPlayback, s.nonstopPlayback],
     [applyAudioOnlyMode, getEffectiveAudioOnly(s)],
     [applyCinematicLighting, s],
+    [setupThumbnailDownloadButton, null],
     [setupAvatarDownload, s.avatars],
     [initWaveVisualizer, s],
     [initShortsReelButtons, null],

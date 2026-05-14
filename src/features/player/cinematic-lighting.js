@@ -125,4 +125,108 @@ export function applyCinematicLighting(settings) {
       cinematicDiv.style.display = settings.cinematicLighting ? 'block' : 'none';
     }
   }
+
+  // Background transparent enhancement
+  const cinematica = $e('#cinematics > div');
+  if (cinematica != undefined) {
+    cinematica.style.cssText =
+      'position: fixed; inset: 0px; pointer-events: none; transform: scale(1.5, 2)';
+  }
+}
+
+export function downloadThumbnail() {
+  const cinematica = $e('#cinematics > div');
+  const videoFull = $e('#movie_player');
+
+  if (cinematica != undefined || videoFull != undefined) {
+    const parametrosURL = new URLSearchParams(window.location.search);
+    const enlace = parametrosURL.get('v');
+
+    const imageUrl = `https://i.ytimg.com/vi/${enlace}/maxresdefault.jpg`;
+
+    fetch(imageUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        const imageSizeKB = blob.size / 1024;
+
+        if (imageSizeKB >= 20) {
+          // Open in new window
+          window.open(
+            `https://i.ytimg.com/vi/${enlace}/maxresdefault.jpg`,
+            'popUpWindow',
+            'height=500,width=400,left=100,top=100,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no, status=yes'
+          );
+
+          // Download the image
+          const imageUrlObject = URL.createObjectURL(blob);
+
+          const enlaceDescarga = document.createElement('a');
+          enlaceDescarga.href = imageUrlObject;
+          const titleVideo = isYTMusic
+            ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
+            : ($e('h1.style-scope.ytd-watch-metadata')?.innerText || 'video');
+          enlaceDescarga.download = `${titleVideo}_maxresdefault.jpg`;
+          enlaceDescarga.click();
+
+          URL.revokeObjectURL(imageUrlObject);
+        } else {
+          console.log(
+            'La imagen no excede los 20 KB. No se descargará.'
+          );
+        }
+      })
+      .catch((error) => {
+        alert('No found image');
+        console.error('Error al obtener la imagen:', error);
+      });
+  }
+}
+
+export function setupThumbnailDownloadButton() {
+  // Find or create the thumbnail download button
+  let btnImagen = $e('#yt-thumbnail-download-btn');
+
+  if (!btnImagen) {
+    btnImagen = document.createElement('button');
+    btnImagen.id = 'yt-thumbnail-download-btn';
+    btnImagen.innerHTML = '<i class="fas fa-image"></i> Download Thumbnail';
+    btnImagen.style.cssText = `
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 8px;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    `;
+
+    btnImagen.onmouseover = () => {
+      btnImagen.style.background = 'rgba(255, 255, 255, 0.2)';
+    };
+
+    btnImagen.onmouseout = () => {
+      btnImagen.style.background = 'rgba(255, 255, 255, 0.1)';
+    };
+
+    // Add to YouTube's action buttons area
+    const actionsContainer = $e('#actions.ytd-watch-metadata') ||
+      $e('#menu-container') ||
+      $e('.ytp-right-controls');
+
+    if (actionsContainer) {
+      actionsContainer.appendChild(btnImagen);
+    }
+  }
+
+  // Setup click handler
+  if (btnImagen != undefined) {
+    btnImagen.onclick = downloadThumbnail;
+  }
 }

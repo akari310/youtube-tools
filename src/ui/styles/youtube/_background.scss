@@ -5,6 +5,7 @@
 
 /* === Mode Custom Properties === */
 body.yt-style-blur {
+  background-color: #0f0f0f !important;
   --yt-glass-blur: 20px;
   --yt-glass-saturate: 1;
   --yt-glass-bg-masthead: rgba(15, 15, 15, 0.55);
@@ -23,6 +24,7 @@ body.yt-style-blur {
 }
 
 body.yt-style-liquid {
+  background-color: #0f0f0f !important;
   --yt-glass-blur: 24px;
   --yt-glass-saturate: 1.8;
   --yt-glass-bg-masthead: rgba(20, 20, 20, 0.4);
@@ -58,6 +60,19 @@ body.yt-style-transparent {
   --yt-glass-inset: none;
 }
 
+/* Light Mode overrides */
+body:not(.ytd-dark-theme).yt-style-blur,
+body:not(.ytd-dark-theme).yt-style-liquid {
+  --yt-glass-bg-masthead: rgba(255, 255, 255, 0.6);
+  --yt-glass-bg-sidebar: rgba(255, 255, 255, 0.55);
+  --yt-glass-bg-guide: rgba(255, 255, 255, 0.5);
+  --yt-glass-bg-search: rgba(255, 255, 255, 0.45);
+  --yt-glass-bg-miniguide: rgba(255, 255, 255, 0.5);
+  --yt-glass-bg-watch: rgba(248, 248, 248, 0.4);
+  --yt-glass-border: rgba(0, 0, 0, 0.08);
+  --yt-glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
 /* === Unified Glass Selectors (single block, no duplication) === */
 
 /* Masthead / Header */
@@ -78,6 +93,16 @@ body.yt-style-transparent #masthead-container {
     background 0.6s ease,
     border-color 0.6s ease;
   will-change: backdrop-filter;
+}
+
+/* Scrolled masthead (more opaque, stronger shadow) */
+body.yt-style-blur ytd-masthead.scrolled,
+body.yt-style-liquid ytd-masthead.scrolled {
+  background: rgba(15, 15, 15, 0.85) !important;
+  backdrop-filter: blur(28px) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(var(--yt-glass-saturate)) !important;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Page content areas */
@@ -190,6 +215,18 @@ body.yt-style-transparent #container.ytd-searchbox {
   background: transparent !important;
 }
 
+/* Search box hover/focus glow */
+body.yt-style-blur ytd-searchbox #search-form:focus-within,
+body.yt-style-blur ytd-searchbox #search-form:hover,
+body.yt-style-liquid ytd-searchbox #search-form:focus-within,
+body.yt-style-liquid ytd-searchbox #search-form:hover {
+  background: rgba(25, 25, 25, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow:
+    0 0 20px rgba(255, 255, 255, 0.06),
+    var(--yt-glass-shadow) !important;
+}
+
 /* Chips / Filter bar */
 body.yt-style-blur #chips-wrapper,
 body.yt-style-blur ytd-feed-filter-chip-bar-renderer,
@@ -254,6 +291,18 @@ body.yt-style-transparent ytd-engagement-panel-section-list-renderer {
     backdrop-filter 0.6s ease,
     background 0.6s ease,
     border-color 0.6s ease;
+}
+
+/* Smooth theme transition class (applied via JS on theme switch) */
+body.transition-theme *,
+body.transition-theme *::before,
+body.transition-theme *::after {
+  transition:
+    background 0.4s ease,
+    background-color 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease !important;
 }
 
 /* Transparent mode: disable will-change to free GPU memory */

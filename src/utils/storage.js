@@ -1,16 +1,14 @@
-// Storage Keys
-export const STORAGE_KEYS_MDCM = {
-  BOOKMARKS: 'ytBookmarksMDCM',
-  CONTINUE_WATCHING: 'ytContinueWatchingMDCM',
-  SHORTS_CHANNEL_CACHE: 'ytShortsChannelCacheMDCM',
-  LIKES_DISLIKES_CACHE: 'ytLikesDislikesCacheMDCM',
-  VERSION_CHECK_LAST: 'ytVersionCheckLastMDCM',
-};
+// Storage Keys - Re-export from centralized config
+export {
+  STORAGE_KEYS as STORAGE_KEYS_MDCM,
+  UPDATE_META_URL,
+  VERSION_CHECK_INTERVAL_MS,
+  CACHE_TTL,
+  CACHE_LIMITS,
+} from '../config/storage-keys.js';
 
-// Update check constants
-export const UPDATE_META_URL =
-  'https://update.greasyfork.org/scripts/460680/Youtube%20Tools%20All%20in%20one%20local%20download%20mp3%20mp4%20HIGT%20QUALITY%20return%20dislikes%20and%20more.meta.js';
-export const VERSION_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // once per day
+// Re-export helper functions
+export { getSettingsKey } from '../config/storage-keys.js';
 
 // Storage helpers using GM APIs
 export function readJsonGM(key, defaultValue = null) {
@@ -29,11 +27,6 @@ export function writeJsonGM(key, value) {
   } catch (e) {}
 }
 
-// Time constants
-export const SHORTS_CHANNEL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-export const LIKES_DISLIKES_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-export const PERSISTED_CACHE_MAX_ENTRIES = 500;
-
 // Cache functions
 export function getShortsChannelFromPersistedCache(videoId) {
   try {
@@ -41,7 +34,7 @@ export function getShortsChannelFromPersistedCache(videoId) {
     const entry = map?.[videoId];
     if (!entry || typeof entry.channelName !== 'string') return null;
     const age = Date.now() - (Number(entry.ts) || 0);
-    if (age > SHORTS_CHANNEL_TTL_MS) return null;
+    if (age > CACHE_TTL.SHORTS_CHANNEL) return null;
     return entry.channelName;
   } catch (e) {
     return null;
@@ -59,7 +52,7 @@ export function setShortsChannelToPersistedCache(videoId, channelName) {
     const entries = Object.entries(map).sort(
       (a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0)
     );
-    const pruned = Object.fromEntries(entries.slice(0, PERSISTED_CACHE_MAX_ENTRIES));
+    const pruned = Object.fromEntries(entries.slice(0, CACHE_LIMITS.PERSISTED_MAX_ENTRIES));
     writeJsonGM(STORAGE_KEYS_MDCM.SHORTS_CHANNEL_CACHE, pruned);
   } catch (e) {}
 }
@@ -70,7 +63,7 @@ export function getLikesDislikesFromPersistedCache(videoId) {
     const entry = map?.[videoId];
     if (!entry) return null;
     const age = Date.now() - (Number(entry.ts) || 0);
-    if (age > LIKES_DISLIKES_TTL_MS) return null;
+    if (age > CACHE_TTL.LIKES_DISLIKES) return null;
     const dislikes = Number(entry.dislikes);
     const likes = Number(entry.likes);
     const viewCount = Number(entry.viewCount);
@@ -100,7 +93,7 @@ export function setLikesDislikesToPersistedCache(videoId, data) {
     const entries = Object.entries(map).sort(
       (a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0)
     );
-    const pruned = Object.fromEntries(entries.slice(0, PERSISTED_CACHE_MAX_ENTRIES));
+    const pruned = Object.fromEntries(entries.slice(0, CACHE_LIMITS.PERSISTED_MAX_ENTRIES));
     writeJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, pruned);
   } catch (e) {}
 }

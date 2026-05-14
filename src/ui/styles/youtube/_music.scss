@@ -47,9 +47,7 @@ body.ytm-style-liquid ytmusic-player-page #side-panel ytmusic-tab-renderer {
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
   border-radius: 16px !important;
 }
 
@@ -63,16 +61,15 @@ body.ytm-style-transparent ytmusic-player-page #side-panel ytmusic-tab-renderer 
   box-shadow: none !important;
 }
 
-/* Inner Container Resets */
-html[dark] .yt-tools-container,
-ytmusic-app .yt-tools-container,
-ytmusic-app #side-panel ytmusic-tab-renderer,
-ytmusic-app ytmusic-search-box,
-ytmusic-app #side-panel > .tab-header-container,
-tp-yt-paper-tabs.tab-header-container,
-#tabsContainer.tp-yt-paper-tabs,
-tp-yt-paper-tab.tab-header,
-.tab-content.tp-yt-paper-tab {
+/* Inner Container Resets - Only apply transparency when a style is active */
+body[class*="ytm-style-"] .yt-tools-container,
+body[class*="ytm-style-"] #side-panel ytmusic-tab-renderer,
+body[class*="ytm-style-"] ytmusic-search-box,
+body[class*="ytm-style-"] #side-panel > .tab-header-container,
+body[class*="ytm-style-"] tp-yt-paper-tabs.tab-header-container,
+body[class*="ytm-style-"] #tabsContainer.tp-yt-paper-tabs,
+body[class*="ytm-style-"] tp-yt-paper-tab.tab-header,
+body[class*="ytm-style-"] .tab-content.tp-yt-paper-tab {
   background: transparent !important;
   background-color: transparent !important;
   backdrop-filter: none !important;
@@ -241,6 +238,22 @@ ytmusic-app #icon-menu-settings:hover {
   --ytm-glass-blur: 18px;
 }
 
+/* Shared Glass Variables (aligned with YouTube glass) */
+body.ytm-style-blur {
+  --yt-glass-blur-sidebar: 20px;
+  --yt-glass-saturate: 1;
+  --yt-glass-bg-sidebar: rgba(20, 20, 20, 0.6);
+  --yt-glass-border: rgba(255, 255, 255, 0.08);
+}
+
+body.ytm-style-liquid {
+  --yt-glass-blur-sidebar: 24px;
+  --yt-glass-saturate: 1.8;
+  --yt-glass-bg-sidebar: rgba(25, 25, 25, 0.45);
+  --yt-glass-border: rgba(255, 255, 255, 0.15);
+  --yt-glass-border-top: rgba(255, 255, 255, 0.25);
+}
+
 /* Core Navbar Glass Effect */
 ytmusic-nav-bar {
   background-color: var(--ytm-glass-bg) !important;
@@ -269,7 +282,7 @@ ytmusic-nav-bar.scrolled {
 
 /* Layout & Containers */
 ytmusic-app-layout {
-  background: var(--ytmusic-background, transparent) !important;
+  background: var(--ytmusic-background, #030303) !important;
 }
 
 /* Sidebar/Guide Glass */

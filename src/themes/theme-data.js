@@ -12,6 +12,8 @@ export const THEMES = [
     videoDuration: '',
     colorIcons: '',
     textLogo: '',
+    glassBg: '',
+    glassBlur: '',
   },
   {
     name: 'Midnight Blue',
@@ -23,6 +25,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(30, 58, 138, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Forest Green',
@@ -34,6 +38,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(20, 83, 45, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Sunset Orange',
@@ -45,6 +51,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(124, 45, 18, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Royal Purple',
@@ -56,6 +64,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(46, 16, 101, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Cherry Blossom',
@@ -67,6 +77,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(169, 0, 92, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Red Dark',
@@ -78,6 +90,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(121, 9, 9, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Raind',
@@ -89,6 +103,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(63, 94, 251, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Neon',
@@ -100,6 +116,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(238, 73, 253, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Azure',
@@ -111,6 +129,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(1, 114, 175, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Butterfly',
@@ -122,6 +142,8 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(255, 64, 96, 0.5)',
+    glassBlur: '20px',
   },
   {
     name: 'Colombia',
@@ -133,5 +155,7 @@ export const THEMES = [
     videoDuration: '#fff',
     colorIcons: '#fff',
     textLogo: '#f00',
+    glassBg: 'rgba(0, 0, 187, 0.5)',
+    glassBlur: '20px',
   },
 ];

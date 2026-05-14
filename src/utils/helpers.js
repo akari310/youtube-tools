@@ -78,7 +78,7 @@ export function FormatterNumber(num, digits) {
     { value: 1e3, symbol: ' K' },
     { value: 1e6, symbol: ' M' },
   ];
-  const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
+  const rx = /\.0+$|\(\.[0-9]*[1-9]\)0+$/;
   const item = lookup
     .slice()
     .reverse()
@@ -127,7 +127,7 @@ export async function checkNewVersion() {
     const res = await fetch(UPDATE_META_URL, { cache: 'no-store' });
     if (!res.ok) return;
     const text = await res.text();
-    const m = text.match(/@version\s+([\d.]+)/);
+    const m = text.match(/@version\s+\([\d.]+\)/);
     if (!m) return;
     const latestVer = m[1].trim();
     const currentVer =

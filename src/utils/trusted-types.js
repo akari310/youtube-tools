@@ -2,9 +2,7 @@ let policyInst = null;
 
 function getTT() {
   try {
-    return typeof unsafeWindow !== 'undefined' && unsafeWindow.trustedTypes
-      ? unsafeWindow.trustedTypes
-      : window.trustedTypes;
+    return typeof unsafeWindow !== 'undefined' ? unsafeWindow.trustedTypes : window.trustedTypes;
   } catch {
     return null;
   }
@@ -17,20 +15,15 @@ function initPolicy() {
     policyInst = null;
     return null;
   }
-  if (tt.defaultPolicy) {
-    policyInst = tt.defaultPolicy;
+  try {
+    policyInst = tt.createPolicy('yt-tools-mdcm', {
+      createHTML: (s) => s
+    });
+    return policyInst;
+  } catch (e) {
+    policyInst = tt.defaultPolicy || null;
     return policyInst;
   }
-  try {
-    policyInst = tt.createPolicy('yt-tools-mdcm', { createHTML: s => s });
-    return policyInst;
-  } catch {}
-  try {
-    policyInst = tt.createPolicy('default', { createHTML: s => s });
-    return policyInst;
-  } catch {}
-  policyInst = null;
-  return null;
 }
 
 export const policy = initPolicy();

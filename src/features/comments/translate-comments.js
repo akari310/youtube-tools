@@ -3,7 +3,7 @@ import { safeHTML } from '../../utils/trusted-types.js';
 import { apiGoogleTranslate } from '../../config/constants.js';
 
 // ------------------------------
-// Feature: Translate Comments
+// Feature: Translate Comments - Optimized Version
 // ------------------------------
 
 const languagesTranslate = {
@@ -16,116 +16,133 @@ const languagesTranslate = {
   'zh-CN': 'Chinese (Simplified)',
 };
 
+// Biến cờ phải nằm ngoài hàm để không bị reset
 let translatorEventBound = false;
-let commentObserver = null;
-// Fallback interval for edge cases where MutationObserver misses updates
-const FALLBACK_INTERVAL_MS = 8000;
-let fallbackInterval = null;
 
-let translatorTarget = 'en';
-
-export function traductor() {
+function traductor() {
+  // Chỉ quét những comment chưa có nút dịch (dùng thuộc tính data-translated)
   const texts = document.querySelectorAll('#content-text:not([data-translated])');
   if (texts.length === 0) return;
 
   const languages = languagesTranslate;
-  const idiomaDestino = translatorTarget;
+  const idiomaDestino = $id('select-languages-comments-select')?.value || 'en';
 
+  // Tạo sẵn HTML cho dropdown ngôn ngữ để dùng chung
   const optionsHTML = Object.entries(languages)
-    .map(
-      ([code, name]) =>
-        `<option value="${code}" ${code === idiomaDestino ? 'selected' : ''}>${name}</option>`
-    )
+    .map(([code, name]) => `<option value="${code}" ${code === idiomaDestino ? 'selected' : ''}>${name}</option>`)
     .join('');
 
-  texts.forEach(texto => {
-    texto.setAttribute('data-translated', 'true');
+  // Gắn nút dịch vào các comment mới
+  texts.forEach((texto) => {
+    texto.setAttribute('data-translated', 'true'); // Đánh dấu là đã gắn nút
     const controlsHTML = `
-    <div class="traductor-container" style="margin-top: 5px; margin-bottom: 5px; display: flex; gap: 8px; align-items: center;">
-      <button class="buttons-tranlate yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-s" data-action="translate-comment" style="padding: 0 10px; height: 24px; font-size: 12px; border-radius: 12px; cursor: pointer; border: none;">
-        Translate
-      </button>
-      <select class="select-traductor" style="background: transparent; color: inherit; border: 1px solid rgba(150,150,150,0.3); border-radius: 4px; padding: 2px 4px; font-size: 12px; outline: none;">
-      ${optionsHTML}
-      </select>
-    </div>
+      <div class="traductor-container">
+        <button class="buttons-tranlate" data-action="translate-comment"> Translate <i class="fa-solid fa-language"></i></button>
+        <select class="select-traductor">
+        ${optionsHTML}
+        </select>
+      </div>
     `;
     texto.insertAdjacentHTML('afterend', safeHTML(controlsHTML));
   });
 
+  // Áp dụng Event Delegation: Chỉ gắn sự kiện click 1 lần duy nhất lên document
   if (!translatorEventBound) {
     translatorEventBound = true;
-    document.addEventListener('click', e => {
+
+    document.addEventListener('click', (e) => {
       const btn = e.target.closest('.buttons-tranlate[data-action="translate-comment"]');
       if (!btn) return;
 
       const container = btn.closest('.traductor-container');
-      const selectLang = container?.querySelector('.select-traductor');
-      const textNode = container?.previousElementSibling;
+      const selectLang = container.querySelector('.select-traductor');
+      const textNode = container.previousElementSibling; // Thẻ #content-text
 
       if (!textNode || !selectLang) return;
 
-      const urlLista =
-        `?client=dict-chrome-ex&sl=auto&tl=${selectLang.value}&q=` +
-        encodeURIComponent(textNode.textContent);
+      const urlLista = `?client=dict-chrome-ex&sl=auto&tl=${selectLang.value}&q=` + encodeURIComponent(textNode.textContent);
 
-      btn.innerHTML = safeHTML('Translating...');
+      btn.innerHTML = safeHTML('Translating... <i class="fa-solid fa-spinner fa-spin"></i>');
 
       fetch(apiGoogleTranslate + urlLista)
-        .then(response => response.json())
-        .then(datos => {
-          if (datos && datos[0] && datos[0][0]) {
-            textNode.textContent = datos[0][0][0] || datos[0][0];
-            btn.textContent = 'Translated';
-          }
+        .then((response) => response.json())
+        .then((datos) => {
+          textNode.textContent = datos[0][0];
+          btn.textContent = 'Translated';
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error('Error en la traducción:', err);
           btn.textContent = 'Error';
         });
     });
   }
 }
 
-export function initTranslateComments(settings) {
-  if (settings?.languagesComments) translatorTarget = settings.languagesComments;
-  if (settings?.translateTarget) translatorTarget = settings.translateTarget;
-  if (commentObserver) {
-    commentObserver.disconnect();
-    commentObserver = null;
-  }
-  if (fallbackInterval) {
-    clearInterval(fallbackInterval);
-    fallbackInterval = null;
-  }
+function limpiarHTML(selector) {
+  $m(selector).forEach((button) => button.remove());
+}
 
+// === CODE TỐI ƯU MỚI THAY THẾ CHO SCROLL EVENT === (YT only)
+let _commentIO = null;
+let _commentMO = null;
+
+function initSmartCommentObserver() {
+  const commentsContainer = document.querySelector('#comments');
+  if (!commentsContainer) return;
+
+  // Disconnect previous observers to avoid duplicates
+  if (_commentIO) { try { _commentIO.disconnect(); } catch (e) { } _commentIO = null; }
+  if (_commentMO) { try { _commentMO.disconnect(); } catch (e) { } _commentMO = null; }
+
+  _commentIO = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      _commentMO = new MutationObserver((mutations) => {
+        let shouldUpdate = false;
+        for (const m of mutations) {
+          if (m.addedNodes.length > 0) {
+            shouldUpdate = true;
+            break;
+          }
+        }
+
+        if (shouldUpdate) {
+          window.requestAnimationFrame(() => {
+            traductor();
+          });
+        }
+      });
+
+      const commentContents = document.querySelector('ytd-comments #contents');
+      if (commentContents) {
+        _commentMO.observe(commentContents, {
+          childList: true,
+          subtree: true
+        });
+      }
+
+      _commentIO.disconnect();
+    }
+  });
+
+  _commentIO.observe(commentsContainer);
+}
+
+export function initTranslateComments(settings) {
   if (!settings?.translateComments) return;
+
+  // Initialize smart observer for YouTube only
+  if (!window.location.hostname.includes('music.youtube.com')) {
+    if (!window.__ytToolsCommentNavBound) {
+      window.__ytToolsCommentNavBound = true;
+      document.addEventListener('yt-navigate-finish', () => {
+        setTimeout(initSmartCommentObserver, 1500);
+      });
+    }
+
+    initSmartCommentObserver();
+  }
 
   // Run once immediately for any existing comments
   traductor();
-
-  // Use MutationObserver to watch for new comments instead of polling
-  const observeTarget =
-    document.querySelector('#comments') ||
-    document.querySelector('ytd-comments') ||
-    document.querySelector('#content') ||
-    document.body;
-
-  let debounceT = null;
-  commentObserver = new MutationObserver(() => {
-    // Debounce: batch rapid DOM mutations into a single traductor() call
-    if (debounceT) return;
-    debounceT = setTimeout(() => {
-      debounceT = null;
-      traductor();
-    }, 500);
-  });
-
-  commentObserver.observe(observeTarget, {
-    childList: true,
-    subtree: true,
-  });
-
-  // Fallback interval (less frequent) for cases MutationObserver might miss
-  // e.g., lazy-loaded comments that don't trigger childList mutations
-  fallbackInterval = setInterval(traductor, FALLBACK_INTERVAL_MS);
 }
+// === KẾT THÚC CODE TỐI ƯU ===

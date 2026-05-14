@@ -20,6 +20,7 @@ const browserGlobals = {
   URL: 'readonly',
   URLSearchParams: 'readonly',
   WebKitMutationObserver: 'readonly',
+  alert: 'readonly',
   atob: 'readonly',
   btoa: 'readonly',
   cancelAnimationFrame: 'readonly',
@@ -52,7 +53,7 @@ const userscriptGlobals = {
 
 export default [
   {
-    ignores: ['node_modules/**', 'dist/**', 'src/script-full.js', '*.min.js'],
+    ignores: ['node_modules/**', 'dist/**', 'src/script-full.js', '*.min.js', 'youtube-tools.user.js'],
   },
   js.configs.recommended,
   {
