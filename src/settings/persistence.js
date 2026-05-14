@@ -58,8 +58,13 @@ export function loadSettingsToDOM() {
   if ($id('nonstop-playback-toggle'))
     $id('nonstop-playback-toggle').checked = settings.nonstopPlayback !== false;
   if ($id('audio-only-toggle')) $id('audio-only-toggle').checked = settings.audioOnly || false;
+  setChk('copy-description-toggle', settings.copyDescription !== false);
   syncAudioOnlyTabCheckbox();
   setChk('themes-toggle', settings.themes || false);
+  const themesMenuSection = $e('.themes-hidden');
+  if (themesMenuSection) {
+    themesMenuSection.style.display = settings.themes ? 'block' : 'none';
+  }
   setChk('translation-toggle', settings.translation || false);
   setChk('avatars-toggle', settings.avatars || false);
   setChk('reverse-mode-toggle', settings.reverseMode || false);
@@ -102,12 +107,10 @@ export function loadSettingsToDOM() {
   const sizeLabel = $id('player-size-value');
   if (sizeLabel) sizeLabel.textContent = $id('player-size-slider')?.value || '100';
 
-  // Static import — circular dependency resolved via settings-dom.js extraction
-  setTimeout(() => {
-    try {
-      applySettings();
-    } catch (err) {
-      console.warn('[YT Tools] applySettings after load failed:', err);
-    }
-  }, 500);
+  // Restore background image preview
+  const preview = $id('background-image-preview');
+  if (preview && settings.backgroundImage) {
+    preview.style.backgroundImage = `url(${settings.backgroundImage})`;
+    preview.classList.add('has-image');
+  }
 }

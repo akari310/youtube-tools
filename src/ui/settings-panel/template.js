@@ -215,6 +215,17 @@ export function createSettingsPanel() {
               </label>
             </div>
           </label>
+          <label ${isYTMusic ? 'style="display:none"' : ''}>
+            <div class="toggle-row" data-for="copy-description-toggle">
+              <span class="toggle-label-text"
+                ><i class="fa-solid fa-copy"></i>Copy description button</span
+              >
+              <label class="toggle-switch-mdcm">
+                <input type="checkbox" class="checkbox-mdcm" id="copy-description-toggle" />
+                <span class="toggle-slider-mdcm"></span>
+              </label>
+            </div>
+          </label>
           <label>
             <div class="toggle-row" data-for="nonstop-playback-toggle">
               <span class="toggle-label-text"

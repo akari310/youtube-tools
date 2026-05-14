@@ -10,18 +10,29 @@ import { safeHTML } from '../utils/trusted-types.js';
  * Inject a "Copy description" button below the video description area.
  * YT only — YTM has no description row.
  */
-export function initDownloadDescription() {
+export function initDownloadDescription(enabled = true) {
   if (isYTMusic) return;
   if (!window.location.href.includes('youtube.com/watch')) return;
-  if ($e('#button_copy_description')) return;
 
-  const containerDescription = $e('#bottom-row.style-scope.ytd-watch-metadata');
+  const existing = $e('#button_copy_description');
+  if (!enabled) {
+    if (existing) existing.remove();
+    return;
+  }
+  if (existing && document.contains(existing)) return;
+  if (existing) existing.remove(); // Cleanup if detached
+
+  const containerDescription =
+    $e('#bottom-row.ytd-watch-metadata') ||
+    $e('#bottom-row.style-scope.ytd-watch-metadata') ||
+    $e('ytd-description-renderer') ||
+    $e('#description.ytd-watch-metadata');
   if (!containerDescription) return;
 
   const wrapper = document.createElement('div');
   wrapper.id = 'button_copy_description';
   wrapper.style.cssText =
-    'display: flex; justify-content: end; align-items: center; margin-top: 10px;';
+    'display: flex; justify-content: space-between; align-items: center; margin-top: 10px; width: 100%;';
 
   const btn = document.createElement('button');
   btn.id = 'copy-description';

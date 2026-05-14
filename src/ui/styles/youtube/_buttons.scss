@@ -148,8 +148,6 @@ button.botones_div:hover {
 
 /* Like vs dislike bar (under likes/dislikes) */
 #yt-like-dislike-bar-mdcm {
-  display: flex;
-  direction: ltr;
   height: 6px;
   border-radius: 999px;
   overflow: hidden;
@@ -159,15 +157,13 @@ button.botones_div:hover {
 }
 #yt-like-dislike-bar-mdcm .like {
   height: 100%;
-  min-width: 0;
   background: #22c55e !important;
-  flex: 0 0 auto;
+  float: left;
 }
 #yt-like-dislike-bar-mdcm .dislike {
   height: 100%;
-  min-width: 0;
   background: #ef4444 !important;
-  flex: 0 0 auto;
+  float: left;
 }
 
 .progress-retry-btn {

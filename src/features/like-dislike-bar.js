@@ -190,41 +190,61 @@ export async function ensureDislikesForCurrentVideo() {
 }
 
 function ensureBarExists() {
-  if ($e('#yt-like-dislike-bar')) return true;
-  const container = $e('#top-level-buttons-computed');
-  if (!container) return false;
-  const bar = document.createElement('div');
-  bar.id = 'yt-like-dislike-bar';
-  bar.style.cssText =
-    'display:none;height:6px;background:#333;border-radius:3px;margin:8px 0;overflow:hidden;';
-  bar.innerHTML =
-    '<div class="yt-like-part" style="height:100%;float:left;"></div><div class="yt-dislike-part" style="height:100%;float:left;"></div>';
-  container.insertAdjacentElement('afterend', bar);
-  return true;
+  let bar = $e('#yt-like-dislike-bar-mdcm');
+  if (bar) return bar;
+
+  const middleRow = $e('#middle-row.ytd-watch-metadata') || $e('#middle-row');
+  const copyDesc = $id('button_copy_description');
+
+  if (!middleRow && !copyDesc) return null;
+
+  bar = document.createElement('div');
+  bar.id = 'yt-like-dislike-bar-mdcm';
+  bar.style.display = 'none';
+  bar.innerHTML = safeHTML(`<div class="like"></div><div class="dislike"></div>`);
+
+  if (copyDesc) {
+    copyDesc.insertAdjacentElement('afterbegin', bar);
+  } else if (middleRow) {
+    middleRow.appendChild(bar);
+  }
+  return bar;
 }
 
 export function updateLikeDislikeBar(likes, dislikes) {
-  if (likes == null || dislikes == null) return;
-  const total = likes + dislikes;
-  if (total <= 0) return;
-  const likePercent = (likes / total) * 100;
-  if (!ensureBarExists()) return;
-  const bar = $e('#yt-like-dislike-bar');
-  bar.style.display = 'block';
-  const likePart = bar.querySelector('.yt-like-part');
-  const dislikePart = bar.querySelector('.yt-dislike-part');
-  bar.style.direction = 'ltr';
-  bar.style.overflow = 'hidden';
+  const l = Number(likes);
+  const d = Number(dislikes);
+  if (!Number.isFinite(l) || !Number.isFinite(d)) return;
+
+  const bar = ensureBarExists();
+  if (!bar) return;
+
+  const total = l + d;
+  if (total <= 0) {
+    bar.style.display = 'none';
+    return;
+  }
+
+  // Re-check placement if it was moved/removed by YT
+  const copyDesc = $id('button_copy_description');
+  if (copyDesc && bar.nextElementSibling !== copyDesc) {
+    copyDesc.insertAdjacentElement('beforebegin', bar);
+  }
+
+  const likePercent = Math.max(0, Math.min(100, (l / total) * 100));
+
+  bar.style.display = 'flex';
+  const likePart = bar.querySelector('.like');
+  const dislikePart = bar.querySelector('.dislike');
+
   if (likePart) {
-    likePart.style.background = '#22c55e';
-    likePart.style.flexBasis = `${likePercent}%`;
     likePart.style.width = `${likePercent}%`;
   }
   if (dislikePart) {
-    dislikePart.style.background = '#ef4444';
-    dislikePart.style.flexBasis = `${100 - likePercent}%`;
     dislikePart.style.width = `${100 - likePercent}%`;
   }
+
+  bar.title = `Likes: ${l.toLocaleString()} | Dislikes: ${d.toLocaleString()}`;
 }
 
 // Retry helper
@@ -250,17 +270,126 @@ export function scheduleLikeBarUpdate(settings, attempts = 4) {
 export async function videoDislike() {
   const videoId = getCurrentVideoId();
   if (!videoId || !window.location.href.includes('youtube.com/watch')) return;
-  const dislikes = await ensureDislikesForCurrentVideo();
-  if (dislikes != null) {
-    const dislikes_content =
-      $e(
-        '#top-level-buttons-computed > segmented-like-dislike-button-view-model > yt-smartimation > div > div > dislike-button-view-model > toggle-button-view-model > button-view-model > button'
-      ) || $e('dislike-button-view-model button');
-    if (dislikes_content != null) {
-      dislikes_content.style.cssText = 'width: 90px';
-      dislikes_content.innerHTML = safeHTML(`
-          <svg class="svg-dislike-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 13v-8a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v7a1 1 0 0 0 1 1h3a4 4 0 0 1 4 4v1a2 2 0 0 0 4 0v-5h3a2 2 0 0 0 2 -2l-1 -5a2 3 0 0 0 -2 -2h-7a3 3 0 0 0 -3 3" /></svg>
-          ${FormatterNumber(dislikes, 0)}`);
+  if (isYTMusic) return;
+
+  const data = await ensureDislikesForCurrentVideo();
+  if (!data) return;
+
+  const dislikes = typeof data === 'object' ? data.dislikes : data;
+  const dislikes_btn =
+    $e(
+      '#top-level-buttons-computed > segmented-like-dislike-button-view-model > yt-smartimation > div > div > dislike-button-view-model > toggle-button-view-model > button-view-model > button'
+    ) || $e('dislike-button-view-model button');
+
+  if (dislikes_btn != null) {
+    const settings = loadSettings();
+
+    // Find or create our custom count element
+    let textContent = dislikes_btn.querySelector('.yt-tools-dislike-count');
+    if (!textContent) {
+      textContent = document.createElement('div');
+      textContent.className = 'ytSpecButtonShapeNextButtonTextContent yt-tools-dislike-count';
+
+      // Insert it after the icon container
+      const iconDiv = dislikes_btn.querySelector('.ytSpecButtonShapeNextIcon');
+      if (iconDiv) {
+        iconDiv.insertAdjacentElement('afterend', textContent);
+        // Convert button style to icon+text layout
+        dislikes_btn.classList.add('ytSpecButtonShapeNextIconLeading');
+        dislikes_btn.classList.remove('ytSpecButtonShapeNextIconButton');
+      } else {
+        dislikes_btn.appendChild(textContent);
+      }
+    }
+
+    if (settings.dislikes) {
+      textContent.textContent = FormatterNumber(dislikes, 0);
+      textContent.style.display = 'block';
+      textContent.style.marginLeft = '6px';
+    } else {
+      textContent.style.display = 'none';
+    }
+
+    const likes_btn =
+      $e('#top-level-buttons-computed like-button-view-model button-view-model button') ||
+      $e('like-button-view-model button') ||
+      $e('segmented-like-dislike-button-view-model like-button-view-model button');
+
+    // Capture current state as "initial" for this data load
+    dislikes_btn.dataset.initialState = dislikes_btn.getAttribute('aria-pressed') === 'true';
+    dislikes_btn.dataset.originalCount = dislikes;
+
+    if (likes_btn) {
+      likes_btn.dataset.initialState = likes_btn.getAttribute('aria-pressed') === 'true';
+      likes_btn.dataset.originalCount =
+        typeof data === 'object' ? data.likes || getLikesFromDom() : getLikesFromDom();
+    }
+
+    const updateCount = () => {
+      // Dislikes calculation
+      const isDislikePressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
+      const wasDislikePressed = dislikes_btn.dataset.initialState === 'true';
+      const originalDislikes = Number(dislikes_btn.dataset.originalCount);
+
+      let dislikeOffset = 0;
+      if (!wasDislikePressed && isDislikePressed) dislikeOffset = 1;
+      else if (wasDislikePressed && !isDislikePressed) dislikeOffset = -1;
+
+      const newDislikes = Math.max(0, originalDislikes + dislikeOffset);
+
+      // Likes calculation
+      let newLikes = (typeof data === 'object' ? data.likes : null) || getLikesFromDom() || 0;
+      if (likes_btn) {
+        const isLikePressed = likes_btn.getAttribute('aria-pressed') === 'true';
+        const wasLikePressed = likes_btn.dataset.initialState === 'true';
+        const originalLikes = Number(likes_btn.dataset.originalCount);
+
+        let likeOffset = 0;
+        if (!wasLikePressed && isLikePressed) likeOffset = 1;
+        else if (wasLikePressed && !isLikePressed) likeOffset = -1;
+
+        newLikes = Math.max(0, originalLikes + likeOffset);
+      }
+
+      // Update run-time cache
+      if (__ytToolsRuntime.dislikesCache.videoId === videoId) {
+        __ytToolsRuntime.dislikesCache.dislikes = newDislikes;
+        __ytToolsRuntime.dislikesCache.likes = newLikes;
+
+        // Also persist it so F5 uses the updated count as "original"
+        setLikesDislikesToPersistedCache(videoId, {
+          likes: newLikes,
+          dislikes: newDislikes,
+          viewCount: __ytToolsRuntime.dislikesCache.viewCount,
+          rating: __ytToolsRuntime.dislikesCache.rating,
+        });
+      }
+
+      if (settings.dislikes && textContent) {
+        textContent.textContent = FormatterNumber(newDislikes, 0);
+      }
+
+      // Sync the like/dislike bar immediately
+      if (settings.likeDislikeBar) {
+        updateLikeDislikeBar(newLikes, newDislikes);
+      }
+    };
+
+    // Attach listeners if not already attached
+    if (!dislikes_btn.dataset.listenerAttached) {
+      dislikes_btn.addEventListener('click', () => setTimeout(updateCount, 100));
+      if (likes_btn) {
+        likes_btn.addEventListener('click', () => setTimeout(updateCount, 100));
+      }
+      dislikes_btn.dataset.listenerAttached = 'true';
+    }
+
+    // Initial bar update
+    if (settings.likeDislikeBar) {
+      updateLikeDislikeBar(
+        likes_btn ? Number(likes_btn.dataset.originalCount) : 0,
+        Number(dislikes_btn.dataset.originalCount)
+      );
     }
   }
 }
@@ -269,10 +398,11 @@ export async function shortDislike() {
   const validoVentanaShort = $m(
     '#button-bar > reel-action-bar-view-model > dislike-button-view-model > toggle-button-view-model > button-view-model > label > div > span'
   );
-  if (validoVentanaShort && document.location.href.includes('/shorts/')) {
+  if (validoVentanaShort.length > 0 && document.location.href.includes('/shorts/')) {
     const videoId = getCurrentVideoId();
     if (!videoId) return;
-    const dislikes = await ensureDislikesForCurrentVideo();
+    const data = await ensureDislikesForCurrentVideo();
+    const dislikes = typeof data === 'object' ? data.dislikes : data;
     if (dislikes != null) {
       for (let i = 0; i < validoVentanaShort.length; i++) {
         validoVentanaShort[i].textContent = `${FormatterNumber(dislikes, 0)}`;

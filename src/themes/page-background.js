@@ -22,7 +22,9 @@ export function applyPageBackground(url, themeColor = null) {
   }
 
   if (url) {
-    const overlayColor = themeColor || 'rgba(0,0,0,0.5)';
+    // Use the theme gradient as the overlay if provided, otherwise default dark
+    const overlayBackground = themeColor || 'rgba(0,0,0,0.5)';
+    const overlayOpacity = themeColor ? '0.4' : '0.6';
     
     styleEl.textContent = `
 ${selector} {
@@ -56,8 +58,8 @@ body::after {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: ${themeColor ? themeColor : 'rgba(0,0,0,0.5)'} !important;
-  opacity: ${themeColor ? '0.6' : '1'} !important;
+  background: ${overlayBackground} !important;
+  opacity: ${overlayOpacity} !important;
   z-index: -2 !important;
   pointer-events: none !important;
 }

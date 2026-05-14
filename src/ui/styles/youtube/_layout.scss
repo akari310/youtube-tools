@@ -16,6 +16,11 @@
 #yt-enhancement-panel {
   z-index: 9999 !important;
 }
+#below.ytd-watch-flexy {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  overflow: hidden !important;
+}
 body .container-mdcm {
   font-family:
     'Inter',
@@ -697,7 +702,9 @@ textarea.textarea-mdcm:focus {
   width: 100% !important;
   display: flex !important;
   justify-content: center !important;
-  margin: 0 !important;
+  margin: 12px 0 !important;
+  padding: 0 20px !important;
+  box-sizing: border-box !important;
 }
 
 .yt-tools-inner-container {
@@ -721,9 +728,10 @@ textarea.textarea-mdcm:focus {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  gap: 12px !important;
+  gap: 16px !important;
   width: 100% !important;
   flex-wrap: wrap !important;
+  padding: 8px 0 !important;
 }
 
 .selectcalidades,

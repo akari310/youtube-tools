@@ -10,7 +10,10 @@
 import { setupContinueWatchingFeature } from './features/continue-watching.js';
 import { setupDownloadClickHandler, initDownloadFeature } from './features/download.js';
 import { initTimeStats, updateUI } from './features/time-stats.js';
-import { applyLikeDislikeBarIfEnabled } from './features/like-dislike-bar.js';
+import {
+  applyLikeDislikeBarIfEnabled,
+  applyDislikeDisplayIfEnabled,
+} from './features/like-dislike-bar.js';
 import { applyBookmarksIfEnabled } from './features/bookmarks.js';
 import { setupLockupCachedStats } from './features/lockup-cached-stats.js';
 import { setupShortsChannelNameFeature } from './features/shorts/shorts-channel-name.js';
@@ -19,11 +22,15 @@ import { initPlayerSize } from './features/player/player-size.js';
 import { initEffectsFeature } from './features/effects.js';
 import { hideComments } from './features/comments/hide-comments.js';
 import { hideSidebar } from './features/hide-sidebar.js';
+import { hideNavbar } from './features/hide-navbar.js';
 import { reverseMode } from './features/player/reverse-mode.js';
 import { disableSubtitles } from './features/player/disable-subtitles.js';
 import { applyNonstopPlayback } from './features/player/nonstop-playback.js';
 import { applyAudioOnlyMode, getEffectiveAudioOnly } from './features/player/audio-only.js';
-import { applyCinematicLighting, setupThumbnailDownloadButton } from './features/player/cinematic-lighting.js';
+import {
+  applyCinematicLighting,
+  setupThumbnailDownloadButton,
+} from './features/player/cinematic-lighting.js';
 import { setupAvatarDownload } from './features/comments/avatar-download.js';
 import { initWaveVisualizer } from './features/wave-visualizer.js';
 import { initShortsReelButtons } from './features/shorts/shorts-reel-buttons.js';
@@ -37,6 +44,7 @@ import { initSettingsPanel } from './ui/settings-panel/index.js';
 
 // --- Settings ---
 import { loadSettings } from './settings/settings-manager.js';
+import { applySettings } from './themes/applier.js';
 
 // --- Modular Utils ---
 import { __ytToolsRuntime } from './utils/runtime.js';
@@ -68,8 +76,10 @@ import { checkNewVersion } from './utils/helpers.js';
 
   // 4. Define features and their argument mapping
   const getFeatureList = s => [
+    [initDownloadDescription, s.copyDescription],
     [setupContinueWatchingFeature, s.continueWatching],
     [applyLikeDislikeBarIfEnabled, s],
+    [applyDislikeDisplayIfEnabled, s],
     [applyBookmarksIfEnabled, s],
     [setupShortsChannelNameFeature, s.shortsChannelName],
     [setupLockupCachedStats, s.lockupStats],
@@ -78,6 +88,7 @@ import { checkNewVersion } from './utils/helpers.js';
     [initPlayerSize, s],
     [hideComments, s.hideComments],
     [hideSidebar, s.hideSidebar],
+    [hideNavbar, s.hideNavbar],
     [reverseMode, s.reverseMode],
     [disableSubtitles, s.disableSubtitles],
     [applyNonstopPlayback, s.nonstopPlayback],
@@ -87,7 +98,6 @@ import { checkNewVersion } from './utils/helpers.js';
     [setupAvatarDownload, s.avatars],
     [initWaveVisualizer, s],
     [initShortsReelButtons, null],
-    [initDownloadDescription, null],
     [setupCommentNavListener, s],
     [startAmbientWatcher, null],
   ];
@@ -104,6 +114,7 @@ import { checkNewVersion } from './utils/helpers.js';
 
   // Initial run
   runFeatures(settings);
+  applySettings(settings);
 
   initDownloadFeature();
   updateUI();
@@ -112,6 +123,7 @@ import { checkNewVersion } from './utils/helpers.js';
   function reinitAll(s) {
     runFeatures(s);
     try {
+      applySettings(s);
       initDownloadFeature();
       updateUI();
     } catch (e) {
@@ -130,4 +142,3 @@ import { checkNewVersion } from './utils/helpers.js';
     'color: #00aaff; font-size: 16px; font-family: sans-serif;'
   );
 })();
-

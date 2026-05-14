@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS = {
   videoQuality: 'hd2160',
 
   hideComments: false,
+  hideNavbar: false,
   hideSidebar: false,
   reverseMode: false,
   disableAutoplay: false,
@@ -52,6 +53,7 @@ export const DEFAULT_SETTINGS = {
   shortsClassic: true,
 
   download: true,
+  copyDescription: true,
 
   menuFontSize: '14',
 };

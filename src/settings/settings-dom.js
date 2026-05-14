@@ -29,7 +29,11 @@ export function syncAudioOnlyTabCheckbox() {
  * Read current toggle/select/slider values from panel DOM and save.
  */
 export function saveSettingsFromDOM() {
+  const existingSaved = GM_getValue(SETTINGS_KEY, '{}');
+  const existing = JSON.parse(existingSaved);
+
   const s = {
+    ...existing,
     theme: $e('input[name="theme"]:checked')?.value || '0',
     bgColorPicker: $id('bg-color-picker')?.value || '#000000',
     progressbarColorPicker: $id('progressbar-color-picker')?.value || '#ff0000',
@@ -45,6 +49,7 @@ export function saveSettingsFromDOM() {
     bookmarks: $id('bookmarks-toggle')?.checked || false,
     continueWatching: $id('continue-watching-toggle')?.checked || false,
     shortsChannelName: $id('shorts-channel-name-toggle')?.checked || false,
+    copyDescription: $id('copy-description-toggle')?.checked || false,
     nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
     audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
     themes: $id('themes-toggle')?.checked || false,

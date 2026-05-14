@@ -61,8 +61,10 @@ body.yt-style-transparent {
 }
 
 /* Light Mode overrides */
-body:not(.ytd-dark-theme).yt-style-blur,
-body:not(.ytd-dark-theme).yt-style-liquid {
+body:not(.ytd-dark-theme):not([dark]) .yt-style-blur,
+body:not(.ytd-dark-theme):not([dark]) .yt-style-liquid,
+html:not([dark]) body.yt-style-blur,
+html:not([dark]) body.yt-style-liquid {
   --yt-glass-bg-masthead: rgba(255, 255, 255, 0.6);
   --yt-glass-bg-sidebar: rgba(255, 255, 255, 0.55);
   --yt-glass-bg-guide: rgba(255, 255, 255, 0.5);
@@ -130,7 +132,7 @@ body.yt-style-transparent #secondary {
   background: transparent !important;
 }
 
-/* Sidebar */
+/* Sidebar - Only apply to the inner container to avoid stacking */
 body.yt-style-blur #secondary-inner,
 body.yt-style-liquid #secondary-inner,
 body.yt-style-transparent #secondary-inner {
@@ -148,16 +150,10 @@ body.yt-style-transparent #secondary-inner {
   will-change: backdrop-filter;
 }
 
-/* Guide / Drawer */
+/* Guide / Drawer - Only apply to ytd-guide-renderer, children must be transparent */
 body.yt-style-blur ytd-guide-renderer,
-body.yt-style-blur #guide-content,
-body.yt-style-blur #guide-wrapper,
 body.yt-style-liquid ytd-guide-renderer,
-body.yt-style-liquid #guide-content,
-body.yt-style-liquid #guide-wrapper,
-body.yt-style-transparent ytd-guide-renderer,
-body.yt-style-transparent #guide-content,
-body.yt-style-transparent #guide-wrapper {
+body.yt-style-transparent ytd-guide-renderer {
   background: var(--yt-glass-bg-guide) !important;
   backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
@@ -167,6 +163,16 @@ body.yt-style-transparent #guide-wrapper {
     background 0.6s ease,
     border-color 0.6s ease;
   will-change: backdrop-filter;
+}
+
+/* Ensure children don't stack backgrounds */
+body.yt-style-blur #guide-content,
+body.yt-style-blur #guide-wrapper,
+body.yt-style-liquid #guide-content,
+body.yt-style-liquid #guide-wrapper,
+body.yt-style-transparent #guide-content,
+body.yt-style-transparent #guide-wrapper {
+  background: transparent !important;
 }
 
 /* Mini Guide */

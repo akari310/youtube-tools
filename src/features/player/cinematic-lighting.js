@@ -40,6 +40,7 @@ export function toggleCinematicLighting() {
     'cinéma',
     'アンビエント',
     '시네마틱',
+    'ánh sáng điện ảnh',
   ];
 
   const findAndClickCinematic = () => {
@@ -68,14 +69,17 @@ export function toggleCinematicLighting() {
 
     for (const item of menuItems) {
       const icon = item.querySelector('.ytp-menuitem-icon svg path');
-      if (
-        icon &&
-        (icon.getAttribute('d')?.includes('M21 7v10H3V7') ||
-          icon.getAttribute('d')?.includes('M12 2C6.48 2 2 6.48 2 12'))
-      ) {
-        console.log('[YT Tools] Found cinematic option by SVG path');
-        item.click();
-        return true;
+      if (icon) {
+        const d = icon.getAttribute('d') || '';
+        if (
+          d.includes('M21 7v10H3V7') ||
+          d.includes('M12 2C6.48 2 2 6.48 2 12') ||
+          d.includes('M12 .5C11.73 .5 11.48 .60 11.29 .79') // Path provided by user
+        ) {
+          console.log('[YT Tools] Found cinematic option by SVG path');
+          item.click();
+          return true;
+        }
       }
     }
 
@@ -109,24 +113,18 @@ export function toggleCinematicLighting() {
 }
 
 export function applyCinematicLighting(settings) {
-  if (!settings?.cinematicLighting) return;
   if (!isWatchPage() || isYTMusic) return;
 
   const isCurrentlyActive = isCinematicActive();
-  if (settings.syncCinematic) {
-    if (settings.cinematicLighting && !isCurrentlyActive) {
-      toggleCinematicLighting();
-    } else if (!settings.cinematicLighting && isCurrentlyActive) {
-      toggleCinematicLighting();
-    }
-  } else {
-    const cinematicDiv = document.getElementById('cinematics');
-    if (cinematicDiv) {
-      cinematicDiv.style.display = settings.cinematicLighting ? 'block' : 'none';
-    }
+  const desiredActive = !!settings.cinematicLighting;
+
+  // If desired state is different from current state, toggle it
+  if (desiredActive !== isCurrentlyActive) {
+    console.log(`[YT Tools] Syncing Cinematic Lighting: Current=${isCurrentlyActive}, Desired=${desiredActive}`);
+    toggleCinematicLighting();
   }
 
-  // Background transparent enhancement
+  // Background transparent enhancement (legacy fix)
   const cinematica = $e('#cinematics > div');
   if (cinematica != undefined) {
     cinematica.style.cssText =

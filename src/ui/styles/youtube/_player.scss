@@ -268,7 +268,7 @@ ytd-watch-flexy[cinematic-container-initialized] .yt-tools-container {
   max-width: var(--ytd-watch-flexy-max-player-width, 1280px);
 }
 /* YouTube watch playlist panel: reuse the same 3 style choices as YTM. */
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
   background: rgba(20, 20, 20, 0.62) !important;
   backdrop-filter: blur(20px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
@@ -278,7 +278,7 @@ body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
   overflow: hidden !important;
 }
 
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
   background: rgba(25, 25, 25, 0.45) !important;
   backdrop-filter: blur(24px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
@@ -291,7 +291,7 @@ body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
   overflow: hidden !important;
 }
 
-body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
+body.yt-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -299,44 +299,44 @@ body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist 
   box-shadow: none !important;
 }
 
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
-body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items,
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items,
-body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items {
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
+body.yt-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items,
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items,
+body.yt-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist #items {
   background: transparent !important;
 }
 
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header,
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header {
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header,
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header {
   background: rgba(255, 255, 255, 0.04) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header {
+body.yt-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist .header {
   background: transparent !important;
   border-bottom: none !important;
 }
 
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer,
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer {
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer,
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer {
   background: transparent !important;
 }
 
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container,
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container {
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container,
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-thumbnail,
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-thumbnail {
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-thumbnail,
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-thumbnail {
   border-radius: 8px !important;
   overflow: hidden !important;
 }
 
-body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta,
-body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta,
-body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta {
+body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta,
+body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta,
+body.yt-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist #meta {
   min-width: 0 !important;
 }

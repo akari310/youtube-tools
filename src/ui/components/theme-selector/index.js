@@ -13,7 +13,8 @@ import {
   generateColorPalette,
   adjustColorBrightness
 } from '../../../themes/theme-engine.js';
-import { loadSettings, saveSettingsFromDOM } from '../../../settings/settings-manager.js';
+import { loadSettings } from '../../../settings/settings-manager.js';
+import { saveSettingsFromDOM } from '../../../themes/theme-engine.js';
 
 /* global Notify */
 
