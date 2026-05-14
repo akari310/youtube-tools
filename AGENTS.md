@@ -2,7 +2,7 @@
 
 > **Dự án:** YouTube Tools Userscript  
 > **Version:** v2.4.4.2  
-> **Ngày tạo:** 10/05/2026 | **Cập nhật:** 11/05/2026  
+> **Ngày tạo:** 10/05/2026 | **Cập nhật:** 14/05/2026  
 > **Ngôn ngữ:** Tiếng Việt (primary), English (code/docs)
 
 ---
@@ -29,7 +29,7 @@ youtube-tools/
 │   ├── config/
 │   │   ├── constants.js              # API endpoints, API key, constants sóng nhạc
 │   │   ├── flags.js                  # Feature flags
-│   │   └── settings-key.js           # Storage key constants
+│   │   └── storage-keys.js           # Storage key constants
 │   ├── features/                     # 🎯 23 tính năng modular
 │   │   ├── avatar-download.js        # Tải avatar kênh
 │   │   ├── bookmarks.js              # Đánh dấu timestamp trong video
@@ -84,16 +84,12 @@ youtube-tools/
 │   │   ├── persistence.js           # Settings persistence
 │   │   └── storage-key.js           # Storage key constants
 │   ├── themes/
-│   │   ├── core/                     # Core theme functionality
-│   │   └── index.js             # Core theme exports
-│   │   ├── presets/                   # Theme presets
-│   │   └── index.js             # 8 theme presets + utilities
-│   │   ├── utils/                     # Theme utilities
-│   │   └── theme-manager.js       # Advanced theme management class
+│   │   ├── animations.js                # Theme animations
+│   │   ├── applier.js                # Theme application logic
+│   │   ├── customizer.js              # Theme customizer
+│   │   ├── page-background.js          # Page background handling
+│   │   ├── theme-data.js             # Theme data
 │   │   ├── theme-engine.js           # Enhanced theme engine
-│   │   ├── theme-data.js             # Legacy theme data
-│   │   ├── applier.js               # Theme application logic
-│   │   └── apply-settings.js        # Circular dependency fix
 │   └── utils/
 │       ├── dom.js                    # DOM helpers: qs, qsAll, createEl, appendEl
 │       ├── helpers.js                # Notify, getCurrentVideoId, formatTimeShort

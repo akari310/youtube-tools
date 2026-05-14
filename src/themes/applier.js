@@ -7,6 +7,7 @@ import { THEMES } from './theme-data.js';
 import { SETTINGS_KEY } from '../settings/storage-key.js';
 import { setDynamicCss, __ytToolsRuntime } from '../utils/runtime.js';
 import { renderizarButtons } from '../ui/toolbar/index.js';
+import { applyPageBackground, removePageBackground } from './page-background.js';
 import { applyNonstopPlayback } from '../features/player/nonstop-playback.js';
 import { applyAudioOnlyMode, getEffectiveAudioOnly } from '../features/player/audio-only.js';
 import { applyBookmarksIfEnabled } from '../features/bookmarks.js';
@@ -372,46 +373,15 @@ export function applySettings() {
 
   addCss(`#icon-menu-settings { color: ${settings.iconsColorPicker || '#fff'} !important; }`);
 
-  // Apply background image if exists
+  // Apply custom page background with blur effect
   if (settings.backgroundImage) {
-    console.log('[YT Tools] Applying background image:', isYTMusic ? 'YouTube Music' : 'YouTube');
-    if (isYTMusic) {
-      // YouTube Music: apply to content-wrapper with transparency chain + dark overlay
-      const bgStyle = `
-        html, body, ytmusic-app, ytmusic-app-layout, #layout {
-          background: transparent !important;
-        }
-        #content-wrapper.style-scope.ytmusic-browse-response,
-        #content-wrapper.style-scope.ytmusic-item-section-renderer,
-        #content-wrapper.style-scope.ytmusic-nav-bar,
-        .ytmusic-browse-response,
-        .ytmusic-item-section-renderer,
-        ytmusic-browse-response,
-        ytmusic-item-section-renderer {
-          background:
-            linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-            url(${settings.backgroundImage}) center/cover fixed no-repeat !important;
-        }
-      `;
-      addCss(bgStyle);
-      console.log('[YT Tools] Background image CSS applied for YouTube Music');
-    } else {
-      // YouTube: apply to body with transparency chain + dark overlay
-      const bgStyle = `
-        html, ytd-app {
-          background: transparent !important;
-        }
-        body {
-          background:
-            linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-            url(${settings.backgroundImage}) center/cover fixed no-repeat !important;
-        }
-      `;
-      addCss(bgStyle);
-      console.log('[YT Tools] Background image CSS applied for YouTube');
-    }
+    console.log('[YT Tools] Applying custom page background:', isYTMusic ? 'YouTube Music' : 'YouTube');
+    const themeColor = settings.themes && isDarkMode === 'dark' && !isThemeCustom
+      ? selectedTheme.gradient
+      : null;
+    applyPageBackground(settings.backgroundImage, themeColor);
   } else {
-    console.log('[YT Tools] No background image to apply');
+    removePageBackground();
   }
 
   // Apply advanced theme CSS
