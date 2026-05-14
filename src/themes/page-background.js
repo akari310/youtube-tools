@@ -70,6 +70,38 @@ ytmusic-app {
 }
 ` : ''}
 
+${!isYTMusic ? `
+/* YouTube: Navbar transparency */
+#masthead-container.ytd-app,
+#background.ytd-masthead,
+#masthead-positioner,
+ytd-masthead,
+#header.ytd-app,
+#top-chips.ytd-app,
+ytd-topbar-masthead-renderer,
+#masthead-container.ytd-app #background,
+#masthead-positioner.ytd-app {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* YouTube: Sidebar transparency */
+#guide.ytd-app,
+#guide-inner.ytd-app,
+ytd-guide-renderer,
+#guide-content.ytd-app,
+#guide-wrapper.ytd-app,
+#secondary.ytd-watch-flexy,
+#secondary-inner.ytd-watch-flexy,
+ytd-watch-flexy #secondary,
+ytd-watch-flexy #secondary-inner,
+#related.ytd-watch-flexy,
+#secondary.ytd-watch-flexy #related {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+` : ''}
+
 #content.ytmusic-app,
 #page-manager.ytd-app,
 #columns.ytd-watch-flexy,
