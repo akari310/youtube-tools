@@ -1,6 +1,6 @@
 // Feature: Avatar Download — adds download button to comment avatars
 import { $m, $cl } from '../utils/dom.js';
-import { safeHTML } from '../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../utils/trusted-types.js';
 
 export function setupAvatarDownload() {
   const avatars = $m('#author-thumbnail-button #img.style-scope.yt-img-shadow');
@@ -9,7 +9,7 @@ export function setupAvatarDownload() {
     if (img.parentElement.querySelector('.yt-image-avatar-download')) return;
 
     const button = $cl('button');
-    button.innerHTML = safeHTML('<i class="fa fa-download"></i>');
+    setHTML(button, '<i class="fa fa-download"></i>');
     button.classList.add('yt-image-avatar-download');
 
     button.onclick = async function () {

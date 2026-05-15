@@ -6,7 +6,7 @@ import {
 } from '../utils/storage.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getCurrentVideoId, FormatterNumber } from '../utils/helpers.js';
-import { safeHTML } from '../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../utils/trusted-types.js';
 import { isYTMusic, $m } from '../utils/dom.js';
 import { loadSettings } from '../settings/settings-manager.js';
 
@@ -191,24 +191,59 @@ export async function ensureDislikesForCurrentVideo() {
 
 function ensureBarExists() {
   let bar = $e('#yt-like-dislike-bar-mdcm');
+  
+  // If bar exists but is not in the document, remove it so we can re-create/re-attach
+  if (bar && !document.contains(bar)) {
+    console.log('[YT Tools] Bar detached, re-attaching...');
+    bar.remove();
+    bar = null;
+  }
+
   if (bar) return bar;
-
-  const middleRow = $e('#middle-row.ytd-watch-metadata') || $e('#middle-row');
-  const copyDesc = $id('button_copy_description');
-
-  if (!middleRow && !copyDesc) return null;
 
   bar = document.createElement('div');
   bar.id = 'yt-like-dislike-bar-mdcm';
-  bar.style.display = 'none';
-  bar.innerHTML = safeHTML(`<div class="like"></div><div class="dislike"></div>`);
+  bar.style.cssText = `
+    display: flex;
+    height: 8px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 12px 0;
+    position: relative;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  `;
+  setHTML(
+    bar,
+    `
+    <div class="like" style="width: 50%; height: 100%; background: #3ea6ff; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+    <div class="dislike" style="width: 50%; height: 100%; background: #ff4e45; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+  `
+  );
 
-  if (copyDesc) {
-    copyDesc.insertAdjacentElement('afterbegin', bar);
-  } else if (middleRow) {
-    middleRow.appendChild(bar);
+  const targets = [
+    $e('ytd-watch-metadata #above-the-fold'),
+    $e('ytd-watch-metadata #actions'),
+    $id('button_copy_description'),
+    $e('#top-level-buttons-computed')
+  ];
+
+  for (const target of targets) {
+    if (target) {
+      console.log('[YT Tools] Appending bar to:', target.id || target.tagName);
+      // If appending to above-the-fold, insert at top
+      if (target.id === 'above-the-fold') {
+        target.insertAdjacentElement('afterbegin', bar);
+      } else {
+        target.appendChild(bar);
+      }
+      return bar;
+    }
   }
-  return bar;
+
+  return null;
 }
 
 export function updateLikeDislikeBar(likes, dislikes) {
@@ -220,51 +255,35 @@ export function updateLikeDislikeBar(likes, dislikes) {
   if (!bar) return;
 
   const total = l + d;
-  if (total <= 0) {
-    bar.style.display = 'none';
-    return;
-  }
-
-  // Re-check placement if it was moved/removed by YT
-  const copyDesc = $id('button_copy_description');
-  if (copyDesc && bar.nextElementSibling !== copyDesc) {
-    copyDesc.insertAdjacentElement('beforebegin', bar);
-  }
-
-  const likePercent = Math.max(0, Math.min(100, (l / total) * 100));
+  const likePercent = total > 0 ? Math.max(0, Math.min(100, (l / total) * 100)) : 50;
 
   bar.style.display = 'flex';
   const likePart = bar.querySelector('.like');
   const dislikePart = bar.querySelector('.dislike');
 
-  if (likePart) {
-    likePart.style.width = `${likePercent}%`;
-  }
-  if (dislikePart) {
-    dislikePart.style.width = `${100 - likePercent}%`;
-  }
+  if (likePart) likePart.style.width = `${likePercent}%`;
+  if (dislikePart) dislikePart.style.width = `${100 - likePercent}%`;
 
   bar.title = `Likes: ${l.toLocaleString()} | Dislikes: ${d.toLocaleString()}`;
 }
 
 // Retry helper
-export function scheduleLikeBarUpdate(settings, attempts = 4) {
+export function scheduleLikeBarUpdate(settings, attempts = 15) {
   if (!settings?.likeDislikeBar) return;
   let i = 0;
   const tryUpdate = async () => {
     if (i >= attempts) return;
     i++;
     const likes = getLikesFromDom();
-    if (likes != null) {
-      const dislikes = await ensureDislikesForCurrentVideo();
-      if (dislikes != null) {
-        updateLikeDislikeBar(likes, dislikes);
-        return;
-      }
+    const dislikes = await ensureDislikesForCurrentVideo();
+    console.log(`[YT Tools] Try update bar #${i}: likes=${likes}, dislikes=${dislikes}`);
+    if (likes != null && dislikes != null) {
+      updateLikeDislikeBar(likes, dislikes);
+      return;
     }
-    setTimeout(tryUpdate, 600);
+    setTimeout(tryUpdate, 1000);
   };
-  setTimeout(tryUpdate, 300);
+  setTimeout(tryUpdate, 500);
 }
 
 export async function videoDislike() {
@@ -412,9 +431,10 @@ export async function shortDislike() {
 }
 
 export function applyLikeDislikeBarIfEnabled(settings) {
+  console.log('[YT Tools] applyLikeDislikeBarIfEnabled called, settings:', settings?.likeDislikeBar);
   const enabled = !!settings?.likeDislikeBar;
-  const bar = $e('#yt-like-dislike-bar');
-  if (bar) bar.style.display = enabled ? 'block' : 'none';
+  const bar = $e('#yt-like-dislike-bar-mdcm');
+  if (bar) bar.style.display = enabled ? 'flex' : 'none';
 
   if (enabled) {
     scheduleLikeBarUpdate(settings, 6);

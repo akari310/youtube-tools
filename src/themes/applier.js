@@ -16,11 +16,6 @@ import { setupShortsChannelNameFeature } from '../features/shorts/shorts-channel
 import { setupLockupCachedStats } from '../features/lockup-cached-stats.js';
 import { ytmAmbientMode } from '../features/ytm-ambient-mode.js';
 import {
-  applyCinematicLighting,
-  isCinematicActive,
-  toggleCinematicLighting,
-} from '../features/player/cinematic-lighting.js';
-import {
   saveSettingsFromDOM,
   getMenuColors,
   syncAudioOnlyTabCheckbox,
@@ -110,17 +105,15 @@ function initYTMHeaderScroll() {
 
 /**
  * Main applySettings — reads all toggle states, applies features + theme.
- * @param {Object} [overrideSettings] - Optional settings object to use instead of reading from DOM.
  */
-export function applySettings(overrideSettings = null) {
+export function applySettings() {
   // Hide download forms
   const f1 = $e('.formulariodescarga');
   const f2 = $e('.formulariodescargaaudio');
   if (f1) f1.classList.add('ocultarframe');
   if (f2) f2.classList.add('ocultarframe');
 
-  const settings = overrideSettings || {
-    // ... existing DOM read logic ...
+  const settings = {
     theme: $e('input[name="theme"]:checked')?.value || '0',
     bgColorPicker: $id('bg-color-picker')?.value || '#000000',
     progressbarColorPicker: $id('progressbar-color-picker')?.value || '#ff0000',
@@ -136,8 +129,8 @@ export function applySettings(overrideSettings = null) {
     bookmarks: $id('bookmarks-toggle')?.checked || false,
     continueWatching: $id('continue-watching-toggle')?.checked || false,
     shortsChannelName: $id('shorts-channel-name-toggle')?.checked || false,
-    nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
-    audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
+    nonstopPlayback: $id('nonstop-playback-toggle')?.checked ?? true,
+    audioOnly: $id('audio-only-toggle')?.checked || false,
     themes: $id('themes-toggle')?.checked || false,
     translation: $id('translation-toggle')?.checked || false,
     avatars: $id('avatars-toggle')?.checked || false,
@@ -159,24 +152,9 @@ export function applySettings(overrideSettings = null) {
     },
   };
 
-  // Ensure backgroundImage is loaded if not in override
-  if (!settings.backgroundImage) {
-    const stored = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-    if (stored.backgroundImage) settings.backgroundImage = stored.backgroundImage;
-  }
-
-  // Mutual Exclusion: Active Theme vs Cinematic Lighting
-  if (settings.themes) {
-    // If Active Theme is ON, Cinematic Lighting must be OFF
-    if (isCinematicActive() && !isYTMusic) {
-      console.log('[YT Tools] Active Theme ON: Disabling Cinematic Lighting');
-      toggleCinematicLighting();
-    }
-    settings.cinematicLighting = false;
-  } else {
-    // If Active Theme is OFF, Background Image should NOT be applied
-    settings.backgroundImage = null;
-  }
+  // backgroundImage is not a DOM element — read it from GM storage
+  const stored = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+  if (stored.backgroundImage) settings.backgroundImage = stored.backgroundImage;
 
   $sp('--yt-enhance-menu-bg', getMenuColors().bg);
   $sp('--yt-enhance-menu-text', getMenuColors().text);
@@ -186,11 +164,6 @@ export function applySettings(overrideSettings = null) {
   applyNonstopPlayback(settings.nonstopPlayback);
   syncAudioOnlyTabCheckbox();
   applyAudioOnlyMode(getEffectiveAudioOnly(settings));
-  
-  // Apply Cinematic Lighting for YouTube
-  if (!isYTMusic) {
-    applyCinematicLighting(settings);
-  }
 
   // Side Panel Style / Background Glass Style
   if (isYTMusic) {
@@ -430,6 +403,10 @@ export function applySettings(overrideSettings = null) {
     setupShortsChannelNameFeature(settings.shortsChannelName);
     setupLockupCachedStats();
   }
+
+  if (__ytToolsRuntime.settingsLoaded) {
+    saveSettingsFromDOM();
+  }
 }
 
 // Advanced Theme CSS Application
@@ -524,10 +501,6 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
 
     // Only apply major component backgrounds if themes are enabled and we have a gradient
     if (shouldApplyTheme && selectedTheme.gradient) {
-      // If we have a background image, components should be transparent to show the overlay + image
-      const componentBg = hasBgImage ? 'transparent' : selectedTheme.gradient;
-      const sidebarBg = hasBgImage ? 'transparent' : (selectedTheme.glassBg || selectedTheme.gradient);
-
       addCss(`
         /* Use theme colors on major components without breaking layout */
         #masthead-container.ytd-app,
@@ -535,14 +508,14 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         ytd-masthead,
         #container.ytd-masthead,
         #masthead-container.ytd-app #masthead.ytd-masthead {
-          background: ${componentBg} !important;
+          background: ${selectedTheme.gradient} !important;
         }
 
         /* Sidebar & Guide - Apply theme gradient with glass effect */
         #secondary-inner,
         ytd-guide-renderer,
         ytd-mini-guide-renderer {
-          background: ${sidebarBg} !important;
+          background: ${selectedTheme.glassBg || selectedTheme.gradient} !important;
           backdrop-filter: blur(${selectedTheme.glassBlur || '12px'}) saturate(1.2) !important;
           -webkit-backdrop-filter: blur(${selectedTheme.glassBlur || '12px'}) saturate(1.2) !important;
         }
@@ -554,7 +527,7 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
 
         /* Restore the 'frosted-glass' look but with the theme gradient */
         #frosted-glass.ytd-app {
-          background: ${componentBg} !important;
+          background: ${selectedTheme.gradient} !important;
           opacity: 0.8 !important;
         }
 
@@ -604,58 +577,62 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
   // YouTube Music-specific advanced CSS
   if (isYTMusic) {
     const ytmSliderSolidColor = selectedTheme.progress || selectedTheme.accent;
-    // For YTM, if we have a background image, we want the main containers to be transparent
-    const mainBg = hasBgImage ? 'transparent' : (shouldApplyTheme ? selectedTheme.gradient : '#030303');
+    const bgOrGradient = shouldApplyTheme ? selectedTheme.gradient : (hasBgImage ? 'transparent' : '#030303');
 
     addCss(`
-      html, body, ytmusic-app, #layout, #content.ytmusic-app, ytmusic-app-layout {
+      html, body, ytmusic-app {
         background-color: ${hasBgImage ? 'transparent' : '#030303'} !important;
-        background-image: ${hasBgImage ? 'none' : (shouldApplyTheme ? selectedTheme.gradient : 'none')} !important;
+        background-image: ${hasBgImage ? 'none' : bgOrGradient} !important;
         background-size: cover !important;
         background-position: center !important;
         background-attachment: fixed !important;
       }
-      
       ytmusic-player-bar {
-        background: ${hasBgImage ? 'transparent' : mainBg} !important;
+        background: ${hasBgImage ? 'transparent' : bgOrGradient} !important;
         ${hasBgImage && shouldApplyTheme ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
       }
-
       ytmusic-nav-bar {
         background: transparent !important;
+        transition: background 0.4s ease-in-out !important;
       }
-
       ytmusic-nav-bar.scrolled,
       ytmusic-nav-bar[opened],
       body[player-page-open] ytmusic-nav-bar {
-        background: ${hasBgImage ? 'transparent' : (shouldApplyTheme ? selectedTheme.gradient : 'rgba(0,0,0,0.5)')} !important;
+        background: ${shouldApplyTheme ? selectedTheme.gradient : 'transparent'} !important;
         ${hasBgImage && shouldApplyTheme ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
       }
-
-      /* Force transparency on all YTM background elements when image is present */
+      ytmusic-search-box #input-box { background: ${shouldApplyTheme ? selectedTheme.gradient : 'transparent'} !important; }
+      
       ytmusic-browse-response,
-      ytmusic-browse-response #background,
-      ytmusic-browse-response .background,
       ytmusic-header-renderer,
-      ytmusic-header-renderer #background,
       ytmusic-tabbed-browse-renderer,
+      ytmusic-detail-header-renderer,
+      ytmusic-section-list-renderer,
+      ytmusic-carousel-shelf-renderer,
+      ytmusic-grid-renderer,
+      ytmusic-item-section-renderer,
+      #content.ytmusic-app,
+      #shorts-container, ytd-shorts, #shorts-inner-container, ytd-reel-player-overlay, #overlay.ytd-reel-video-renderer, ytmusic-app-layout, #mini-guide-background, #guide-wrapper.ytmusic-app-layout, ytmusic-browse-response #background, ytmusic-browse-response .background, ytmusic-app-layout #background, ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer, ytmusic-chip-cloud-chip-renderer, ytmusic-chip-cloud-renderer, ytmusic-player-page, ytmusic-player-page #background { background: transparent !important; }
+
+      /* Neutralize default YTM gradients */
+      ytmusic-browse-response #background,
+      ytmusic-header-renderer #background,
       ytmusic-tabbed-browse-renderer #background,
-      ytmusic-player-page,
       ytmusic-player-page #background,
       ytmusic-player-page .background,
       .background-gradient.ytmusic-browse-response,
-      ytmusic-immersive-header-renderer,
-      ytmusic-section-list-renderer,
       #background.style-scope.ytmusic-browse-response,
-      #mini-guide-background,
-      #guide-wrapper.ytmusic-app-layout,
-      #guide-spacer {
+      #header.style-scope.ytmusic-browse-response,
+      ytmusic-browse-response [id="background"],
+      ytmusic-header-renderer [id="background"], #mini-guide-background, #guide-spacer {
         background: transparent !important;
-        background-color: transparent !important;
         background-image: none !important;
       }
-
+      /* Only hide the immersive background if we have a custom background image */
       ${hasBgImage ? '.immersive-background, ytmusic-fullbleed-thumbnail-renderer[is-background] { display: none !important; }' : ''}
+
+      #layout { background: transparent !important; }
+      .content.ytmusic-player-page { background: transparent !important; }
     `);
 
     if (shouldApplyTheme) {

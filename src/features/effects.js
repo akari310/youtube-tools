@@ -147,7 +147,7 @@ function spawnBomb() {
 
   // Randomly choose between bomb 💣 or item 💎
   const isGood = Math.random() > 0.8;
-  bomb.innerHTML = isGood ? '💎' : '💣';
+  setHTML(bomb, isGood ? '💎' : '💣');
   bomb.dataset.type = isGood ? 'good' : 'bad';
 
   const startX = Math.random() * (window.innerWidth - 40);
@@ -275,13 +275,16 @@ function gameOver() {
 
   const msg = $cl('div');
   msg.id = 'yt-game-over';
-  msg.innerHTML = `
+  setHTML(
+    msg,
+    `
     <div style="background:rgba(0,0,0,0.9); padding:40px; border-radius:20px; text-align:center; border:2px solid #ff0000; backdrop-filter:blur(10px);">
       <h1 style="color:#ff0000; margin-bottom:10px;">GAME OVER</h1>
       <p style="color:#fff; margin-bottom:20px;">Score: ${score}</p>
       <button id="restartGame" style="background:#ff0000; color:#fff; border:none; padding:10px 30px; border-radius:5px; cursor:pointer; font-weight:bold;">RETRY</button>
     </div>
-  `;
+  `
+  );
   msg.style.cssText = `
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;

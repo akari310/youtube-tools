@@ -2,7 +2,7 @@
 // Avatar Download (Comment section)
 // ===========================================
 import { $m, $cl } from '../../utils/dom.js';
-import { safeHTML } from '../../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../../utils/trusted-types.js';
 
 export function setupAvatarDownload(enabled) {
   if (!enabled) {
@@ -16,7 +16,7 @@ export function setupAvatarDownload(enabled) {
     if (img.parentElement.querySelector('.yt-image-avatar-download')) return;
 
     const button = $cl('button');
-    button.innerHTML = safeHTML('<i class="fa fa-download"></i>');
+    setHTML(button, '<i class="fa fa-download"></i>');
     button.classList.add('yt-image-avatar-download');
     button.style.cssText = `
       position: absolute;

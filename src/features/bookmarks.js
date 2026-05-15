@@ -1,5 +1,5 @@
 import { $e, $id } from '../utils/dom.js';
-import { safeHTML } from '../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../utils/trusted-types.js';
 import { readJsonGM, writeJsonGM, STORAGE_KEYS_MDCM } from '../utils/storage.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getCurrentVideoId, formatTimeShort, Notify } from '../utils/helpers.js';
@@ -42,27 +42,24 @@ export function renderBookmarksPanel(videoId) {
 
   const { list } = getBookmarksForVideo(videoId);
   if (!list.length) {
-    panel.innerHTML = safeHTML(
-      `<div class="yt-bm-empty">No bookmarks yet. Click ★ to save one.</div>`
-    );
+    setHTML(panel, `<div class="yt-bm-empty">No bookmarks yet. Click ★ to save one.</div>`);
     return;
   }
 
-  panel.innerHTML = safeHTML(
-    list
-      .map(b => {
-        const time = formatTimeShort(b.t);
-        const safeLabel = (b.label || time).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `
+  const itemsHtml = list
+    .map(b => {
+      const time = formatTimeShort(b.t);
+      const safeLabel = (b.label || time).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `
         <div class="yt-bm-item">
           <button type="button" class="yt-bm-go" data-action="go" data-t="${b.t}" title="Go to ${time}">${time}</button>
           <div class="yt-bm-label" title="${safeLabel}">${safeLabel}</div>
           <button type="button" class="yt-bm-del" data-action="del" data-t="${b.t}" title="Delete">✕</button>
         </div>
       `;
-      })
-      .join('')
-  );
+    })
+    .join('');
+  setHTML(panel, itemsHtml);
 }
 
 export function applyBookmarksIfEnabled(settings) {

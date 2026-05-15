@@ -4,7 +4,7 @@
 // ===========================================
 import { $cl, $ap, $id, isYTMusic } from '../../utils/dom.js';
 import { THEMES } from '../../themes/theme-data.js';
-import { safeHTML } from '../../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../../utils/trusted-types.js';
 
 const html = String.raw;
 
@@ -982,7 +982,7 @@ export function createSettingsPanel() {
     </div>
   `;
 
-  panel.innerHTML = safeHTML(menuHTML);
+  setHTML(panel, menuHTML);
   $ap(panel);
 
   return { panel, panelOverlay };

@@ -3,6 +3,7 @@
 // ===========================================
 
 import { $e, $id } from '../../../utils/dom.js';
+import { safeHTML, setHTML } from '../../../utils/trusted-types.js';
 import {
   themeManager,
   getAllThemePresets,
@@ -24,7 +25,9 @@ export function createThemeSelector() {
 
   const themes = themeManager.getAllThemes();
 
-  container.innerHTML = `
+  setHTML(
+    container,
+    `
     <div class="theme-selector-header">
       <h4>Theme Gallery</h4>
       <div class="theme-selector-actions">
@@ -99,7 +102,8 @@ export function createThemeSelector() {
     </div>
     
     <input type="file" id="theme-import-input" accept=".json" style="display: none;">
-  `;
+  `
+  );
 
   setupEventListeners(container);
   return container;
@@ -275,7 +279,7 @@ function setupEventListeners(container) {
 function refreshThemeGrid(container) {
   const themeGrid = container.querySelector('#theme-grid');
   const themes = themeManager.getAllThemes();
-  themeGrid.innerHTML = themes.map(theme => createThemeCard(theme)).join('');
+  setHTML(themeGrid, themes.map(theme => createThemeCard(theme)).join(''));
 }
 
 function showNotification(message, type = 'info') {
@@ -338,7 +342,7 @@ function applyFilteredThemes(themes) {
     if (container) {
       // Performance: Use requestAnimationFrame for smooth updates
       requestAnimationFrame(() => {
-        container.innerHTML = '';
+        setHTML(container, '');
         container.appendChild(fragment);
       });
     }

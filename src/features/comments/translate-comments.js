@@ -1,5 +1,5 @@
 import { $id, $m } from '../../utils/dom.js';
-import { safeHTML } from '../../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../../utils/trusted-types.js';
 import { apiGoogleTranslate } from '../../config/constants.js';
 
 // ------------------------------
@@ -62,7 +62,7 @@ function traductor() {
 
       const urlLista = `?client=dict-chrome-ex&sl=auto&tl=${selectLang.value}&q=` + encodeURIComponent(textNode.textContent);
 
-      btn.innerHTML = safeHTML('Translating... <i class="fa-solid fa-spinner fa-spin"></i>');
+      setHTML(btn, 'Translating... <i class="fa-solid fa-spinner fa-spin"></i>');
 
       fetch(apiGoogleTranslate + urlLista)
         .then((response) => response.json())

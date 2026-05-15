@@ -4,7 +4,7 @@
 // ===========================================
 import { $e, isYTMusic } from '../../utils/dom.js';
 import { FormatterNumber } from '../../utils/helpers.js';
-import { safeHTML } from '../../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../../utils/trusted-types.js';
 import { getLikesDislikesFromPersistedCache } from '../../utils/storage.js';
 import { __ytToolsRuntime } from '../../utils/runtime.js';
 
@@ -47,7 +47,7 @@ function createReelBarButton(opts) {
   if (opts.iconSvg) {
     try {
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = safeHTML(opts.iconSvg);
+      setHTML(tempDiv, opts.iconSvg);
       while (tempDiv.firstChild) {
         iconSpan.appendChild(tempDiv.firstChild);
       }

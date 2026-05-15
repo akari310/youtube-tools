@@ -1,5 +1,6 @@
 // Feature: Cinematic/Ambient Lighting toggle
 import { $e, $m } from '../../utils/dom.js';
+import { setHTML } from '../../utils/trusted-types.js';
 
 const isYTMusic = location.hostname === 'music.youtube.com';
 
@@ -192,17 +193,22 @@ export function setupThumbnailDownloadButton() {
   if (!btnImagen) {
     btnImagen = document.createElement('button');
     btnImagen.id = 'yt-thumbnail-download-btn';
-    btnImagen.innerHTML = '<i class="fas fa-image"></i> Download Thumbnail';
+    setHTML(btnImagen, '<i class="fas fa-image"></i>');
     btnImagen.style.cssText = `
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 6px;
+      border-radius: 50%;
       cursor: pointer;
-      margin: 8px;
-      font-size: 12px;
+      margin: 4px;
+      font-size: 14px;
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
     `;
 
     btnImagen.onmouseover = () => {

@@ -23,10 +23,11 @@ export function initDownloadDescription(enabled = true) {
   if (existing) existing.remove(); // Cleanup if detached
 
   const containerDescription =
+    $e('ytd-watch-metadata #bottom-row') ||
     $e('#bottom-row.ytd-watch-metadata') ||
-    $e('#bottom-row.style-scope.ytd-watch-metadata') ||
     $e('ytd-description-renderer') ||
-    $e('#description.ytd-watch-metadata');
+    $e('#description.ytd-watch-metadata') ||
+    $e('#top-row.ytd-watch-metadata');
   if (!containerDescription) return;
 
   const wrapper = document.createElement('div');

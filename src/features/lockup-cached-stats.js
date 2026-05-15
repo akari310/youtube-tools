@@ -1,6 +1,6 @@
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getLikesDislikesFromPersistedCache } from '../utils/storage.js';
-import { safeHTML } from '../utils/trusted-types.js';
+import { safeHTML, setHTML } from '../utils/trusted-types.js';
 import { FormatterNumber } from '../utils/helpers.js';
 
 // ------------------------------
@@ -23,7 +23,7 @@ function getVideoIdFromLockup(lockup) {
 
 function createSvgIconFromString(svgString, sizePx) {
   const div = document.createElement('div');
-  div.innerHTML = safeHTML(svgString.trim());
+  setHTML(div, svgString.trim());
   const svg = div.firstElementChild;
   if (!svg) return null;
   svg.setAttribute('width', String(sizePx || 14));

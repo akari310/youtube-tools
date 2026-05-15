@@ -1,8 +1,4 @@
-// ===========================================
-// Safe DOM Utilities - Null-safe helpers
-// ===========================================
-// Prevents errors from null/undefined DOM elements
-// ===========================================
+import { setHTML } from './trusted-types.js';
 
 /**
  * Safe querySelector - returns null if not found (no error)
@@ -72,7 +68,7 @@ export function safeSetTextContent(element, text) {
 export function safeSetInnerHTML(element, html) {
   if (!element) return false;
   try {
-    element.innerHTML = html ?? '';
+    setHTML(element, html ?? '');
     return true;
   } catch (e) {
     console.warn('[DOM-Safe] setInnerHTML error:', e);

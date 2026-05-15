@@ -15,15 +15,21 @@ function initPolicy() {
     policyInst = null;
     return null;
   }
-  try {
-    policyInst = tt.createPolicy('yt-tools-mdcm', {
-      createHTML: (s) => s
-    });
-    return policyInst;
-  } catch (e) {
-    policyInst = tt.defaultPolicy || null;
-    return policyInst;
+  
+  const policyNames = ['yt-tools-mdcm', 'default', 'youtube-tools', 'script-policy'];
+  for (const name of policyNames) {
+    try {
+      policyInst = tt.createPolicy(name, {
+        createHTML: (s) => s
+      });
+      if (policyInst) return policyInst;
+    } catch (e) {
+      /* Try next name */
+    }
   }
+
+  policyInst = tt.defaultPolicy || null;
+  return policyInst;
 }
 
 export const policy = initPolicy();
