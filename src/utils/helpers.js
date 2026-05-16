@@ -2,6 +2,8 @@ import { isYTMusic } from './dom.js';
 import {
   readJsonGM,
   writeJsonGM,
+  gmRawGet,
+  gmRawSet,
   STORAGE_KEYS_MDCM,
   UPDATE_META_URL,
   VERSION_CHECK_INTERVAL_MS,
@@ -120,9 +122,9 @@ export function isVersionNewer(latestStr, currentStr) {
 // Check for updates
 export async function checkNewVersion() {
   try {
-    const last = GM_getValue(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, 0);
+    const last = Number(gmRawGet(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, 0));
     if (Date.now() - last < VERSION_CHECK_INTERVAL_MS) return;
-    GM_setValue(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, Date.now());
+    gmRawSet(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, Date.now());
 
     const res = await fetch(UPDATE_META_URL, { cache: 'no-store' });
     if (!res.ok) return;

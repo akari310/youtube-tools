@@ -8,6 +8,7 @@ import { loadSettings } from '../../settings/settings-manager.js';
 import { onWaveStyleChange } from '../../features/wave-visualizer.js';
 import { updateVideoInfoPanel } from '../video-info-panel/index.js';
 import { SETTINGS_KEY } from '../../settings/storage-key.js';
+import { gmRawSet } from '../../utils/storage.js';
 
 /** Persist + theme pass, then tell `main.js` to re-run feature inits (wave visualizer, etc.). */
 function persistApplyAndNotifyFeatures() {
@@ -219,7 +220,7 @@ export function setupSettingsPanelEvents(panelDOM) {
           console.log('[YT Tools] Using SETTINGS_KEY:', SETTINGS_KEY);
           settings.backgroundImage = imageUrl;
           console.log('[YT Tools] Saving backgroundImage to settings with key:', SETTINGS_KEY);
-          GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+          gmRawSet(SETTINGS_KEY, JSON.stringify(settings));
           console.log('[YT Tools] Settings saved, applying settings');
           applySettings();
         };
@@ -246,7 +247,7 @@ export function setupSettingsPanelEvents(panelDOM) {
       const settings = loadSettings();
       delete settings.backgroundImage;
       console.log('[YT Tools] Removing backgroundImage with key:', SETTINGS_KEY);
-      GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+      gmRawSet(SETTINGS_KEY, JSON.stringify(settings));
       applySettings();
     });
   }

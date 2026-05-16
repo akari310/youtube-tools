@@ -2,6 +2,7 @@ import { $id } from '../utils/dom.js';
 import { setHTML } from '../utils/trusted-types.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getCurrentVideoId } from '../utils/helpers.js';
+import { gmRawGet, gmRawSet } from '../utils/storage.js';
 
 const isMusic = location.hostname === 'music.youtube.com';
 
@@ -25,40 +26,40 @@ let detailedStats = {};
 let dailyStats = {};
 
 function loadStats() {
-  usageTime = Number(GM_getValue(STORAGE.USAGE, 0)) || 0;
-  videoTime = Number(GM_getValue(STORAGE.VIDEO, 0)) || 0;
-  shortsTime = Number(GM_getValue(STORAGE.SHORTS, 0)) || 0;
+  usageTime = Number(gmRawGet(STORAGE.USAGE, 0)) || 0;
+  videoTime = Number(gmRawGet(STORAGE.VIDEO, 0)) || 0;
+  shortsTime = Number(gmRawGet(STORAGE.SHORTS, 0)) || 0;
   try {
-    detailedStats = JSON.parse(GM_getValue(STORAGE.DETAIL, '{}'));
+    detailedStats = JSON.parse(gmRawGet(STORAGE.DETAIL, '{}'));
   } catch {
     detailedStats = {};
   }
   try {
-    dailyStats = JSON.parse(GM_getValue(STORAGE.DAILY, '{}'));
+    dailyStats = JSON.parse(gmRawGet(STORAGE.DAILY, '{}'));
   } catch {
     dailyStats = {};
   }
   videosWatched = Object.keys(detailedStats).length;
 
-  const sessionStart = Number(GM_getValue(STORAGE.SESSION, 0));
+  const sessionStart = Number(gmRawGet(STORAGE.SESSION, 0));
   const now = Date.now();
   if (now - sessionStart > 3600000) {
     sessionTime = 0;
-    GM_setValue(STORAGE.SESSION, now);
+    gmRawSet(STORAGE.SESSION, now);
   } else {
     sessionTime = (now - sessionStart) / 1000;
   }
 }
 
 function saveStats() {
-  GM_setValue(STORAGE.USAGE, usageTime);
-  GM_setValue(STORAGE.VIDEO, videoTime);
-  GM_setValue(STORAGE.SHORTS, shortsTime);
+  gmRawSet(STORAGE.USAGE, usageTime);
+  gmRawSet(STORAGE.VIDEO, videoTime);
+  gmRawSet(STORAGE.SHORTS, shortsTime);
   try {
-    GM_setValue(STORAGE.DETAIL, JSON.stringify(detailedStats));
+    gmRawSet(STORAGE.DETAIL, JSON.stringify(detailedStats));
   } catch {}
   try {
-    GM_setValue(STORAGE.DAILY, JSON.stringify(dailyStats));
+    gmRawSet(STORAGE.DAILY, JSON.stringify(dailyStats));
   } catch {}
 }
 
@@ -260,19 +261,19 @@ function resetStats() {
   detailedStats = {};
   dailyStats = {};
   lastUpdate = Date.now();
-  GM_setValue(STORAGE.USAGE, 0);
-  GM_setValue(STORAGE.VIDEO, 0);
-  GM_setValue(STORAGE.SHORTS, 0);
-  GM_setValue(STORAGE.DETAIL, '{}');
-  GM_setValue(STORAGE.DAILY, '{}');
-  GM_setValue(STORAGE.SESSION, Date.now());
+  gmRawSet(STORAGE.USAGE, 0);
+  gmRawSet(STORAGE.VIDEO, 0);
+  gmRawSet(STORAGE.SHORTS, 0);
+  gmRawSet(STORAGE.DETAIL, '{}');
+  gmRawSet(STORAGE.DAILY, '{}');
+  gmRawSet(STORAGE.SESSION, Date.now());
   updateUI();
 }
 
 export function initTimeStats() {
   loadStats();
   lastUpdate = Date.now();
-  GM_setValue(STORAGE.SESSION, Date.now());
+  gmRawSet(STORAGE.SESSION, Date.now());
 
   if (!__ytToolsRuntime.modularStatsIntervalId) {
     __ytToolsRuntime.modularStatsIntervalId = true;

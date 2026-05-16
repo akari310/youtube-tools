@@ -273,6 +273,22 @@ export function buildToolbar() {
   container.appendChild(collapsible);
   main.appendChild(container);
 
+  // Wire btn1 (MP4) and btn2 (MP3) to toggle forms
+  const btn1 = main.querySelector('.btn1');
+  const btn2 = main.querySelector('.btn2');
+  if (btn1) {
+    btn1.addEventListener('click', () => {
+      const hidden = videoForm.classList.toggle('ocultarframe');
+      audioForm.classList.add('ocultarframeaudio');
+    });
+  }
+  if (btn2) {
+    btn2.addEventListener('click', () => {
+      const hidden = audioForm.classList.toggle('ocultarframeaudio');
+      videoForm.classList.add('ocultarframe');
+    });
+  }
+
   return main;
 }
 

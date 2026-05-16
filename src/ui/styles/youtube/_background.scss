@@ -4,6 +4,10 @@
    =========================================== */
 
 /* === Mode Custom Properties === */
+:root {
+  --yt-search-text-color: #eee;
+  --yt-search-placeholder-color: #999;
+}
 body.yt-style-blur {
   background-color: #0f0f0f !important;
   --yt-glass-blur: 20px;
@@ -73,6 +77,8 @@ html:not([dark]) body.yt-style-liquid {
   --yt-glass-bg-watch: rgba(248, 248, 248, 0.4);
   --yt-glass-border: rgba(0, 0, 0, 0.08);
   --yt-glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  --yt-search-text-color: #111;
+  --yt-search-placeholder-color: #666;
 }
 
 /* === Unified Glass Selectors (single block, no duplication) === */
@@ -212,25 +218,89 @@ body.yt-style-transparent #search-form {
   will-change: backdrop-filter;
 }
 
+body.yt-style-blur yt-searchbox .ytSearchboxComponentInputBox,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentInputBox,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentInputBox {
+  background: var(--yt-glass-bg-search) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  border: 1px solid var(--yt-glass-border) !important;
+  border-top: 1px solid var(--yt-glass-border-top) !important;
+  border-right: none !important;
+  border-radius: 24px 0 0 24px !important;
+  box-shadow: var(--yt-glass-shadow) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease,
+    border-color 0.6s ease;
+  will-change: backdrop-filter;
+}
+
 body.yt-style-blur ytd-searchbox #container,
 body.yt-style-blur #container.ytd-searchbox,
+body.yt-style-blur yt-searchbox .ytSearchboxComponentInputContainer,
 body.yt-style-liquid ytd-searchbox #container,
 body.yt-style-liquid #container.ytd-searchbox,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentInputContainer,
 body.yt-style-transparent ytd-searchbox #container,
-body.yt-style-transparent #container.ytd-searchbox {
+body.yt-style-transparent #container.ytd-searchbox,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentInputContainer {
   background: transparent !important;
 }
 
 /* Search box hover/focus glow */
 body.yt-style-blur ytd-searchbox #search-form:focus-within,
 body.yt-style-blur ytd-searchbox #search-form:hover,
+body.yt-style-blur yt-searchbox .ytSearchboxComponentInputBox:focus-within,
+body.yt-style-blur yt-searchbox .ytSearchboxComponentInputBox:hover,
 body.yt-style-liquid ytd-searchbox #search-form:focus-within,
-body.yt-style-liquid ytd-searchbox #search-form:hover {
+body.yt-style-liquid ytd-searchbox #search-form:hover,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentInputBox:focus-within,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentInputBox:hover {
   background: rgba(25, 25, 25, 0.55) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
   box-shadow:
     0 0 20px rgba(255, 255, 255, 0.06),
     var(--yt-glass-shadow) !important;
+}
+
+/* New search button styling */
+body.yt-style-blur yt-searchbox .ytSearchboxComponentSearchButton,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentSearchButton,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentSearchButton {
+  background: var(--yt-glass-bg-search) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  border: 1px solid var(--yt-glass-border) !important;
+  border-left: none !important;
+  border-radius: 0 24px 24px 0 !important;
+  margin-left: -1px !important;
+  color: var(--yt-search-text-color, #eee) !important;
+  transition:
+    backdrop-filter 0.6s ease,
+    background 0.6s ease,
+    border-color 0.6s ease;
+}
+
+body.yt-style-blur yt-searchbox .ytSearchboxComponentSearchButton:hover,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentSearchButton:hover,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentSearchButton:hover {
+  background: rgba(25, 25, 25, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Search input text */
+body.yt-style-blur yt-searchbox .ytSearchboxComponentInput,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentInput,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentInput {
+  color: var(--yt-search-text-color, #eee) !important;
+}
+
+body.yt-style-blur yt-searchbox .ytSearchboxComponentInput::placeholder,
+body.yt-style-liquid yt-searchbox .ytSearchboxComponentInput::placeholder,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentInput::placeholder {
+  color: var(--yt-search-placeholder-color, #999) !important;
+  opacity: 0.8 !important;
 }
 
 /* Chips / Filter bar */
@@ -316,6 +386,8 @@ body.yt-style-transparent ytd-masthead,
 body.yt-style-transparent #secondary-inner,
 body.yt-style-transparent ytd-guide-renderer,
 body.yt-style-transparent ytd-searchbox #search-form,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentInputBox,
+body.yt-style-transparent yt-searchbox .ytSearchboxComponentSearchButton,
 body.yt-style-transparent ytd-watch-flexy #primary-inner,
 body.yt-style-transparent ytd-watch-flexy #below {
   will-change: auto !important;

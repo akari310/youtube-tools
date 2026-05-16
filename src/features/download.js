@@ -278,8 +278,21 @@ export function setupDownloadClickHandler() {
     const container = clicked.closest('.download-container');
     if (!container) return;
 
-    const quality = container.dataset.quality;
-    const type = container.dataset.type;
+    // Resolve quality from dataset or from sibling <select>
+    let quality = container.dataset.quality;
+    let type = container.dataset.type;
+
+    if (!quality) {
+      const parent = container.parentElement;
+      if (parent) {
+        const sel = parent.querySelector('select');
+        if (sel && sel.value) quality = sel.value;
+      }
+    }
+
+    if (!type) {
+      type = container.classList.contains('ocultarframeaudio') ? 'audio' : 'video';
+    }
 
     // download-again just re-opens the last URL (no restart)
     if (clicked.classList.contains('download-again-btn')) {

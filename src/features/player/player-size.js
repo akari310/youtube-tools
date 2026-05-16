@@ -1,5 +1,7 @@
 import { $e } from '../../utils/dom.js';
 import { __ytToolsRuntime } from '../../utils/runtime.js';
+import { readJsonGM } from '../../utils/storage.js';
+import { STORAGE_KEYS } from '../../config/storage-keys.js';
 
 const DEFAULT_SIZE = 100;
 
@@ -29,7 +31,7 @@ export function initPlayerSize(settings) {
     __ytToolsRuntime.playerSizeNavBound = true;
     window.addEventListener('yt-navigate-finish', () => {
       try {
-        const s = JSON.parse(GM_getValue('ytSettingsMDCM', '{}'));
+        const s = readJsonGM(STORAGE_KEYS.SETTINGS_YT, {});
         if (s?.playerSize) applyPlayerSize(s.playerSize);
       } catch {}
     });

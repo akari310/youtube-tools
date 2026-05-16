@@ -4,6 +4,7 @@
 // ===========================================
 import { $e, isYTMusic } from '../utils/dom.js';
 import { SETTINGS_KEY } from '../settings/storage-key.js';
+import { readJsonGM } from '../utils/storage.js';
 
 export const ytmAmbientMode = {
   active: false,
@@ -299,7 +300,7 @@ export function startAmbientWatcher() {
     if (_ambientWatcherId) return;
     _ambientWatcherId = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
-      const s = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+      const s = readJsonGM(SETTINGS_KEY, {});
       const onWatch = window.location.href.includes('/watch');
       if (!s.cinematicLighting) {
         if (ytmAmbientMode.active) ytmAmbientMode.hide();
@@ -316,7 +317,7 @@ export function startAmbientWatcher() {
 
   // Also respond to YTM-specific events immediately
   document.addEventListener('yt-page-data-updated', () => {
-    const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+    const settings = readJsonGM(SETTINGS_KEY, {});
     if (!settings.cinematicLighting) return;
     if (window.location.href.includes('/watch')) {
       if (!ytmAmbientMode.active) ytmAmbientMode.show();

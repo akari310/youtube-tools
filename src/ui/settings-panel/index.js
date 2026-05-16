@@ -6,6 +6,7 @@ import { setupSettingsPanelEvents } from './events.js';
 import { initThemeSelector } from '../components/theme-selector/index.js';
 
 import { loadSettingsToDOM } from '../../themes/theme-engine.js';
+import { applySettings } from '../../themes/theme-engine.js';
 import { initGearIcon } from '../gear-icon.js';
 import './style.scss';
 
@@ -24,9 +25,10 @@ export function initSettingsPanel() {
       initThemeSelector();
     }, 100);
 
-    // Load settings to DOM
+    // Load settings to DOM then apply theme with correct values
     setTimeout(() => {
       loadSettingsToDOM();
+      applySettings();
     }, 100);
   }
 }

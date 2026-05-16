@@ -4,9 +4,9 @@
 import { $e, $id, $m, $sp } from '../utils/dom.js';
 import { SETTINGS_KEY } from './storage-key.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
+import { readJsonGM } from '../utils/storage.js';
 import { syncAudioOnlyTabCheckbox, setMenuColor } from './settings-dom.js';
 import { selectedBgColor, selectedTextColor, selectedBgAccentColor } from './settings-dom.js';
-import { applySettings } from '../themes/applier.js';
 
 // Re-export for external consumers (theme-engine.js, settings-panel, etc.)
 export {
@@ -20,7 +20,7 @@ export {
  * Read settings from GM storage and apply to panel DOM.
  */
 export function loadSettingsToDOM() {
-  const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+  const settings = readJsonGM(SETTINGS_KEY, {});
   __ytToolsRuntime.settingsLoaded = true;
 
   if (settings.theme) {

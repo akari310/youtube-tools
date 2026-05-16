@@ -5,7 +5,7 @@
 import { $e, $id, $sp, isYTMusic, checkDarkModeActive } from '../utils/dom.js';
 import { THEMES } from './theme-data.js';
 import { SETTINGS_KEY } from '../settings/storage-key.js';
-import { setDynamicCss, __ytToolsRuntime } from '../utils/runtime.js';
+import { setDynamicCss } from '../utils/runtime.js';
 import { renderizarButtons } from '../ui/toolbar/index.js';
 import { applyPageBackground, removePageBackground } from './page-background.js';
 import { applyNonstopPlayback } from '../features/player/nonstop-playback.js';
@@ -15,8 +15,8 @@ import { setupContinueWatchingFeature } from '../features/continue-watching.js';
 import { setupShortsChannelNameFeature } from '../features/shorts/shorts-channel-name.js';
 import { setupLockupCachedStats } from '../features/lockup-cached-stats.js';
 import { ytmAmbientMode } from '../features/ytm-ambient-mode.js';
+import { readJsonGM } from '../utils/storage.js';
 import {
-  saveSettingsFromDOM,
   getMenuColors,
   syncAudioOnlyTabCheckbox,
 } from '../settings/settings-dom.js';
@@ -41,7 +41,7 @@ function applyYTMThemeVars(
   progressColor,
   progressSecondary
 ) {
-  const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+  const settings = readJsonGM(SETTINGS_KEY, {});
   const hasBgImage = !!settings.backgroundImage;
   const bgT = hasBgImage ? 'transparent' : bgColor;
   const menuBgT = hasBgImage ? 'transparent' : menuBg || bgColor;
@@ -153,7 +153,7 @@ export function applySettings() {
   };
 
   // backgroundImage is not a DOM element — read it from GM storage
-  const stored = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+  const stored = readJsonGM(SETTINGS_KEY, {});
   if (stored.backgroundImage) settings.backgroundImage = stored.backgroundImage;
 
   $sp('--yt-enhance-menu-bg', getMenuColors().bg);
@@ -394,6 +394,41 @@ export function applySettings() {
   // Apply advanced theme CSS
   applyAdvancedThemeCSS(selectedTheme, settings, addCss);
 
+  // YT sidebar theme - handle both preset and custom themes
+  if (!isYTMusic && settings.themes && isDarkMode === 'dark') {
+    const sidebarBg = isThemeCustom
+      ? (settings.headerColorPicker || settings.bgColorPicker)
+      : (selectedTheme.glassBg || selectedTheme.gradient);
+    const sidebarBlur = isThemeCustom ? '24px' : (selectedTheme.glassBlur || '24px');
+    addCss(`
+      ytd-guide-renderer,
+      ytd-guide-renderer #guide-content,
+      ytd-guide-renderer #guide-wrapper,
+      ytd-guide-renderer #guide-inner-content,
+      ytd-guide-renderer #sections,
+      ytd-guide-renderer ytd-guide-section-renderer,
+      ytd-guide-renderer #items,
+      ytd-mini-guide-renderer,
+      ytd-app > #header,
+      ytd-app > #header ytd-topbar-logo-renderer,
+      #secondary-inner {
+        background: linear-gradient(rgba(10, 10, 10, 0.75), rgba(10, 10, 10, 0.75)), ${sidebarBg} !important;
+        backdrop-filter: blur(${sidebarBlur}) saturate(1.2) !important;
+        -webkit-backdrop-filter: blur(${sidebarBlur}) saturate(1.2) !important;
+      }
+      ytd-guide-entry-renderer,
+      ytd-guide-collapsible-entry-renderer,
+      ytd-guide-section-renderer #header {
+        background: transparent !important;
+      }
+      ytd-guide-renderer #sections,
+      ytd-guide-renderer #guide-inner-content {
+        scrollbar-width: thin !important;
+        overflow-y: overlay !important;
+      }
+    `);
+  }
+
   setDynamicCss(dynamicCssArray.join('\n'));
 
   // Apply features
@@ -404,9 +439,9 @@ export function applySettings() {
     setupLockupCachedStats();
   }
 
-  if (__ytToolsRuntime.settingsLoaded) {
-    saveSettingsFromDOM();
-  }
+  // Don't auto-save here — saveSettingsFromDOM() reads DOM values which may
+  // not be populated from storage yet (loadSettingsToDOM runs with setTimeout).
+  // It is called by user interaction events in settings-panel/events.js instead.
 }
 
 // Advanced Theme CSS Application
@@ -511,19 +546,7 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
           background: ${selectedTheme.gradient} !important;
         }
 
-        /* Sidebar & Guide - Apply theme gradient with glass effect */
-        #secondary-inner,
-        ytd-guide-renderer,
-        ytd-mini-guide-renderer {
-          background: ${selectedTheme.glassBg || selectedTheme.gradient} !important;
-          backdrop-filter: blur(${selectedTheme.glassBlur || '12px'}) saturate(1.2) !important;
-          -webkit-backdrop-filter: blur(${selectedTheme.glassBlur || '12px'}) saturate(1.2) !important;
-        }
-
-        /* Ensure nested guide elements are transparent to avoid stacking */
-        #guide-content, #guide-wrapper {
-          background: transparent !important;
-        }
+        /* Sidebar & Guide handled in main applySettings */
 
         /* Restore the 'frosted-glass' look but with the theme gradient */
         #frosted-glass.ytd-app {
@@ -592,14 +615,9 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         ${hasBgImage && shouldApplyTheme ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
       }
       ytmusic-nav-bar {
-        background: transparent !important;
-        transition: background 0.4s ease-in-out !important;
-      }
-      ytmusic-nav-bar.scrolled,
-      ytmusic-nav-bar[opened],
-      body[player-page-open] ytmusic-nav-bar {
         background: ${shouldApplyTheme ? selectedTheme.gradient : 'transparent'} !important;
         ${hasBgImage && shouldApplyTheme ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
+        transition: background 0.4s ease-in-out !important;
       }
       ytmusic-search-box #input-box { background: ${shouldApplyTheme ? selectedTheme.gradient : 'transparent'} !important; }
       
@@ -612,7 +630,7 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
       ytmusic-grid-renderer,
       ytmusic-item-section-renderer,
       #content.ytmusic-app,
-      #shorts-container, ytd-shorts, #shorts-inner-container, ytd-reel-player-overlay, #overlay.ytd-reel-video-renderer, ytmusic-app-layout, #mini-guide-background, #guide-wrapper.ytmusic-app-layout, ytmusic-browse-response #background, ytmusic-browse-response .background, ytmusic-app-layout #background, ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer, ytmusic-chip-cloud-chip-renderer, ytmusic-chip-cloud-renderer, ytmusic-player-page, ytmusic-player-page #background { background: transparent !important; }
+      #shorts-container, ytd-shorts, #shorts-inner-container, ytd-reel-player-overlay, #overlay.ytd-reel-video-renderer, ytmusic-app-layout, ytmusic-browse-response #background, ytmusic-browse-response .background, ytmusic-app-layout #background, ytmusic-immersive-header-renderer, ytmusic-card-shelf-renderer, ytmusic-chip-cloud-chip-renderer, ytmusic-chip-cloud-renderer, ytmusic-player-page, ytmusic-player-page #background { background: transparent !important; }
 
       /* Neutralize default YTM gradients */
       ytmusic-browse-response #background,
@@ -624,7 +642,7 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
       #background.style-scope.ytmusic-browse-response,
       #header.style-scope.ytmusic-browse-response,
       ytmusic-browse-response [id="background"],
-      ytmusic-header-renderer [id="background"], #mini-guide-background, #guide-spacer {
+      ytmusic-header-renderer [id="background"], #guide-spacer {
         background: transparent !important;
         background-image: none !important;
       }
@@ -648,6 +666,30 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
           --paper-slider-active-color: ${ytmSliderSolidColor} !important;
           --paper-slider-knob-color: ${ytmSliderSolidColor} !important;
           --paper-slider-secondary-color: ${ytmSliderSolidColor}80 !important;
+        }
+
+        /* Sidebar & Guide - Apply theme gradient with glass effect */
+        tp-yt-app-drawer,
+        tp-yt-app-drawer #contentContainer,
+        #guide-wrapper.ytmusic-app-layout,
+        #guide-content,
+        #guide-spacer,
+        ytmusic-guide-renderer,
+        ytmusic-guide-section-renderer,
+        #mini-guide-background,
+        #mini-guide,
+        #mini-guide-renderer {
+          background: linear-gradient(rgba(10, 10, 10, 0.75), rgba(10, 10, 10, 0.75)), ${selectedTheme.glassBg || selectedTheme.gradient} !important;
+          backdrop-filter: blur(${selectedTheme.glassBlur || '24px'}) saturate(1.2) !important;
+          -webkit-backdrop-filter: blur(${selectedTheme.glassBlur || '24px'}) saturate(1.2) !important;
+        }
+
+        /* Nested guide elements transparent to avoid stacking */
+        #guide-wrapper.ytmusic-app-layout #items,
+        ytmusic-guide-section-renderer #items,
+        ytmusic-guide-entry-renderer,
+        tp-yt-paper-item.ytmusic-guide-entry-renderer {
+          background: transparent !important;
         }
       `);
     }

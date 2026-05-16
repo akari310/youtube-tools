@@ -5,6 +5,7 @@
 // ===========================================
 import { $e, $id } from '../utils/dom.js';
 import { SETTINGS_KEY } from './storage-key.js';
+import { gmRawGet, gmRawSet, readJsonGM } from '../utils/storage.js';
 
 export let selectedBgColor = '#252525';
 export let selectedTextColor = '#ffffff';
@@ -17,7 +18,7 @@ export function syncAudioOnlyTabCheckbox() {
   if (!tabToggle) return;
   const key = 'ytAudioOnlyTab_' + (window.__ytTabId || '0');
   try {
-    tabToggle.checked = GM_getValue(key, false);
+    tabToggle.checked = gmRawGet(key, false);
   } catch {
     /* */
   }
@@ -29,8 +30,7 @@ export function syncAudioOnlyTabCheckbox() {
  * Read current toggle/select/slider values from panel DOM and save.
  */
 export function saveSettingsFromDOM() {
-  const existingSaved = GM_getValue(SETTINGS_KEY, '{}');
-  const existing = JSON.parse(existingSaved);
+  const existing = readJsonGM(SETTINGS_KEY, {});
 
   const s = {
     ...existing,
@@ -70,7 +70,7 @@ export function saveSettingsFromDOM() {
     languagesComments: $id('select-languages-comments-select')?.value || 'en',
     menu_akari: { bg: selectedBgColor, color: selectedTextColor, accent: selectedBgAccentColor },
   };
-  GM_setValue(SETTINGS_KEY, JSON.stringify(s));
+  gmRawSet(SETTINGS_KEY, JSON.stringify(s));
 }
 
 // Export menu color state for settings panel events

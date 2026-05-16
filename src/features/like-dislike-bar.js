@@ -1,4 +1,4 @@
-import { $e } from '../utils/dom.js';
+import { $e, $id } from '../utils/dom.js';
 import { apiDislikes } from '../config/constants.js';
 import {
   getLikesDislikesFromPersistedCache,
@@ -83,6 +83,7 @@ export function parseCountText(text) {
     'uk',
     'ru',
     'ar',
+    'vi',
   ];
   const isDotThousandsLocale = dotThousandsLocales.some(l => hl.startsWith(l));
 
@@ -136,15 +137,19 @@ export function getLikesFromDom() {
     $e('button[aria-label*="like" i]') ||
     $e('ytd-menu-renderer like-button-view-model button');
   if (!likeBtn) return null;
-  const aria = likeBtn.getAttribute('aria-label') || '';
-  const m = aria.match(/([\d.,]+\s*[kKmMil]*)/i);
-  if (m) {
-    const parsed = parseCountText(m[1]);
+
+  // Use full button text — includes compact suffix (e.g. "3,4 N" → 3400)
+  const btnText = likeBtn.textContent;
+  if (btnText) {
+    const parsed = parseCountText(btnText);
     if (parsed != null) return parsed;
   }
-  const countEl = likeBtn.querySelector('span, .yt-spec-button-shape-next__button-text-content');
-  if (countEl) {
-    const parsed = parseCountText(countEl.textContent);
+
+  // Fallback to aria-label — extract raw number only, ignore grammatical words like "nghìn"
+  const aria = likeBtn.getAttribute('aria-label') || '';
+  const m = aria.match(/([\d.,]+)/);
+  if (m) {
+    const parsed = parseCountText(m[1]);
     if (parsed != null) return parsed;
   }
   return null;

@@ -9,6 +9,10 @@ const DEFAULT_API_KEY = 'dfcb6d76f2f6a9894gjkege8a4ab232222';
 
 export function getApiKey() {
   try {
+    const custom = unsafeWindow.localStorage.getItem('yt_tools_ytToolsApiKeyMDCM');
+    if (custom) return custom;
+  } catch {}
+  try {
     const custom = GM_getValue('ytToolsApiKeyMDCM', '');
     return custom && custom.length > 0 ? custom : DEFAULT_API_KEY;
   } catch {
