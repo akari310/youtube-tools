@@ -47,6 +47,7 @@ const userscriptGlobals = {
   GM_info: 'readonly',
   GM_registerMenuCommand: 'readonly',
   GM_setValue: 'readonly',
+  GM_xmlhttpRequest: 'readonly',
   iziToast: 'readonly',
   unsafeWindow: 'readonly',
 };

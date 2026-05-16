@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS = {
   bookmarks: true,
   likeDislike: true,
   likeDislikeBar: true,
+  translateComments: true,
   waveVisualizer: true,
   waveVisualizerSelected: 'dinamica',
   shortsChannelName: true,

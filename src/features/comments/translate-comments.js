@@ -64,16 +64,33 @@ function traductor() {
 
       setHTML(btn, 'Translating... <i class="fa-solid fa-spinner fa-spin"></i>');
 
-      fetch(apiGoogleTranslate + urlLista)
-        .then((response) => response.json())
-        .then((datos) => {
-          textNode.textContent = datos[0][0];
-          btn.textContent = 'Translated';
-        })
-        .catch((err) => {
-          console.error('Error en la traducción:', err);
-          btn.textContent = 'Error';
+      if (typeof GM_xmlhttpRequest !== 'undefined') {
+        GM_xmlhttpRequest({
+          method: 'GET',
+          url: apiGoogleTranslate + urlLista,
+          onload: (res) => {
+            try {
+              const datos = JSON.parse(res.responseText);
+              textNode.textContent = datos[0][0];
+              btn.textContent = 'Translated';
+            } catch (e) {
+              btn.textContent = 'Error';
+            }
+          },
+          onerror: () => { btn.textContent = 'Error'; },
         });
+      } else {
+        fetch(apiGoogleTranslate + urlLista)
+          .then((response) => response.json())
+          .then((datos) => {
+            textNode.textContent = datos[0][0];
+            btn.textContent = 'Translated';
+          })
+          .catch((err) => {
+            console.error('Error en la traducción:', err);
+            btn.textContent = 'Error';
+          });
+      }
     });
   }
 }
