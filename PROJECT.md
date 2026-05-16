@@ -1,28 +1,29 @@
-# YouTube Tools — Kiến Trúc & Tài Liệu Dự Án
+# YouTube Tools — Architecture & Project Documentation
 
 **Project:** `youtube-tools-userscript` v2.4.4.2  
 **Type:** Tampermonkey Userscript  
 **Build:** Vite + vite-plugin-monkey (production) / Rollup (dev)  
-**Last Updated:** 2026-05-11
+**Last Updated:** 2026-05-16  
+**Status:** ✅ 100% Modular ES Modules | ✅ All 28 Issues Resolved
 
 ---
 
-## Mục lục
+## Table of Contents
 
-1. [Tổng quan kiến trúc](#tổng-quan-kiến-trúc)
-2. [Luồng khởi tạo](#luồng-khởi-tạo)
-3. [Quản lý State](#quản-lý-state)
+1. [Architecture Overview](#architecture-overview)
+2. [Initialization Flow](#initialization-flow)
+3. [State Management](#state-management)
 4. [API Integrations](#api-integrations)
-5. [Từng Feature Chi Tiết](#từng-feature-chi-tiết)
+5. [Feature Details](#feature-details)
 6. [Build Pipeline](#build-pipeline)
-7. [Cấu trúc thư mục đầy đủ](#cấu-trúc-thư-mục-đầy-đủ)
+7. [Project Structure](#project-structure)
 8. [Known Issues & Technical Debt](#known-issues--technical-debt)
 
 ---
 
-## Tổng quan kiến trúc
+## Architecture Overview
 
-Dự án là một **Tampermonkey userscript** hoạt động trên YouTube và YouTube Music. Codebase đã hoàn tất migration từ monolithic legacy sang **100% modular ES modules**.
+This project is a **Tampermonkey userscript** that runs on YouTube and YouTube Music. The codebase has completed migration from monolithic legacy to **100% modular ES modules**.
 
 ```
 ┌───────────────────────────────────────────────────┐
@@ -43,39 +44,39 @@ Dự án là một **Tampermonkey userscript** hoạt động trên YouTube và 
 └───────────────────────────────────────────────────┘
 ```
 
-### Migration hoàn tất
+### Migration Completed
 
-- ✅ `legacy-full.js` (~8,800 dòng) đã bị xóa
-- ✅ `script.js`, `scripts/sync-legacy.mjs`, `scripts/verify-parity.mjs` đã bị xóa
-- ✅ Tất cả 28 issues từ ERROR_ANALYSIS.md đã resolved
+- ✅ `legacy-full.js` (~8,800 lines) deleted
+- ✅ `script.js`, `scripts/sync-legacy.mjs`, `scripts/verify-parity.mjs` deleted
+- ✅ All 28 issues from ERROR_ANALYSIS.md resolved
 
 ---
 
-## Luồng khởi tạo
+## Initialization Flow
 
 ```
-1. Tampermonkey injects script vào youtube.com
-2. Vite build → IIFE wrapper bọc toàn bộ code
-3. main.js chạy:
+1. Tampermonkey injects script into youtube.com
+2. Vite build → IIFE wrapper around all code
+3. main.js executes:
    ├── Import settings-manager (loadSettings)
    ├── Import theme-engine (initThemeEngine)
    ├── Import UI components (panel, toolbar, gear, video-info)
-   ├── Import tất cả 21 feature modules
-   ├── loadSettings() → đọc cấu hình từ GM storage
-   ├── initThemeEngine(settings) → áp dụng theme
+   ├── Import all 21 feature modules
+   ├── loadSettings() → read config from GM storage
+   ├── initThemeEngine(settings) → apply theme
    ├── createPanel() + initSettingsEvents() → settings panel
    ├── initToolbar() → download toolbar
-   ├── initGearIcon() → nút gear
-   ├── initVideoInfoPanel() → panel metadata
-   ├── Chạy từng feature với settings (try-catch)
+   ├── initGearIcon() → gear button
+   ├── initVideoInfoPanel() → video metadata panel
+   ├── Run each feature with settings (try-catch)
    ├── setTimeout(checkNewVersion, 3000)
-   ├── Lắng nghe 'yt-navigate-finish' → reinit tất cả
-   └── Lắng nghe 'yt-tools-settings-changed' → reinit
+   ├── Listen 'yt-navigate-finish' → reinit all
+   └── Listen 'yt-tools-settings-changed' → reinit
 ```
 
 ### SPA Navigation Handler
 
-YouTube là Single Page Application — khi người dùng click vào video, trang không reload. Script dùng custom event:
+YouTube is a Single Page Application — when users click on a video, the page doesn't reload. The script uses custom events:
 
 ```javascript
 window.addEventListener('yt-navigate-finish', () => {
@@ -83,25 +84,25 @@ window.addEventListener('yt-navigate-finish', () => {
 });
 ```
 
-Tất cả feature đều có handler này hoặc được gọi lại qua reinitAll.
+All features have this handler or are called via reinitAll.
 
 ---
 
-## Quản lý State
+## State Management
 
-### 2 nguồn state chính
+### 2 Primary State Sources
 
-| Nguồn              | File               | Scope         | Ví dụ                                                      |
+| Source             | File               | Scope         | Examples                                                   |
 | ------------------ | ------------------ | ------------- | ---------------------------------------------------------- |
 | `__ytToolsRuntime` | `utils/runtime.js` | Window global | `__ytToolsRuntime.dislikesCache`, `modularStatsIntervalId` |
 | GM storage         | Tampermonkey       | Persistent    | `GM_getValue('ytSettingsMDCM', '{}')`                      |
 
-Module-level variables trong `time-stats.js` và `state.js` dùng cho state cục bộ của từng feature.
+Module-level variables in `time-stats.js` and `state.js` are used for per-feature local state.
 
 ### Storage Mechanism
 
 - **Settings:** `GM_getValue('ytSettingsMDCM', '{}')` — JSON (YouTube) / `GM_getValue('ytmSettingsMDCM', '{}')` — JSON (YouTube Music)
-- **Thống kê:** `GM_setValue('YT_TOTAL_USAGE', ...)`, `YT_VIDEO_TIME`, `YT_SHORTS_TIME`, `YT_DETAILED_STATS`, `YT_DAILY_STATS`, `YT_SESSION_START`
+- **Statistics:** `GM_setValue('YT_TOTAL_USAGE', ...)`, `YT_VIDEO_TIME`, `YT_SHORTS_TIME`, `YT_DETAILED_STATS`, `YT_DAILY_STATS`, `YT_SESSION_START`
 - **Bookmarks:** `GM_setValue('YT_BOOKMARKS', ...)`
 - **Continue Watching:** `GM_setValue('YT_CONTINUE_VIDEO', ...)`
 - **Dislike Cache:** `GM_setValue('ytLikesDislikesCacheMDCM', ...)` + `__ytToolsRuntime.dislikesCache` (in-memory)
@@ -152,116 +153,116 @@ Method: POST (JSON)
 
 ---
 
-## Từng Feature Chi Tiết
+## Feature Details
 
 ### 1. Download (`src/features/download.js`)
 
-- **Mục đích:** Tải video MP4 hoặc audio MP3 từ YouTube
-- **Providers:** SaveNow (chính) + Dubs (fallback)
-- **UI:** Download toolbar với progress UI (`src/ui/toolbar.js`)
+- **Purpose:** Download MP4 video or MP3 audio from YouTube
+- **Providers:** SaveNow (primary) + Dubs (fallback)
+- **UI:** Download toolbar with progress UI (`src/ui/toolbar.js`)
 
 ### 2. Like/Dislike Bar (`src/features/like-dislike-bar.js`)
 
-- **Mục đích:** Hiển thị thanh tỷ lệ like/dislike + số dislike
+- **Purpose:** Display like/dislike ratio bar + dislike count
 - **API:** ReturnYouTubeDislike
-- **Parsing:** `parseCountText()` — locale-aware (đọc `hl` URL param)
+- **Parsing:** `parseCountText()` — locale-aware (reads `hl` URL param)
 
 ### 3. Time Stats (`src/features/time-stats.js`)
 
-- **Mục đích:** Theo dõi thời gian xem video/shorts, thống kê session, daily, weekly
+- **Purpose:** Track video/shorts watch time, session, daily, weekly statistics
 - **Storage:** `YT_TOTAL_USAGE`, `YT_VIDEO_TIME`, `YT_SHORTS_TIME`, `YT_DETAILED_STATS`, `YT_DAILY_STATS`, `YT_SESSION_START`
 - **UI:** Stats panel (`src/ui/_stats.scss`)
-- **Update interval:** 1 giây | **Save interval:** 30 giây
+- **Update interval:** 1 second | **Save interval:** 30 seconds
 
 ### 4. Wave Visualizer (`src/features/wave-visualizer.js`)
 
-- **Mục đích:** Visualizer sóng âm thanh real-time dùng Web Audio API
+- **Purpose:** Real-time audio waveform visualizer using Web Audio API
 - **Tech:** AudioContext → AnalyserNode → Canvas (requestAnimationFrame loop)
-- **Cleanup:** `cleanupWaveVisualizer()` gọi khi SPA navigate
+- **Cleanup:** `cleanupWaveVisualizer()` called on SPA navigate
 
 ### 5. Bookmarks (`src/features/bookmarks.js`)
 
-- **Mục đích:** Lưu timestamp đánh dấu trong video
+- **Purpose:** Save timestamp bookmarks in videos
 - **Storage:** `GM_getValue('YT_BOOKMARKS', '[]')`
 
 ### 6. Continue Watching (`src/features/continue-watching.js`)
 
-- **Mục đích:** Lưu vị trí đang xem và tự động resume
+- **Purpose:** Save current position and auto-resume
 - **Storage:** `GM_setValue('YT_CONTINUE_VIDEO', ...)`
 - **Cache:** `metaCache` Map per videoId
 
 ### 7. Translate Comments (`src/features/translate-comments.js`)
 
-- **Mục đích:** Dịch bình luận YouTube sang ngôn ngữ khác
+- **Purpose:** Translate YouTube comments to another language
 - **API:** Google Translate
-- **Target:** Đọc từ `settings.translateTarget`
+- **Target:** Reads from `settings.translateTarget`
 
 ### 8. Effects Mini-game (`src/features/effects.js`)
 
-- **Mục đích:** Game nhỏ bắn súng bên trong panel
+- **Purpose:** Mini-game (dodge the bomb) inside panel
 - **Input:** Keyboard (Space, Arrow keys)
 
 ### 9. Player Size (`src/features/player-size.js`)
 
-- **Mục đích:** Cho phép người dùng điều chỉnh kích thước video player
-- **Có SPA navigation handler**
+- **Purpose:** Allow users to adjust video player size
+- **Has SPA navigation handler**
 
 ### 10. Shorts Channel Name (`src/features/shorts-channel-name.js`)
 
-- **Mục đích:** Hiển thị tên kênh trên YouTube Shorts
+- **Purpose:** Display channel name on YouTube Shorts
 - **Tech:** IntersectionObserver + `FetchQueue` bounded concurrency
 
 ### 11. Cached Stats on Video Cards (`src/features/lockup-cached-stats.js`)
 
-- **Mục đích:** Hiển thị thống kê đã cache trên video lockup cards
+- **Purpose:** Display cached statistics on video lockup cards
 
-### 12. Audio Only (`src/features/audio-only.js`)
+### 12. Audio Only (`src/features/player/audio-only.js`)
 
-- **Mục đích:** Ẩn video, chỉ phát audio — nền đen + background art
+- **Purpose:** Hide video, play audio only — black background + art
 
 ### 13. Avatar Download (`src/features/avatar-download.js`)
 
-- **Mục đích:** Tải avatar kênh YouTube
+- **Purpose:** Download YouTube channel avatar
 
 ### 14. Cinematic Lighting (`src/features/cinematic-lighting.js`)
 
-- **Mục đích:** Ambient lighting effect xung quanh video player
+- **Purpose:** Ambient lighting effect around video player
 
-### 15. Comment Observer (`src/features/comment-observer.js`)
+### 15. Comment Observer (`src/features/comments/comment-observer.js`)
 
-- **Mục đích:** MutationObserver chung cho bình luận
+- **Purpose:** Shared MutationObserver for comments
 
 ### 16. Disable Subtitles (`src/features/disable-subtitles.js`)
 
-- **Mục đích:** Tắt phụ đề tự động
+- **Purpose:** Turn off auto-captions
 
 ### 17. Download Description (`src/features/download-description.js`)
 
-- **Mục đích:** Tải mô tả video dạng text
+- **Purpose:** Download video description as text
 
 ### 18. Hide Comments (`src/features/hide-comments.js`)
 
-- **Mục đích:** Ẩn section bình luận
+- **Purpose:** Hide comment section
 
 ### 19. Hide Sidebar (`src/features/hide-sidebar.js`)
 
-- **Mục đích:** Ẩn sidebar
+- **Purpose:** Collapse sidebar
 
 ### 20. Nonstop Playback (`src/features/nonstop-playback.js`)
 
-- **Mục đích:** Tự động chuyển video tiếp theo khi kết thúc
+- **Purpose:** Auto-skip to next video when current ends
 
 ### 21. Reverse Mode (`src/features/reverse-mode.js`)
 
-- **Mục đích:** Đảo ngược layout giao diện
+- **Purpose:** Flip layout horizontally
 
 ### 22. Shorts Reel Buttons (`src/features/shorts-reel-buttons.js`)
 
-- **Mục đích:** Nút tùy chỉnh trên Shorts reel
+- **Purpose:** Custom buttons on Shorts reel
 
 ### 23. YTM Ambient Mode (`src/features/ytm-ambient-mode.js`)
 
-- **Mục đích:** Ambient mode cho YouTube Music
+- **Purpose:** Ambient mode for YouTube Music
 
 ---
 
@@ -290,27 +291,25 @@ src/main.js → Vite (vite.config.dev.js) → dist/dev.user.js
 src/main.js → Vite → dist/youtube-tools-userscript.user.js
    ├── ES6 imports tree-shaken
    ├── SCSS compiled to CSS
-   ├── vite-plugin-monkey tạo userscript header
+   ├── vite-plugin-monkey generates userscript header
    └─ @require iziToast CDN
 ```
 
-- Entry point: `src/main.js` (import tất cả modular features + UI + themes)
-- `vite-plugin-monkey` tự động generate metadata block
-- iziToast được load qua CDN (không bundle vào)
+- Entry point: `src/main.js` (imports all modular features + UI + themes)
+- `vite-plugin-monkey` automatically generates metadata block
+- iziToast loaded via CDN (not bundled)
 
 ---
 
-## Cấu trúc thư mục đầy đủ
+## Project Structure
 
 ```
 youtube-tools/
 │
-├── README.md                   # Tài liệu người dùng
-├── PROJECT.md                  # Tài liệu kiến trúc (file này)
-├── ERROR_ANALYSIS.md           # 28 issues đã resolved
-├── CHECKLIST.md                # Checklist fix từng issue
-├── FEATURE_PARITY.md           # So sánh tính năng
-├── AGENTS.md                   # Hướng dẫn cho AI agent
+├── README.md                   # User documentation
+├── PROJECT.md                  # Architecture docs (this file)
+├── CHANGELOG.md                # Version history
+├── AGENTS.md                   # AI agent guide
 │
 ├── package.json                # v2.4.4.2, scripts, deps
 ├── vite.config.js              # Production build config
@@ -329,53 +328,53 @@ youtube-tools/
 │   │   └── settings-key.js     # Storage key constants
 │   │
 │   ├── features/
-│   │   ├── avatar-download.js  # Tải avatar kênh
+│   │   ├── avatar-download.js  # Download channel avatar
 │   │   ├── bookmarks.js        # Video bookmarks
 │   │   ├── comments/           # Comment-related features
-│   │   │   ├── comment-observer.js # MutationObserver chung
-│   │   │   ├── hide-comments.js # Ẩn bình luận
-│   │   │   └── translate-comments.js # Comment translation
-│   │   ├── continue-watching.js # Resume playback (549 dòng)
+│   │   │   ├── comment-observer.js # Shared MutationObserver
+│   │   │   ├── hide-comments.js # Hide comments
+│   │   │   └── translate-comments.js # Translate comments
+│   │   ├── continue-watching.js # Resume playback
 │   │   ├── download.js         # MP3/MP4 download engine
-│   │   ├── download-description.js # Tải mô tả video
-│   │   ├── effects.js          # Mini-game (268 dòng)
-│   │   ├── hide-sidebar.js     # Ẩn sidebar
+│   │   ├── download-description.js # Download video description
+│   │   ├── effects.js          # Mini-game
+│   │   ├── hide-sidebar.js     # Hide sidebar
 │   │   ├── like-dislike-bar.js # RYD integration + bar
 │   │   ├── lockup-cached-stats.js # Cached stats cards
 │   │   ├── player/             # Player-related features
-│   │   │   ├── audio-only.js   # Chế độ chỉ nghe nhạc
+│   │   │   ├── audio-only.js   # Music-only mode
 │   │   │   ├── cinematic-lighting.js # Ambient lighting effect
-│   │   │   ├── disable-subtitles.js # Tắt phụ đề tự động
-│   │   │   ├── nonstop-playback.js # Tự động chuyển video
+│   │   │   ├── disable-subtitles.js # Disable auto-captions
+│   │   │   ├── nonstop-playback.js # Auto-skip on end
 │   │   │   ├── player-size.js  # Player width adjustment
-│   │   │   └── reverse-mode.js # Đảo ngược layout
+│   │   │   └── reverse-mode.js # Flip layout
 │   │   ├── shorts/             # Shorts-related features
-│   │   │   ├── shorts-channel-name.js # Shorts channel names
-│   │   │   └── shorts-reel-buttons.js # Shorts reel buttons
+│   │   │   ├── shorts-channel-name.js # Display channel name
+│   │   │   └── shorts-reel-buttons.js # Custom buttons
 │   │   ├── time-stats.js       # Usage tracking + stats
-│   │   ├── wave-visualizer.js  # Audio visualizer (285 dòng)
+│   │   ├── wave-visualizer.js  # Audio waveform visualizer
 │   │   └── ytm-ambient-mode.js # YTM ambient mode
 │   │
 │   ├── ui/
 │   │   ├── components/
 │   │   │   ├── settings-panel/ # Settings panel module
 │   │   │   │   ├── index.js    # Entry point
-│   │   │   │   ├── template.js # HTML template (38,429 bytes)
+│   │   │   │   ├── template.js # HTML template (38KB)
 │   │   │   │   ├── events.js   # Event handlers
-│   │   │   └── style.scss  # Settings panel styles
+│   │   │   │   └── style.scss  # Settings panel styles
 │   │   │   ├── theme-selector/ # Theme selector component
 │   │   │   │   ├── index.js    # Theme selector UI
 │   │   │   │   └── style.scss  # Theme selector styles
 │   │   │   ├── shared/         # Shared UI components
 │   │   │   ├── toolbar/        # Download toolbar
-│   │   │   └── video-info-panel/ # Panel thông tin video
+│   │   │   └── video-info-panel/ # Video info panel
 │   │   ├── styles/             # SCSS stylesheets
 │   │   │   ├── _variables.scss # CDN imports + CSS variables
-│   │   │   ├── _youtube.scss   # Styles cho YouTube (2,120 dòng)
-│   │   │   ├── _youtube-music.scss # Styles cho YouTube Music (235 dòng)
+│   │   │   ├── _youtube.scss   # YouTube styles (2,120 lines)
+│   │   │   ├── _youtube-music.scss # YTM styles (235 lines)
 │   │   │   └── _stats.scss     # Stats panel styles
 │   │   ├── gear-icon.js        # Settings gear button
-│   │   └── video-info-panel.js # Panel thông tin video
+│   │   └── video-info-panel.js # Video info panel
 │   │
 │   ├── settings/
 │   │   ├── defaults.js         # Default settings values
@@ -414,27 +413,27 @@ youtube-tools/
 
 ## Known Issues & Technical Debt
 
-### Đã resolved (28/28) ✅
+### Resolved (28/28) ✅
 
-Tất cả 28 issues từ ERROR_ANALYSIS.md đã được resolved. Chi tiết:
+All 28 issues from ERROR_ANALYSIS.md have been resolved. Details:
 
-| Phase               | Total  | Done   |
-| ------------------- | ------ | ------ |
-| Phase 1: Sửa Ngay   | 6      | **6**  |
-| Phase 2: Kiến Trúc  | 7      | **7**  |
-| Phase 3: Chất Lượng | 7      | **7**  |
-| Phase 4: Dọn Dẹp    | 8      | **8**  |
-| **TOTAL**           | **28** | **28** |
+| Phase                   | Total  | Done   |
+| ----------------------- | ------ | ------ |
+| Phase 1: Critical Fixes | 6      | **6**  |
+| Phase 2: Architecture   | 7      | **7**  |
+| Phase 3: Code Quality   | 7      | **7**  |
+| Phase 4: Polish         | 8      | **8**  |
+| **TOTAL**               | **28** | **28** |
 
-### Chưa có
+### Not Yet Implemented
 
-- ⬜ **Test coverage** — chưa có test framework
+- ⬜ **Test coverage** — no test framework yet
 
 ---
 
 ## CSP & Security
 
-Dự án dùng **Trusted Types** để tuân thủ Content Security Policy của YouTube:
+The project uses **Trusted Types** to comply with YouTube's Content Security Policy:
 
 ```javascript
 // src/utils/trusted-types.js
@@ -463,10 +462,10 @@ Panel UI dùng `setHTML()` để inject HTML template một cách an toàn.
 
 ## Migration Roadmap
 
-Mục tiêu: **xóa `import './legacy-full.js'`** — ✅ ĐÃ HOÀN THÀNH
+Goal: **remove `import './legacy-full.js'`** — ✅ COMPLETED
 
 1. ✅ Phase 1 — Fix critical bugs
-2. ✅ Phase 2 — Thiết kế unified AppState, sửa kiến trúc core
-3. ✅ Phase 3 — Cải thiện code quality, consistency
+2. ✅ Phase 2 — Design unified AppState, fix core architecture
+3. ✅ Phase 3 — Improve code quality, consistency
 4. ✅ Phase 4 — Extract inline HTML, split CSS, cleanup
-5. ✅ **Xóa `legacy-full.js`** — Codebase 100% modular
+5. ✅ **Removed `legacy-full.js`** — Codebase 100% modular
