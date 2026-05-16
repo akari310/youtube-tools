@@ -222,7 +222,6 @@ export function setupLockupCachedStats(enabled) {
   __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
   __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
 
-  if (!__ytToolsRuntime.lockupCachedStatsIntervalId) {
-    __ytToolsRuntime.lockupCachedStatsIntervalId = setInterval(runLockupCachedStatsCatchUp, 1800);
-  }
+  // Observer + initial inject is sufficient; no need for redundant polling interval.
+  // The catch-up is built into the observer's debounce callback.
 }

@@ -25,7 +25,10 @@ let lastUpdate = Date.now();
 let detailedStats = {};
 let dailyStats = {};
 
+const domCache = {};
+
 function loadStats() {
+  Object.keys(domCache).forEach(k => delete domCache[k]);
   usageTime = Number(gmRawGet(STORAGE.USAGE, 0)) || 0;
   videoTime = Number(gmRawGet(STORAGE.VIDEO, 0)) || 0;
   shortsTime = Number(gmRawGet(STORAGE.SHORTS, 0)) || 0;
@@ -182,7 +185,10 @@ export function updateUI() {
   const avg = getAvgWatchTime();
 
   const eachById = (id, fn) => {
-    document.querySelectorAll(`[id="${id}"]`).forEach(fn);
+    if (!domCache[id]) {
+      domCache[id] = Array.from(document.querySelectorAll(`[id="${id}"]`));
+    }
+    domCache[id].forEach(fn);
   };
   const set = (id, val) => {
     eachById(id, el => {
@@ -219,7 +225,7 @@ export function updateUI() {
   bar('today-bar', today.totalSec);
 
   // Weekly chart
-  const chart = $id('weekly-chart');
+  const chart = domCache._weeklyChart || (domCache._weeklyChart = $id('weekly-chart'));
   if (chart) {
     setHTML(
       chart,
@@ -231,7 +237,7 @@ export function updateUI() {
         .join('')
     );
   }
-  const topList = $id('top-videos-list');
+  const topList = domCache._topVideosList || (domCache._topVideosList = $id('top-videos-list'));
   if (topList) {
     const top = getTopVideos(10);
     setHTML(

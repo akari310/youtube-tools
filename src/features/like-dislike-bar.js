@@ -455,12 +455,19 @@ export function applyDislikeDisplayIfEnabled(settings) {
   }, 1500);
 }
 
-// Hook navigation
+// Hook navigation — only when at least one related feature is enabled
 if (typeof window !== 'undefined') {
+  let _navHandlerActive = false;
   window.addEventListener('yt-navigate-finish', () => {
     if (isYTMusic) return;
     try {
       const settings = loadSettings();
+      const needsRun = settings?.likeDislikeBar || settings?.dislikes;
+      if (!needsRun) {
+        if (_navHandlerActive) _navHandlerActive = false;
+        return;
+      }
+      if (!_navHandlerActive) _navHandlerActive = true;
       if (settings.likeDislikeBar) {
         scheduleLikeBarUpdate(settings, 4);
       }

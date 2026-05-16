@@ -82,13 +82,15 @@ export async function applyAudioOnlyMode(enabled) {
     .querySelectorAll('.yt-tools-audio-only-player')
     .forEach(el => el.classList.remove('yt-tools-audio-only-player'));
 
+  // Always clear existing timer before creating new one
+  if (rt.refreshTimer) {
+    clearInterval(rt.refreshTimer);
+    rt.refreshTimer = null;
+  }
+
   if (!rt.enabled) {
     rt.lastArtUrl = '';
     setAudioOnlyBackground('');
-    if (rt.refreshTimer) {
-      clearInterval(rt.refreshTimer);
-      rt.refreshTimer = null;
-    }
     return;
   }
 
@@ -103,12 +105,10 @@ export async function applyAudioOnlyMode(enabled) {
     setAudioOnlyBackground(artUrl);
   }
 
-  if (!rt.refreshTimer) {
-    rt.refreshTimer = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      const settingsKey = isYTMusic ? STORAGE_KEYS.SETTINGS_YTM : STORAGE_KEYS.SETTINGS_YT;
-      const settings = readJsonGM(settingsKey, {});
-      applyAudioOnlyMode(getEffectiveAudioOnly(settings));
-    }, 3000);
-  }
+  rt.refreshTimer = setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    const settingsKey = isYTMusic ? STORAGE_KEYS.SETTINGS_YTM : STORAGE_KEYS.SETTINGS_YT;
+    const settings = readJsonGM(settingsKey, {});
+    applyAudioOnlyMode(getEffectiveAudioOnly(settings));
+  }, 3000);
 }

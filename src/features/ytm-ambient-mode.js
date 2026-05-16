@@ -206,9 +206,16 @@ export const ytmAmbientMode = {
     let lastTop = 0,
       lastHeight = 0,
       lastLeft = 0;
+    let frameCount = 0;
     function track() {
       if (!self.active) {
         self._trackerId = null;
+        return;
+      }
+      // Throttle to ~4fps (every 15th frame at 60fps)
+      frameCount++;
+      if (frameCount % 15 !== 0) {
+        self._trackerId = requestAnimationFrame(track);
         return;
       }
       const nav = document.querySelector('ytmusic-nav-bar');
@@ -274,7 +281,7 @@ export const ytmAmbientMode = {
         return;
       }
       self._updateArt();
-    }, 2000);
+    }, 3000);
   },
 
   _onPlay: function () {
@@ -311,9 +318,9 @@ export function startAmbientWatcher() {
       } else if (!onWatch && ytmAmbientMode.active) {
         ytmAmbientMode.hide();
       }
-    }, 1500);
+    }, 3000);
   }
-  setTimeout(start, 1500);
+  setTimeout(start, 3000);
 
   // Also respond to YTM-specific events immediately
   document.addEventListener('yt-page-data-updated', () => {

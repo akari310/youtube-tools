@@ -35,7 +35,8 @@ function ensureWaveMutationObserver() {
     clearTimeout(observerDebounce);
     observerDebounce = setTimeout(() => checkForVideo(), 200);
   });
-  videoObserver.observe(PD().body, { childList: true, subtree: true });
+  const target = PD().querySelector('#movie_player') || PD().body;
+  videoObserver.observe(target, { childList: true, subtree: true });
 }
 
 /**

@@ -53,7 +53,15 @@ export function getCurrentVideoMeta() {
     const thumbs = vd?.thumbnail?.thumbnails;
     const thumb = Array.isArray(thumbs) ? thumbs[thumbs.length - 1]?.url || '' : '';
     const result = { title, author, thumb };
-    if (videoId) metaCache.set(videoId, result);
+    if (videoId) {
+      metaCache.set(videoId, result);
+      // Prune to 200 entries if exceeded
+      if (metaCache.size > 200) {
+        const iter = metaCache.keys();
+        let del = metaCache.size - 200;
+        while (del-- > 0) metaCache.delete(iter.next().value);
+      }
+    }
     return result;
   } catch (e) {
     return { title: '', author: '', thumb: '' };
