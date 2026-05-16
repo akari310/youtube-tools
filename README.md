@@ -3,70 +3,116 @@
 **Version:** v2.4.4.2  
 **Author:** DeveloperMDCM  
 **License:** MIT
+**Status:** ✅ 100% Modular ES Modules | ✅ All 28 Issues Resolved
 
-Công cụ YouTube tất cả trong một — userscript cho Tampermonkey/Greasemonkey, hoạt động trên YouTube và YouTube Music. Tải xuống MP3/MP4 chất lượng cao, hiển thị lượt dislike, thống kê thời gian xem, dịch bình luận, visualizer âm thanh và nhiều tính năng khác.
-
----
-
-## Tính năng
-
-| Tính năng                   | Mô tả                                                           |
-| --------------------------- | --------------------------------------------------------------- |
-| 📥 **Download MP3/MP4**     | Tải video/audio chất lượng cao qua SaveNow và Dubs API          |
-| 👎 **Return Dislike**       | Hiển thị lượt dislike qua ReturnYouTubeDislike API              |
-| 📊 **Thống kê xem**         | Tổng thời gian, session, today, top videos, weekly chart        |
-| 🔖 **Bookmarks**            | Đánh dấu timestamp trong video                                  |
-| ▶️ **Continue Watching**    | Tiếp tục video đang xem dở                                      |
-| 🌊 **Wave Visualizer**      | Hiển thị sóng âm thanh real-time (Web Audio API)                |
-| 💬 **Translate Comments**   | Dịch bình luận qua Google Translate API                         |
-| 🎮 **Effects Mini-game**    | Game nhỏ trong panel                                            |
-| 📐 **Player Size**          | Điều chỉnh kích thước player                                    |
-| 📺 **Shorts Channel Name**  | Hiển thị tên kênh trên YouTube Shorts                           |
-| 📈 **Cached Stats**         | Thống kê lượt xem trên video cards                              |
-| 🔊 **Audio Only**           | Chế độ chỉ nghe nhạc, ẩn video                                  |
-| 🎨 **Cinematic Lighting**   | Hiệu ứng ambient lighting xung quanh video                      |
-| 🖼️ **Avatar Download**      | Tải avatar kênh YouTube                                         |
-| 🔄 **Nonstop Playback**     | Tự động chuyển video tiếp theo khi kết thúc                     |
-| 🔀 **Reverse Mode**         | Đảo ngược layout giao diện                                      |
-| 👁️ **Hide Sidebar**         | Ẩn sidebar                                                      |
-| 💬 **Hide Comments**        | Ẩn section bình luận                                            |
-| 🎬 **Shorts Reel Buttons**  | Nút tùy chỉnh trên Shorts reel                                  |
-| 📝 **Download Description** | Tải mô tả video dạng text                                       |
-| 🔤 **Disable Subtitles**    | Tắt phụ đề tự động                                              |
-| 🎵 **YTM Ambient Mode**     | Ambient mode cho YouTube Music                                  |
-| 🎨 **Enhanced Themes**      | Theme system nâng cao với presets, custom themes, export/import |
+Công cụ YouTube tất cả trong một — userscript cho Tampermonkey/Greasemonkey/Violentmonkey. Hỗ trợ đầy đủ YouTube và YouTube Music với 23+ tính năng mạnh mẽ.
 
 ---
 
-## Hỗ trợ nền tảng
+## 🚀 Tính năng nổi bật
 
-- **youtube.com** — toàn bộ tính năng
-- **music.youtube.com** — thống kê nghe nhạc, download, dislike, ambient mode
-- Tampermonkey / Greasemonkey / Violentmonkey (cần hỗ trợ GM API)
+| Icon | Tính năng              | Mô tả                                                                       |
+| ---- | ---------------------- | --------------------------------------------------------------------------- |
+| 📥   | **Download MP3/MP4**   | Tải video/audio chất lượng cao qua SaveNow + Dubs API (exponential backoff) |
+| 👎   | **Return Dislike**     | Hiển thị lượt dislike qua ReturnYouTubeDislike API (cache 7 ngày)           |
+| 📊   | **Thống kê xem**       | Tổng thời gian, session, daily, weekly chart, top videos                    |
+| 🔖   | **Bookmarks**          | Đánh dấu timestamp trong video, lưu vĩnh viễn                               |
+| ▶️   | **Continue Watching**  | Tự động lưu vị trí, resume video đang xem dở                                |
+| 🌊   | **Wave Visualizer**    | Sóng âm thanh real-time (Web Audio API, cleanup SPA)                        |
+| 💬   | **Translate Comments** | Dịch bình luận qua Google Translate API                                     |
+| 🎨   | **Enhanced Themes**    | 8+ theme presets, custom themes, export/import, glassmorphism               |
 
 ---
 
-## Cài đặt
+## 🎯 Danh sách đầy đủ tính năng (23 total)
 
-### Cách 1: Cài từ Greasy Fork
+### Download & Media
 
-> _Script có sẵn trên Greasy Fork — tìm "YouTube Tools All in one local download"_
+- 📥 Download MP3/MP4 (SaveNow + Dubs fallback)
+- 📝 Download Description (tải mô tả video)
+- 🖼️ Avatar Download (tải avatar kênh)
 
-1. Cài Tampermonkey cho trình duyệt
-2. Truy cập Greasy Fork và cài đặt script
-3. Vào YouTube — panel sẽ xuất hiện ở góc phải
+### Player Controls
 
-### Cách 2: Build từ source
+- 🔊 Audio Only (chế độ chỉ nghe nhạc)
+- 📐 Player Size (điều chỉnh kích thước)
+- 🎬 Cinematic Lighting (ambient lighting effect)
+- 🔤 Disable Subtitles (tắt phụ đề tự động)
+- 🔄 Nonstop Playback (auto-skip khi kết thúc)
+
+### UI & Display
+
+- 👎 Like/Dislike Bar (thanh tỷ lệ like/dislike)
+- 📈 Lockup Cached Stats (stats trên thumbnails)
+- 🔄 Reverse Mode (đảo ngược layout)
+- 👁️ Hide Sidebar (ẩn sidebar)
+- 💬 Hide Comments (ẩn bình luận)
+
+### Shorts
+
+- 📺 Shorts Channel Name (hiển thị tên kênh)
+- 🎬 Shorts Reel Buttons (nút tùy chỉnh)
+
+### Statistics & Tracking
+
+- 📊 Time Stats (thống kê thời gian xem chi tiết)
+
+### Comments
+
+- 💬 Translate Comments (dịch bình luận)
+- 💬 Comment Observer (MutationObserver optimization)
+
+### Entertainment
+
+- 🌊 Wave Visualizer (3 chế độ: dynamic, bars, circular)
+- 🎮 Effects Mini-game (game né bom)
+
+### YouTube Music
+
+- 🎵 YTM Ambient Mode (ambient mode cho YTM)
+
+### Quality of Life
+
+- 🔖 Bookmarks (đánh dấu timestamp)
+- ▶️ Continue Watching (tiếp tục xem dở)
+
+---
+
+## 🖥️ Hỗ trợ nền tảng
+
+| Nền tảng              | Hỗ trợ     | Ghi chú                                |
+| --------------------- | ---------- | -------------------------------------- |
+| **youtube.com**       | ✅ Full    | Tất cả 23 tính năng                    |
+| **music.youtube.com** | ✅ Partial | Stats, download, dislike, ambient mode |
+| **Tampermonkey**      | ✅         | Recommended                            |
+| **Greasemonkey 4+**   | ✅         | Fallback localStorage                  |
+| **Violentmonkey**     | ✅         | Full support                           |
+
+---
+
+## 📦 Cài đặt
+
+### Cách 1: Greasy Fork (Recommended)
+
+1. Cài **Tampermonkey** cho trình duyệt
+2. Truy cập [Greasy Fork - YouTube Tools](https://greasyfork.org/scripts/460680)
+3. Click **Install**
+4. Vào YouTube — panel settings xuất hiện góc phải
+
+### Cách 2: Build từ Source
 
 ```bash
-# Clone repo
+# Clone repository
 git clone https://github.com/DeveloperMDCM/youtube-tools.git
 cd youtube-tools
 
-# Cài dependencies
+# Cài đặt dependencies
 npm install
 
-# Build production
+# Development mode (watch)
+npm run dev
+
+# Production build
 npm run build
 
 # Output: dist/youtube-tools-userscript.user.js
@@ -76,40 +122,44 @@ Cài file `dist/youtube-tools-userscript.user.js` vào Tampermonkey.
 
 ---
 
-## Development
+## 🛠️ Development
 
-### Scripts
+### NPM Scripts
 
-| Command                | Mô tả                                                         |
-| ---------------------- | ------------------------------------------------------------- |
-| `npm run dev`          | Dev mode với Rollup — watch `src/`, output `dist/dev.user.js` |
-| `npm run build`        | Production build với Vite + vite-plugin-monkey                |
-| `npm run lint`         | ESLint check                                                  |
-| `npm run lint:fix`     | ESLint auto-fix                                               |
-| `npm run format`       | Prettier format toàn bộ                                       |
-| `npm run format:check` | Check Prettier                                                |
-| `npm run verify`       | Build + lint + format check (CI pipeline)                     |
+| Command                | Mô tả                               | Output                                  |
+| ---------------------- | ----------------------------------- | --------------------------------------- |
+| `npm run dev`          | Rollup dev mode (watch)             | `dist/dev.user.js`                      |
+| `npm run build`        | Vite production build               | `dist/youtube-tools-userscript.user.js` |
+| `npm run lint`         | ESLint check                        | —                                       |
+| `npm run lint:fix`     | ESLint auto-fix                     | —                                       |
+| `npm run format`       | Prettier format                     | —                                       |
+| `npm run format:check` | Prettier check                      | —                                       |
+| `npm run verify`       | CI pipeline (build + lint + format) | —                                       |
 
-### Cấu trúc build
+### Build System
 
-- **Dev mode** (`rollup.config.dev.js`): Input `src/main.js` → output `dist/dev.user.js` (IIFE + sourcemap inline)
-- **Production** (`vite.config.js`): Entry `src/main.js`, plugin `vite-plugin-monkey`, output userscript với đầy đủ header/grant/match
-- **Alternative Dev** (`vite.config.dev.js`): Vite-based dev build với watch mode
+| Mode           | Tool                      | Entry         | Output                                  | Features              |
+| -------------- | ------------------------- | ------------- | --------------------------------------- | --------------------- |
+| **Dev**        | Rollup                    | `src/main.js` | `dist/dev.user.js`                      | Watch mode, sourcemap |
+| **Production** | Vite + vite-plugin-monkey | `src/main.js` | `dist/youtube-tools-userscript.user.js` | Minified, auto header |
+| **Dev (Alt)**  | Vite                      | `src/main.js` | `dist/dev.user.js`                      | Fast HMR              |
 
-### Công nghệ
+### Tech Stack
 
-- **Build:** Vite + Rollup + vite-plugin-monkey
-- **CSS:** SCSS (tách thành \_youtube, \_youtube-music, \_variables, \_stats)
-- **Lint/Format:** ESLint v9 + Prettier
-- **Dependencies:** iziToast (CDN, load qua `@require`)
-- **Runtime:** ES6 Modules, GM APIs, Web Audio API, MutationObserver
+- **Runtime:** ES6+ Modules, GM APIs, Web Audio API, MutationObserver
+- **Build:** Vite 8, Rollup, vite-plugin-monkey
+- **Styling:** SCSS (modular: `_youtube.scss`, `_youtube-music.scss`, `_variables.scss`)
+- **Linting:** ESLint v9 (flat config) + Prettier
+- **UI Library:** iziToast (CDN via `@require`)
+- **APIs:** ReturnYouTubeDislike, Google Translate, SaveNow, Dubs
 
 ---
 
-## Cấu trúc dự án
+## 📁 Cấu trúc dự án
 
 ```
-src/
+youtube-tools/
+├── src/
 ├── main.js                       # Entry point (ES Modules)
 ├── config/
 │   ├── constants.js              # API endpoints, constants
@@ -191,45 +241,79 @@ src/
 
 ---
 
-## API Integrations
+## 🔌 API Integrations
 
-| API                  | Endpoint                                 | Mục đích          |
-| -------------------- | ---------------------------------------- | ----------------- |
-| ReturnYouTubeDislike | `returnyoutubedislikeapi.com/Votes`      | Lấy lượt dislike  |
-| Google Translate     | `translate.googleapis.com/translate_a/t` | Dịch bình luận    |
-| SaveNow              | `p.savenow.to/ajax/download.php`         | Download MP3/MP4  |
-| Dubs                 | `dubs.io/wp-json/tools/v1/`              | Download fallback |
-
----
-
-## Known Issues
-
-Dự án đã hoàn tất migration từ monolithic legacy sang kiến trúc modular 100%. Tất cả **28 issues** từ [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md) đã được resolved. Chi tiết xem [CHECKLIST.md](CHECKLIST.md).
-
-### Đã resolved (28/28) ✅
-
-- ✅ Dual Codebase — legacy-full.js đã bị xóa
-- ✅ State Fragmentation — đã đơn giản hóa
-- ✅ Memory leaks — FetchQueue class, RAF cleanup
-- ✅ Null-check gaps — tất cả feature có null guard
-- ✅ Và 24 issues khác
-
-### Chưa có
-
-- ⬜ Test coverage — chưa có test framework
+| API                      | Endpoint                                 | Purpose             | Cache Policy                      |
+| ------------------------ | ---------------------------------------- | ------------------- | --------------------------------- |
+| **ReturnYouTubeDislike** | `returnyoutubedislikeapi.com/Votes`      | Dislike count       | 10min in-memory, 7 days persisted |
+| **Google Translate**     | `translate.googleapis.com/translate_a/t` | Comment translation | None                              |
+| **SaveNow**              | `p.savenow.to/ajax/download.php`         | Primary download    | None                              |
+| **Dubs**                 | `dubs.io/wp-json/tools/v1/`              | Fallback download   | None                              |
 
 ---
 
-## Tài liệu
+## ✅ Migration Status
 
-- [PROJECT.md](PROJECT.md) — Kiến trúc chi tiết, luồng khởi tạo, state management
-- [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md) — 28 issues phân loại theo severity
-- [CHECKLIST.md](CHECKLIST.md) — Checklist fix từng issue
-- [FEATURE_PARITY.md](FEATURE_PARITY.md) — So sánh tính năng
-- [AGENTS.md](AGENTS.md) — Hướng dẫn cho AI agent
+### Completed (v2.4.4.2)
+
+- ✅ **100% Modular ES Modules** — `legacy-full.js` deleted
+- ✅ **28/28 Issues Resolved** — See [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md)
+- ✅ **New UI System** — Glassmorphic settings panel, toolbar, theme engine
+- ✅ **Storage Refactor** — Universal `gmRawGet`/`gmRawSet` wrappers
+- ✅ **SPA Navigation** — Proper cleanup on `yt-navigate-finish`
+- ✅ **Memory Leaks Fixed** — FetchQueue class, RAF loop cleanup
+- ✅ **Null Safety** — All features have null guards
+- ✅ **Locale-aware Parsing** — Uses `hl` URL param
+
+### Known Limitations
+
+- ⬜ **No Test Coverage** — Test framework not yet implemented
+- ⬜ **API Rate Limits** — SaveNow/Dubs may be rate-limited
 
 ---
 
-## License
+## 📚 Documentation
+
+| File                                   | Description                                         |
+| -------------------------------------- | --------------------------------------------------- |
+| [PROJECT.md](PROJECT.md)               | Architecture, initialization flow, state management |
+| [ERROR_ANALYSIS.md](ERROR_ANALYSIS.md) | 28 issues analysis by severity                      |
+| [CHECKLIST.md](CHECKLIST.md)           | Issue-by-issue fix checklist                        |
+| [FEATURE_PARITY.md](FEATURE_PARITY.md) | Legacy vs modular feature comparison                |
+| [AGENTS.md](AGENTS.md)                 | AI agent development guide                          |
+
+---
+
+## 🐛 Troubleshooting
+
+### Panel không hiển thị?
+
+1. Kiểm tra Tampermonkey đã enable script chưa
+2. F5 trang YouTube
+3. Xóa cache trình duyệt
+
+### Download không hoạt động?
+
+1. API key có thể hết hạn — kiểm tra `src/config/constants.js`
+2. CORS issues — thử dùng VPN/proxy
+3. Server SaveNow/Dubs tạm thời down
+
+### Wave visualizer không chạy?
+
+1. YouTube có thể đã connect AudioContext riêng
+2. Kiểm tra browser console (F12)
+3. Disable/enable lại trong settings
+
+---
+
+## 📄 License
 
 MIT © DeveloperMDCM
+
+---
+
+## 🔗 Links
+
+- **GitHub:** https://github.com/DeveloperMDCM/youtube-tools
+- **Greasy Fork:** https://greasyfork.org/scripts/460680
+- **Issues:** https://github.com/DeveloperMDCM/youtube-tools/issues
