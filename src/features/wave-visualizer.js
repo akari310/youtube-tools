@@ -21,6 +21,21 @@ const PW = pageWindow;
 const PD = pageDocument;
 
 const s = getState();
+
+function getThemeCSS(varName, fallback = '') {
+  try {
+    const val = PW().getComputedStyle(PD().documentElement).getPropertyValue(varName).trim();
+    return val || fallback;
+  } catch { return fallback; }
+}
+
+function waveThemeColors() {
+  return {
+    accent: getThemeCSS('--yt-spec-static-brand-red', '#ff0000'),
+    primary: getThemeCSS('--yt-spec-text-primary', '#ffffff'),
+    bgGradient: getThemeCSS('--yt-spec-base-background', ''),
+  };
+}
 /** After a failed tap into the video graph, avoid hammering setup on every DOM mutation (YouTube is noisy). */
 const WAVE_FAIL_RETRY_MS = 4000;
 let waveVisualizerUnloadBound = false;
@@ -345,11 +360,12 @@ function draw() {
 
   const sliceWidth = w / s.bufferLength;
   const style = s.waveStyle || 'dinamica';
+  const { accent, bgGradient } = waveThemeColors();
 
   switch (style) {
     case 'linea': {
       s.ctx.lineWidth = 2;
-      s.ctx.strokeStyle = 'lime';
+      s.ctx.strokeStyle = accent;
       s.ctx.beginPath();
       let x = 0;
       for (let i = 0; i < s.bufferLength; i++) {
@@ -365,7 +381,7 @@ function draw() {
       let x = 0;
       for (let i = 0; i < s.bufferLength; i += 5) {
         const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
-        s.ctx.fillStyle = 'cyan';
+        s.ctx.fillStyle = accent;
         s.ctx.fillRect(x, 0, sliceWidth * 4, amplitude);
         x += sliceWidth * 5;
       }
@@ -373,7 +389,7 @@ function draw() {
     }
     case 'curva': {
       s.ctx.lineWidth = 2;
-      s.ctx.strokeStyle = 'yellow';
+      s.ctx.strokeStyle = accent;
       s.ctx.beginPath();
       s.ctx.moveTo(0, Math.max(0, s.smoothedData[0] - 128) * SCALE);
       for (let i = 0; i < s.bufferLength - 1; i++) {
@@ -391,7 +407,7 @@ function draw() {
       break;
     }
     case 'picos': {
-      s.ctx.fillStyle = 'magenta';
+      s.ctx.fillStyle = accent;
       let x = 0;
       for (let i = 0; i < s.bufferLength; i += 5) {
         const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
@@ -413,15 +429,26 @@ function draw() {
       }
       s.ctx.lineTo(w, 0);
       s.ctx.closePath();
-      s.ctx.fillStyle = 'rgba(0,255,0,0.3)';
+      s.ctx.fillStyle = accent + '4d';
       s.ctx.fill();
       break;
     }
     case 'dinamica': {
       const gradient = s.ctx.createLinearGradient(0, 0, w, 0);
-      gradient.addColorStop(0, 'red');
-      gradient.addColorStop(0.5, 'purple');
-      gradient.addColorStop(1, 'blue');
+      if (bgGradient && bgGradient.includes('linear-gradient')) {
+        const colors = bgGradient.match(/#[0-9a-fA-F]{3,8}/g);
+        if (colors && colors.length >= 2) {
+          gradient.addColorStop(0, colors[0]);
+          gradient.addColorStop(1, colors[colors.length - 1]);
+        } else {
+          gradient.addColorStop(0, 'red');
+          gradient.addColorStop(1, accent);
+        }
+      } else {
+        gradient.addColorStop(0, accent);
+        gradient.addColorStop(0.5, accent + '80');
+        gradient.addColorStop(1, accent);
+      }
       s.ctx.lineWidth = 3;
       s.ctx.strokeStyle = gradient;
       s.ctx.beginPath();
@@ -446,7 +473,7 @@ function draw() {
       }
       s.ctx.lineTo(w, 0);
       s.ctx.closePath();
-      s.ctx.fillStyle = 'rgba(128,128,255,0.4)';
+      s.ctx.fillStyle = accent + '66';
       s.ctx.fill();
       break;
     }

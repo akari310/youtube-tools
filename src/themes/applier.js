@@ -436,6 +436,7 @@ export function applySettings() {
 function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
   const hasBgImage = !!settings.backgroundImage;
   const isDarkMode = checkDarkModeActive() ? 'dark' : 'light';
+  const hasCustomTheme = settings.themeCustom || $e('input[name="theme"][value="custom"]')?.checked;
 
   // Only apply theme CSS when themes is enabled AND dark mode is active
   const shouldApplyTheme = settings.themes && isDarkMode === 'dark';
@@ -522,8 +523,10 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
       }
     `);
 
+    const ytGradient = hasCustomTheme ? (settings.bgColorPicker || '#0f0f0f') : (selectedTheme.gradient || '');
+
     // Only apply major component backgrounds if themes are enabled and we have a gradient
-    if (shouldApplyTheme && selectedTheme.gradient) {
+    if (shouldApplyTheme && ytGradient) {
       addCss(`
         /* Use theme colors on major components without breaking layout */
         #masthead-container.ytd-app,
@@ -531,53 +534,58 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         ytd-masthead,
         #container.ytd-masthead,
         #masthead-container.ytd-app #masthead.ytd-masthead {
-          background: ${selectedTheme.gradient} !important;
+          background: ${ytGradient} !important;
         }
 
         /* Sidebar & Guide handled in main applySettings */
 
         /* Restore the 'frosted-glass' look but with the theme gradient */
         #frosted-glass.ytd-app {
-          background: ${selectedTheme.gradient} !important;
+          background: ${ytGradient} !important;
           opacity: 0.8 !important;
         }
 
         ytd-engagement-panel-section-list-renderer { 
-          background: ${selectedTheme.gradient} !important; 
+          background: ${ytGradient} !important; 
           backdrop-filter: blur(12px) !important; 
         }
         ytd-engagement-panel-title-header-renderer[shorts-panel] #header.ytd-engagement-panel-title-header-renderer {
-          background: ${selectedTheme.gradient}  !important;
+          background: ${ytGradient}  !important;
         }
       `);
     }
 
+    const ytAccent = hasCustomTheme ? (settings.lineColorPicker || '#ff0000') : (selectedTheme.btnTranslate || selectedTheme.accent || 'rgba(255,255,255,0.1)');
+    const ytTextColor = hasCustomTheme ? (settings.primaryColorPicker || '#fff') : (selectedTheme.textColor || '#fff');
+    const ytIconColor = hasCustomTheme ? (settings.iconsColorPicker || '#fff') : (selectedTheme.colorIcons || selectedTheme.textColor || '#fff');
+    const ytVideoDuration = hasCustomTheme ? (settings.timeColorPicker || '#fff') : (selectedTheme.videoDuration || selectedTheme.primary || '#fff');
+
     if (shouldApplyTheme) {
       addCss(`
         .buttons-tranlate {
-          background: ${selectedTheme.btnTranslate || selectedTheme.accent || 'rgba(255,255,255,0.1)'} !important;
+          background: ${ytAccent} !important;
         }
         .badge-shape-wiz--thumbnail-default {
-          color: ${selectedTheme.videoDuration || selectedTheme.primary || '#fff'} !important;
-          background: ${selectedTheme.gradient || 'rgba(0,0,0,0.6)'} !important;
+          color: ${ytVideoDuration} !important;
+          background: ${ytGradient || 'rgba(0,0,0,0.6)'} !important;
         }
         #logo-icon {
-          color: ${selectedTheme.textLogo || selectedTheme.primary || 'inherit'} !important;
+          color: ${ytTextColor} !important;
         }
         .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text {
-          color: ${selectedTheme.colorIcons || selectedTheme.primary || 'inherit'} !important;
+          color: ${ytIconColor} !important;
         }
         .ytd-topbar-menu-button-renderer #button.ytd-topbar-menu-button-renderer {
-          color: ${selectedTheme.colorIcons || selectedTheme.primary || 'inherit'} !important;
+          color: ${ytIconColor} !important;
         }
         .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon {
-          color: ${selectedTheme.colorIcons || selectedTheme.primary || 'inherit'} !important;
+          color: ${ytIconColor} !important;
         }
         .ytp-svg-fill {
-          fill: ${selectedTheme.colorIcons || selectedTheme.primary || 'inherit'} !important;
+          fill: ${ytIconColor} !important;
         }
         #ytp-id-30,#ytp-id-17,#ytp-id-19,#ytp-id-20{
-          fill: ${selectedTheme.colorIcons || selectedTheme.primary || 'inherit'} !important;
+          fill: ${ytIconColor} !important;
         }
       `);
     }
@@ -588,7 +596,10 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
   // YouTube Music-specific advanced CSS
   if (isYTMusic) {
     const ytmSliderSolidColor = selectedTheme.progress || selectedTheme.accent || selectedTheme.CurrentProgressVideo || '#ff0000';
-    const bgOrGradient = shouldApplyTheme ? selectedTheme.gradient : (hasBgImage ? 'transparent' : '#030303');
+    const ytmBgGradient = hasCustomTheme ? (settings.bgColorPicker || '#030303') : (selectedTheme.gradient || '#030303');
+    const ytmGlassBg = hasCustomTheme ? (settings.headerColorPicker || settings.bgColorPicker || '#030303') : (selectedTheme.glassBg || selectedTheme.gradient || '#030303');
+    const ytmGlassBlur = hasCustomTheme ? '24px' : (selectedTheme.glassBlur || '24px');
+    const bgOrGradient = shouldApplyTheme ? ytmBgGradient : (hasBgImage ? 'transparent' : '#030303');
 
     addCss(`
       html, body, ytmusic-app {
@@ -603,11 +614,11 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         ${hasBgImage && shouldApplyTheme ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
       }
       ytmusic-nav-bar {
-        background: ${shouldApplyTheme ? selectedTheme.gradient : 'transparent'} !important;
+        background: ${shouldApplyTheme ? ytmBgGradient : 'transparent'} !important;
         ${hasBgImage && shouldApplyTheme ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
         transition: background 0.4s ease-in-out !important;
       }
-      ytmusic-search-box #input-box { background: ${shouldApplyTheme ? selectedTheme.gradient : 'transparent'} !important; }
+      ytmusic-search-box #input-box { background: ${shouldApplyTheme ? ytmBgGradient : 'transparent'} !important; }
       
       ytmusic-browse-response,
       ytmusic-header-renderer,
@@ -668,9 +679,9 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         #mini-guide,
         #mini-guide-renderer,
         body.ytm-ambient-active #mini-guide-renderer {
-          background: linear-gradient(rgba(10, 10, 10, 0.75), rgba(10, 10, 10, 0.75)), ${selectedTheme.glassBg || selectedTheme.gradient} !important;
-          backdrop-filter: blur(${selectedTheme.glassBlur || '24px'}) saturate(1.2) !important;
-          -webkit-backdrop-filter: blur(${selectedTheme.glassBlur || '24px'}) saturate(1.2) !important;
+          background: linear-gradient(rgba(10, 10, 10, 0.75), rgba(10, 10, 10, 0.75)), ${ytmGlassBg} !important;
+          backdrop-filter: blur(${ytmGlassBlur}) saturate(1.2) !important;
+          -webkit-backdrop-filter: blur(${ytmGlassBlur}) saturate(1.2) !important;
         }
 
         /* Nested guide elements transparent to avoid stacking */
