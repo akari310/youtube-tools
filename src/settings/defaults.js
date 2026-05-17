@@ -48,7 +48,6 @@ export const DEFAULT_SETTINGS = {
   lockupStats: true,
   languagesComments: 'vi',
   translateTarget: 'en',
-  effects: true,
 
   shortsViews: true,
   shortsRating: true,

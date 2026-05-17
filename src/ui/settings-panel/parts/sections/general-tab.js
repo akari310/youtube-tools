@@ -200,18 +200,6 @@ export function buildGeneralTab(isYTMusic, languageOptionsHTML) {
               </label>
             </div>
           </label>
-          <label ${!isYTMusic ? 'style="display:none"' : ''}>
-            <div class="toggle-row" data-for="custom-timeline-color-toggle">
-              <span class="toggle-label-text"
-                ><i class="fa-solid fa-clock"></i>Royal Purple Timeline</span
-              >
-              <label class="toggle-switch-mdcm">
-                <input type="checkbox" class="checkbox-mdcm" id="custom-timeline-color-toggle" />
-                <span class="toggle-slider-mdcm"></span>
-              </label>
-            </div>
-          </label>
-
           <div class="quality-selector-mdcm" style="grid-column: span 2;">
             <div class="select-wrapper-mdcm">
               <label

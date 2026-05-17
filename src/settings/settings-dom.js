@@ -64,7 +64,6 @@ export function saveSettingsFromDOM() {
     cinematicLighting: $id('cinematic-lighting-toggle')?.checked || false,
     syncCinematic: $id('sync-cinematic-toggle')?.checked || false,
     sidePanelStyle: $id('side-panel-style-select')?.value || 'blur',
-    customTimelineColor: $id('custom-timeline-color-toggle')?.checked || false,
     playerSize: $id('player-size-slider')?.value || 100,
     selectVideoQuality: $id('select-video-qualitys-select')?.value || 'user',
     languagesComments: $id('select-languages-comments-select')?.value || 'en',

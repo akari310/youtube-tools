@@ -432,8 +432,21 @@ export async function shortDislike() {
         validoVentanaShort[i].textContent = `${FormatterNumber(dislikes, 0)}`;
       }
     }
+    // Update custom views/rating buttons from cache after fetch
+    const persisted = getLikesDislikesFromPersistedCache(videoId);
+    if (persisted) {
+      if (persisted.viewCount != null) {
+        __ytToolsRuntime.updateShortsViewsButton(videoId, persisted.viewCount);
+      }
+      if (persisted.rating != null) {
+        __ytToolsRuntime.updateShortsRatingButton(videoId, persisted.rating);
+      }
+    }
   }
 }
+
+// Export via runtime so shorts observer can trigger data refresh
+__ytToolsRuntime.triggerShortsDislike = shortDislike;
 
 export function applyLikeDislikeBarIfEnabled(settings) {
   console.log('[YT Tools] applyLikeDislikeBarIfEnabled called, settings:', settings?.likeDislikeBar);

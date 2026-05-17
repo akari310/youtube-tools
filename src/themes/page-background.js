@@ -216,6 +216,8 @@ body.ytm-ambient-active ytmusic-player-bar {
 }
 
 /* YTM Sidebar (Expanded & Collapsed): Glass with separator line - respect ambient */
+body.ytm-style-transparent ytmusic-guide-renderer,
+body.ytm-style-transparent #guide-renderer,
 body.ytm-style-transparent tp-yt-app-drawer #contentContainer,
 body.ytm-style-transparent #mini-guide,
 body.ytm-style-transparent #mini-guide-renderer,
@@ -226,6 +228,11 @@ body.ytm-ambient-active #mini-guide-renderer {
   backdrop-filter: blur(25px) !important;
   -webkit-backdrop-filter: blur(25px) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.ytm-ambient-active ytmusic-guide-renderer,
+body.ytm-ambient-active #guide-renderer {
+  background: transparent !important;
 }
 
 body.ytm-ambient-active tp-yt-app-drawer #contentContainer,

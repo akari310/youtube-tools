@@ -78,8 +78,6 @@ export function loadSettingsToDOM() {
     $id('sync-cinematic-toggle').checked = settings.syncCinematic || false;
   if ($id('side-panel-style-select'))
     $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
-  if ($id('custom-timeline-color-toggle'))
-    $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
   setVal('player-size-slider', settings.playerSize || 100);
   setVal('select-video-qualitys-select', settings.selectVideoQuality || 'user');
   setVal('select-languages-comments-select', settings.languagesComments || 'en');

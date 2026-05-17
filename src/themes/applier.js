@@ -142,7 +142,6 @@ export function applySettings() {
     cinematicLighting: $id('cinematic-lighting-toggle')?.checked || false,
     syncCinematic: $id('sync-cinematic-toggle')?.checked || false,
     sidePanelStyle: $id('side-panel-style-select')?.value || 'blur',
-    customTimelineColor: $id('custom-timeline-color-toggle')?.checked || false,
     playerSize: $id('player-size-slider')?.value || 100,
     selectVideoQuality: $id('select-video-qualitys-select')?.value || 'user',
     menu_developermdcm: {
@@ -228,17 +227,6 @@ export function applySettings() {
   const addCss = css => {
     if (css) dynamicCssArray.push(css);
   };
-
-  if (settings.customTimelineColor) {
-    addCss(
-      `.ytp-swatch-background-color { background: linear-gradient(135deg, #4c1d95, #8b5cf6) !important; }`
-    );
-    if (isYTMusic) {
-      addCss(
-        `#progress-bar { --paper-slider-active-color: #8b5cf6 !important; --paper-slider-knob-color: #8b5cf6 !important; }`
-      );
-    }
-  }
 
   // Theme custom/normal toggle UI
   const themeCustomOpts = $e('.theme-custom-options');
@@ -599,7 +587,7 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
 
   // YouTube Music-specific advanced CSS
   if (isYTMusic) {
-    const ytmSliderSolidColor = selectedTheme.progress || selectedTheme.accent;
+    const ytmSliderSolidColor = selectedTheme.progress || selectedTheme.accent || selectedTheme.CurrentProgressVideo || '#ff0000';
     const bgOrGradient = shouldApplyTheme ? selectedTheme.gradient : (hasBgImage ? 'transparent' : '#030303');
 
     addCss(`
@@ -666,6 +654,7 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
           --paper-slider-active-color: ${ytmSliderSolidColor} !important;
           --paper-slider-knob-color: ${ytmSliderSolidColor} !important;
           --paper-slider-secondary-color: ${ytmSliderSolidColor}80 !important;
+          --paper-slider-container-color: rgba(255, 255, 255, 0.15) !important;
         }
 
         /* Sidebar & Guide - Apply theme gradient with glass effect */
@@ -675,10 +664,10 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         #guide-content,
         #guide-spacer,
         ytmusic-guide-renderer,
-        ytmusic-guide-section-renderer,
         #mini-guide-background,
         #mini-guide,
-        #mini-guide-renderer {
+        #mini-guide-renderer,
+        body.ytm-ambient-active #mini-guide-renderer {
           background: linear-gradient(rgba(10, 10, 10, 0.75), rgba(10, 10, 10, 0.75)), ${selectedTheme.glassBg || selectedTheme.gradient} !important;
           backdrop-filter: blur(${selectedTheme.glassBlur || '24px'}) saturate(1.2) !important;
           -webkit-backdrop-filter: blur(${selectedTheme.glassBlur || '24px'}) saturate(1.2) !important;
@@ -687,6 +676,7 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         /* Nested guide elements transparent to avoid stacking */
         #guide-wrapper.ytmusic-app-layout #items,
         ytmusic-guide-section-renderer #items,
+        ytmusic-guide-section-renderer[is-collapsed],
         ytmusic-guide-entry-renderer,
         tp-yt-paper-item.ytmusic-guide-entry-renderer {
           background: transparent !important;

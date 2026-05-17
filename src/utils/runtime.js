@@ -43,6 +43,7 @@ export const __ytToolsRuntime = {
   },
   downloadClickHandlerInitialized: false,
   shortsObserver: null,
+  shortsReelButtonsInitialized: false,
   statsObserver: null,
   statsIntervalId: null,
   modularStatsIntervalId: null,

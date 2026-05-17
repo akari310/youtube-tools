@@ -19,7 +19,6 @@ import { setupLockupCachedStats } from './features/lockup-cached-stats.js';
 import { setupShortsChannelNameFeature } from './features/shorts/shorts-channel-name.js';
 import { initTranslateComments } from './features/comments/translate-comments.js';
 import { initPlayerSize } from './features/player/player-size.js';
-import { initEffectsFeature } from './features/effects.js';
 import { hideComments } from './features/comments/hide-comments.js';
 import { hideSidebar } from './features/hide-sidebar.js';
 import { hideNavbar } from './features/hide-navbar.js';
@@ -84,7 +83,6 @@ import { checkNewVersion } from './utils/helpers.js';
     [setupShortsChannelNameFeature, s.shortsChannelName],
     [setupLockupCachedStats, s.lockupStats],
     [initTranslateComments, s],
-    [initEffectsFeature, s],
     [initPlayerSize, s],
     [hideComments, s.hideComments],
     [hideSidebar, s.hideSidebar],
