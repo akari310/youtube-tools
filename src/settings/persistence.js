@@ -65,7 +65,7 @@ export function loadSettingsToDOM() {
   if (themesMenuSection) {
     themesMenuSection.style.display = settings.themes ? 'block' : 'none';
   }
-  setChk('translation-toggle', settings.translation || false);
+  setChk('translation-toggle', settings.translateComments || false);
   setChk('avatars-toggle', settings.avatars || false);
   setChk('reverse-mode-toggle', settings.reverseMode || false);
   setChk('wave-visualizer-toggle', settings.waveVisualizer || false);

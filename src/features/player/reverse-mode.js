@@ -1,19 +1,20 @@
 // Reverse page layout (flex-direction: row-reverse)
 
-export function reverseMode(enabled) {
-  if (enabled) {
-    document.documentElement.style.setProperty('flex-direction', 'row-reverse', 'important');
-    const primary = document.querySelector('#primary');
-    const secondary = document.querySelector('#secondary');
-    if (primary && secondary) {
-      primary.style.order = '2';
-      secondary.style.order = '1';
-    }
-  } else {
-    document.documentElement.style.removeProperty('flex-direction');
-    const primary = document.querySelector('#primary');
-    const secondary = document.querySelector('#secondary');
-    if (primary) primary.style.order = '';
-    if (secondary) secondary.style.order = '';
+const REVERSE_ID = 'yt-tools-reverse-style';
+const REVERSE_CSS =
+  '#columns.style-scope.ytd-watch-flexy { flex-direction: row-reverse !important; padding-left: 20px !important; }';
+
+function getOrCreateStyle() {
+  let el = document.getElementById(REVERSE_ID);
+  if (!el) {
+    el = document.createElement('style');
+    el.id = REVERSE_ID;
+    document.head.appendChild(el);
   }
+  return el;
+}
+
+export function reverseMode(enabled) {
+  const el = getOrCreateStyle();
+  el.textContent = enabled ? REVERSE_CSS : '';
 }

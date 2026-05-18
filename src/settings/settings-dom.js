@@ -53,7 +53,7 @@ export function saveSettingsFromDOM() {
     nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
     audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
     themes: $id('themes-toggle')?.checked || false,
-    translation: $id('translation-toggle')?.checked || false,
+    translateComments: $id('translation-toggle')?.checked || false,
     avatars: $id('avatars-toggle')?.checked || false,
     reverseMode: $id('reverse-mode-toggle')?.checked || false,
     waveVisualizer: $id('wave-visualizer-toggle')?.checked || false,

@@ -186,6 +186,16 @@
   transition: height 0.24s ease;
 }
 
+.is-today .week-bar-fill {
+  background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%);
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.5);
+}
+
+.is-today .week-label {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
 .week-bar-val {
   min-height: 12px;
   max-width: 100%;
@@ -215,6 +225,15 @@
   gap: 8px;
   padding: 8px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  transition: background 0.12s ease;
+  border-radius: 4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.top-video-row:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .top-video-row:last-child {
@@ -308,6 +327,16 @@
   color: #fff;
   background: #b91c1c;
   border-color: #b91c1c;
+}
+
+/* Streak fire animation */
+.stat-card[style*="fb923c"] .stat-card-icon i {
+  animation: streak-pulse 2s ease-in-out infinite;
+}
+
+@keyframes streak-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
 }
 
 /* Audio-only mode - hide video */

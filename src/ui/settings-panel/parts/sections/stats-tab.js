@@ -87,6 +87,16 @@ export function buildStatsTab() {
             </div>
           </div>
 
+          <div class="stat-card" style="--stat-accent:#fb923c;--stat-bg:rgba(251,146,60,0.14);">
+            <div class="stat-card-icon">
+              <i class="fas fa-fire"></i>
+            </div>
+            <div class="stat-card-body">
+              <span class="stat-label" id="streak-label">No Streak</span>
+              <span class="stat-value" id="streak-count">0</span>
+            </div>
+          </div>
+
           <div
             class="stat-card stat-card-wide"
             style="--stat-accent:#f97316;--stat-bg:rgba(249,115,22,0.14);"

@@ -123,6 +123,27 @@ function getTopVideos(limit = 10) {
     .slice(0, limit);
 }
 
+function getStreak() {
+  const days = Object.keys(dailyStats)
+    .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k))
+    .sort()
+    .reverse();
+  let streak = 0;
+  const today = new Date().toISOString().slice(0, 10);
+  // start from today, check consecutive days backwards
+  for (let i = 0; i < days.length; i++) {
+    const expected = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    if (days[i] === expected) streak++;
+    else break;
+  }
+  // if no data for today but yesterday has data, streak starts yesterday
+  if (streak === 0 && days.length > 0) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (days[0] === yesterday) streak = 1;
+  }
+  return streak;
+}
+
 function getLongestVideo() {
   const top = getTopVideos(1);
   return top[0] || null;
@@ -136,15 +157,20 @@ function getAvgWatchTime() {
 
 // --- Formatting ---
 
-export function formatTime(seconds, { compact = false } = {}) {
-  if (isNaN(seconds) || seconds < 0) return compact ? '0s' : '0h 0m 0s';
+export function formatTime(seconds, { compact = false, smart = true } = {}) {
+  if (isNaN(seconds) || seconds < 0) return compact ? '0s' : '0s';
   const s = Math.floor(seconds);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (compact) {
-    return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m` : `${s % 60}s`;
+  const sec = s % 60;
+  if (compact || smart) {
+    const parts = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}m`);
+    if (sec > 0 || parts.length === 0) parts.push(`${sec}s`);
+    return parts.join(' ');
   }
-  return `${h}h ${m}m ${s % 60}s`;
+  return `${h}h ${m}m ${sec}s`;
 }
 
 function escapeHtml(s) {
@@ -178,11 +204,25 @@ function exportStats() {
 
 // --- UI Update ---
 
+let _prevHash = '';
+
 export function updateUI() {
   const today = getTodayStats();
   const week = getWeekData();
   const longest = getLongestVideo();
   const avg = getAvgWatchTime();
+  const streak = getStreak();
+
+  const _hash = [
+    usageTime, videoTime, shortsTime, sessionTime,
+    today.totalSec, videosWatched, avg, streak,
+    longest?.videoId ?? '', longest?.title ?? '', longest?.totalSec ?? '',
+    ...week.map(d => `${d.sec}:${d.pct}`),
+    ...getTopVideos(10).map(v => `${v.videoId}:${v.title}:${v.channel}:${v.totalSec}`),
+    isMusic,
+  ].join('|');
+  if (_hash === _prevHash) return;
+  _prevHash = _hash;
 
   const eachById = (id, fn) => {
     if (!domCache[id]) {
@@ -192,7 +232,7 @@ export function updateUI() {
   };
   const set = (id, val) => {
     eachById(id, el => {
-      el.textContent = val;
+      if (el.textContent !== val) el.textContent = val;
     });
   };
   set('total-time', formatTime(usageTime));
@@ -209,13 +249,16 @@ export function updateUI() {
   set('videos-count', String(videosWatched));
   set('avg-time', formatTime(avg, { compact: true }));
   set('longest-title', longest ? escapeHtml(longest.title || longest.videoId) : '-');
-  set('longest-time', longest ? formatTime(longest.totalSec, { compact: true }) : '-');
+  set('longest-time', longest ? formatTime(longest.totalSec) : '-');
   set('most-label', isMusic ? 'Most Played' : 'Most Watched');
+  set('streak-count', String(streak));
+  set('streak-label', streak > 0 ? (streak === 1 ? 'Today' : `${streak} Day Streak`) : 'No Streak');
 
   const maxTime = 86400;
   const bar = (id, v) => {
     eachById(id, el => {
-      el.style.width = `${Math.min(100, (v / maxTime) * 100)}%`;
+      const _w = `${Math.min(100, (v / maxTime) * 100)}%`;
+      if (el.style.width !== _w) el.style.width = _w;
     });
   };
   bar('usage-bar', usageTime);
@@ -227,12 +270,14 @@ export function updateUI() {
   // Weekly chart
   const chart = domCache._weeklyChart || (domCache._weeklyChart = $id('weekly-chart'));
   if (chart) {
+    const todayKey = new Date().toISOString().slice(0, 10);
     setHTML(
       chart,
       week
         .map(d => {
-          const h = d.sec > 0 ? formatTime(d.sec, { compact: true }) : '';
-          return `<div class="week-bar-wrapper"><div class="week-label">${d.label}</div><div class="week-bar-track"><div class="week-bar-fill" style="height:${d.pct}%"></div></div><div class="week-bar-val">${h}</div></div>`;
+          const h = d.sec > 0 ? formatTime(d.sec) : '';
+          const isToday = d.key === todayKey;
+          return `<div class="week-bar-wrapper${isToday ? ' is-today' : ''}"><div class="week-label">${isToday ? 'Today' : d.label}</div><div class="week-bar-track"><div class="week-bar-fill" style="height:${d.pct}%"></div></div><div class="week-bar-val">${h}</div></div>`;
         })
         .join('')
     );
@@ -247,12 +292,12 @@ export function updateUI() {
         : top
             .map(
               (v, i) =>
-                `<div class="top-video-row">
+                `<a class="top-video-row" href="/watch?v=${encodeURIComponent(v.videoId)}" target="_blank">
           <span class="top-video-rank">#${i + 1}</span>
           <span class="top-video-title" title="${escapeHtml(v.title || v.videoId)}">${escapeHtml(v.title || v.videoId)}</span>
           <span class="top-video-chan">${escapeHtml(v.channel || '')}</span>
-          <span class="top-video-time">${formatTime(v.totalSec, { compact: true })}</span>
-        </div>`
+          <span class="top-video-time">${formatTime(v.totalSec)}</span>
+        </a>`
             )
             .join('')
     );
