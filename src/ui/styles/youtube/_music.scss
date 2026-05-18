@@ -190,12 +190,11 @@ ytmusic-app .selectcalidadesaudio {
 
 ytmusic-app .download-container {
   width: 100% !important;
-  background: rgba(0, 0, 0, 0.3) !important;
-  border-radius: 6px !important;
-  position: relative !important; /* Fix absolute positioned buttons (Retry/Again) */
-  padding: 10px !important;
-  box-sizing: border-box !important;
-  margin-bottom: 0 !important;
+  border-radius: 16px !important;
+  padding: 20px 16px 16px !important;
+  margin-bottom: 8px !important;
+  position: relative !important;
+  overflow: hidden;
 }
 
 ytmusic-app .content_collapsible_colors {

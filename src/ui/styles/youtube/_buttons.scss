@@ -156,8 +156,12 @@ button.botones_div:hover {
 }
 
 @keyframes shimmer-dl {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .progress-text {

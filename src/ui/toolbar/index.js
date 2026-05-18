@@ -147,7 +147,6 @@ export function buildToolbar() {
 
   // Hide close toolbar
 
-
   // Picture-in-Picture
   btnsDiv.appendChild(
     makeToolBtn('Picture to picture', null, 'video_picture_to_picture', [
@@ -459,9 +458,22 @@ function buildDownloadContainer(id, type) {
  * For YT: above the video metadata.
  */
 export function renderizarButtons() {
-  // Remove any existing toolbar before creating a new one
-  // Skip if toolbar already exists (prevents duplicates on settings change)
-  if (document.querySelector('.yt-tools-container')) return;
+  // Check if toolbar already exists AND is properly placed in current DOM
+  const existing = document.querySelector('.yt-tools-container');
+  if (existing) {
+    if (isYTMusic) {
+      // For YTM: toolbar should be inside #side-panel
+      if (existing.closest('#side-panel')) return;
+    } else {
+      // For YT: toolbar should be a sibling of current .ytd-watch-metadata
+      const anchor = document.querySelector('.style-scope.ytd-watch-metadata');
+      if (anchor && existing.parentNode === anchor.parentNode) return;
+    }
+    // Stale toolbar from previous SPA navigation — remove it
+    try {
+      existing.remove();
+    } catch {}
+  }
 
   if (isYTMusic) {
     const sidePanel = document.querySelector('#player-page #side-panel');
@@ -491,6 +503,11 @@ export function renderizarButtons() {
         const toolbar = buildToolbar();
         sideWrapper.appendChild(toolbar);
         const line = document.createElement('div');
+        setTimeout(() => {
+          try {
+            window.dispatchEvent(new CustomEvent('yt-tools-toolbar-ready'));
+          } catch {}
+        }, 0);
         line.className = 'ytm-side-panel-divider';
         sideWrapper.appendChild(line);
         sideWrapper.appendChild(addButton);
@@ -516,6 +533,11 @@ export function renderizarButtons() {
       if (isVisible || addButton2) {
         const toolbar = buildToolbar();
         addButton.parentNode.insertBefore(toolbar, addButton);
+        setTimeout(() => {
+          try {
+            window.dispatchEvent(new CustomEvent('yt-tools-toolbar-ready'));
+          } catch {}
+        }, 0);
       }
     }
   }

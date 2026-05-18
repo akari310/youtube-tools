@@ -176,13 +176,13 @@ ytd-watch-metadata .content_collapsible_colors {
 ytd-watch-metadata .download-container {
   width: 90% !important;
   max-width: 450px !important;
-  padding: 7px !important;
-  border-radius: 12px !important;
-  margin: 5px auto !important;
+  border-radius: 16px !important;
+  margin: 10px auto !important;
+  padding: 20px 16px 16px !important;
   display: flex !important;
   flex-direction: column !important;
-  transition: all 0.3s ease;
   position: relative;
+  overflow: hidden;
 }
 
 /* YT Stats overlay */

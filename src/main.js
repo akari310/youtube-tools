@@ -110,18 +110,20 @@ import { checkNewVersion } from './utils/helpers.js';
     }
   }
 
-  // Initial run
-  runFeatures(settings);
+  // Initial run: toolbar trước để feature có DOM để gắn
   applySettings(settings);
+  runFeatures(settings);
 
   initDownloadFeature();
   updateUI();
   setTimeout(checkNewVersion, 3000);
 
   function reinitAll(s) {
-    runFeatures(s);
     try {
       applySettings(s);
+    } catch {}
+    runFeatures(s);
+    try {
       initDownloadFeature();
       updateUI();
     } catch (e) {

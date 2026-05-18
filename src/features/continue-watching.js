@@ -159,6 +159,35 @@ export function updateContinueWatchingButton() {
   }
 }
 
+// Auto-resume: seek to saved position when entering a partially watched video
+export function tryAutoResume(videoEl, videoId) {
+  const rt = __ytToolsRuntime.continueWatching;
+  if (!rt.enabled) return;
+
+  const t = getContinueWatchingTime(videoId);
+  if (!t || t < 5) return;
+
+  const dur = Number(videoEl?.duration);
+  if (Number.isFinite(dur) && dur > 0) {
+    if (t >= dur - 5) {
+      clearContinueWatchingForVideo(videoId);
+      return;
+    }
+  }
+
+  // Don't auto-resume if URL already has a timestamp
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('t')) return;
+
+  // Seek after video metadata is ready
+  if (Math.abs((videoEl?.currentTime || 0) - t) > 3) {
+    videoEl.currentTime = t;
+    try {
+      Notify('info', `Resumed at ${formatTimeShort(t)}`);
+    } catch {}
+  }
+}
+
 export function cssEscapeLite(s) {
   const str = String(s || '');
   if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(str);
@@ -326,13 +355,14 @@ export function renderContinueWatchingPanel() {
       seek.dataset.t = String(tSec);
       go = seek;
     } else {
-      const a = document.createElement('a');
-      a.className = 'yt-simple-endpoint yt-cw-go';
-      a.textContent = 'Resume';
-      a.href = `/watch?v=${encodeURIComponent(e.videoId)}&t=${tSec}s`;
-      a.target = '_self';
-      a.rel = 'noopener';
-      go = a;
+      const navBtn = document.createElement('button');
+      navBtn.type = 'button';
+      navBtn.className = 'yt-cw-go';
+      navBtn.textContent = 'Resume';
+      navBtn.dataset.cwAction = 'navigate';
+      navBtn.dataset.videoId = e.videoId;
+      navBtn.dataset.t = String(tSec);
+      go = navBtn;
     }
 
     const del = document.createElement('button');
@@ -360,6 +390,11 @@ export function setupContinueWatchingFeature(enabled) {
   // Navigation handler - only bind once
   if (!rt.navHandlerInitialized) {
     rt.navHandlerInitialized = true;
+    const refreshCwUi = () => {
+      updateContinueWatchingButton();
+      updateContinueWatchingHistoryUi();
+      if (rt.panelOpen) renderContinueWatchingPanel();
+    };
     const onNav = () => {
       try {
         const vid = getCurrentVideoId();
@@ -368,14 +403,11 @@ export function setupContinueWatchingFeature(enabled) {
           rt.lastSaveAt = 0;
           rt.lastSavedTime = -1;
           rt.boundVideoId = vid;
-          updateContinueWatchingButton();
-          updateContinueWatchingHistoryUi();
-          if (rt.panelOpen) renderContinueWatchingPanel();
-        } else {
-          updateContinueWatchingButton();
-          updateContinueWatchingHistoryUi();
-          if (rt.panelOpen) renderContinueWatchingPanel();
         }
+        refreshCwUi();
+        // Delayed re-check: toolbar may be re-created by renderizarButtons retry
+        setTimeout(refreshCwUi, 600);
+        setTimeout(refreshCwUi, 1500);
       } catch (e) {
         console.warn('[YT Tools] Continue watching nav handler error:', e);
       }
@@ -441,6 +473,14 @@ export function setupContinueWatchingFeature(enabled) {
               console.warn('[YT Tools] Notify error:', e2);
             }
             updateContinueWatchingButton();
+            return;
+          }
+          if (action === 'navigate') {
+            const vid = cwActionBtn.getAttribute('data-video-id') || '';
+            const t = Number(cwActionBtn.getAttribute('data-t'));
+            if (!vid) return;
+            // Keep panel open state so it re-renders after navigation
+            navigateToWatchSpa(vid, t);
             return;
           }
         }
@@ -600,6 +640,7 @@ export function setupContinueWatchingFeature(enabled) {
       loadedmetadata: () => {
         updateContinueWatchingButton();
         if (rt.panelOpen) renderContinueWatchingPanel();
+        tryAutoResume(v, videoId);
       },
       seeked: () => {
         updateContinueWatchingButton();
@@ -617,4 +658,15 @@ export function setupContinueWatchingFeature(enabled) {
 
   updateContinueWatchingButton();
   updateContinueWatchingHistoryUi();
+
+  // Nếu toolbar chưa tồn tại (renderizarButtons đang retry), đợi rồi cập nhật lại
+  if (!document.querySelector('.yt-tools-container')) {
+    const onReady = () => {
+      window.removeEventListener('yt-tools-toolbar-ready', onReady);
+      updateContinueWatchingButton();
+      updateContinueWatchingHistoryUi();
+      if (rt.panelOpen) renderContinueWatchingPanel();
+    };
+    window.addEventListener('yt-tools-toolbar-ready', onReady);
+  }
 }
