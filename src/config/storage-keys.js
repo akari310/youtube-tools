@@ -34,6 +34,12 @@ export const STORAGE_KEYS = {
   DAILY_STATS: 'YT_DAILY_STATS',
   SESSION_START: 'YT_SESSION_START',
 
+  // Time Statistics (YouTube Music)
+  YTM_LISTEN_TIME: 'YTM_LISTEN_TIME',
+  YTM_DETAILED_STATS: 'YTM_DETAILED_STATS',
+  YTM_DAILY_STATS: 'YTM_DAILY_STATS',
+  YTM_SESSION_START: 'YTM_SESSION_START',
+
   // Custom Themes (localStorage)
   CUSTOM_THEMES: 'yt-tools-custom-themes',
 };

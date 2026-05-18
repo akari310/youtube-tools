@@ -3,16 +3,17 @@ import { setHTML } from '../utils/trusted-types.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getCurrentVideoId } from '../utils/helpers.js';
 import { gmRawGet, gmRawSet } from '../utils/storage.js';
+import { STORAGE_KEYS } from '../config/storage-keys.js';
 
 const isMusic = location.hostname === 'music.youtube.com';
 
 const STORAGE = {
-  USAGE: isMusic ? 'YT_TOTAL_USAGE' : 'YT_TOTAL_USAGE',
-  VIDEO: isMusic ? 'YTM_LISTEN_TIME' : 'YT_VIDEO_TIME',
-  SHORTS: 'YT_SHORTS_TIME',
-  DETAIL: isMusic ? 'YTM_DETAILED_STATS' : 'YT_DETAILED_STATS',
-  DAILY: isMusic ? 'YTM_DAILY_STATS' : 'YT_DAILY_STATS',
-  SESSION: isMusic ? 'YTM_SESSION_START' : 'YT_SESSION_START',
+  USAGE: STORAGE_KEYS.TOTAL_USAGE,
+  VIDEO: isMusic ? STORAGE_KEYS.YTM_LISTEN_TIME : STORAGE_KEYS.VIDEO_TIME,
+  SHORTS: STORAGE_KEYS.SHORTS_TIME,
+  DETAIL: isMusic ? STORAGE_KEYS.YTM_DETAILED_STATS : STORAGE_KEYS.DETAILED_STATS,
+  DAILY: isMusic ? STORAGE_KEYS.YTM_DAILY_STATS : STORAGE_KEYS.DAILY_STATS,
+  SESSION: isMusic ? STORAGE_KEYS.YTM_SESSION_START : STORAGE_KEYS.SESSION_START,
 };
 
 let usageTime = 0;

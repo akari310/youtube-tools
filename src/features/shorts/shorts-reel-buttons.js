@@ -224,23 +224,9 @@ export function initShortsReelButtons() {
   __ytToolsRuntime.shortsReelButtonsInitialized = true;
 
   let lastShortId = null;
-  let pollIntervalId = null;
-
-  function startPolling() {
-    if (pollIntervalId) return;
-    pollIntervalId = setInterval(onShortChange, 1000);
-  }
-
-  function stopPolling() {
-    if (pollIntervalId) {
-      clearInterval(pollIntervalId);
-      pollIntervalId = null;
-    }
-  }
 
   function onShortChange() {
     if (!window.location.pathname.startsWith('/shorts')) {
-      stopPolling();
       lastShortId = null;
       return;
     }
@@ -253,20 +239,13 @@ export function initShortsReelButtons() {
     }, 300);
   }
 
-  function onNavigate() {
-    if (window.location.pathname.startsWith('/shorts')) {
-      startPolling();
-      onShortChange();
-    } else {
-      stopPolling();
-    }
+  // Initial load
+  if (window.location.pathname.startsWith('/shorts')) {
+    onShortChange();
   }
 
-  // Initial load
-  onNavigate();
-
-  // SPA navigation events
-  document.addEventListener('yt-page-data-updated', onNavigate);
-  document.addEventListener('yt-navigate-finish', onNavigate);
-  window.addEventListener('popstate', onNavigate);
+  // SPA Navigation events — no polling needed
+  document.addEventListener('yt-page-data-updated', onShortChange);
+  document.addEventListener('yt-navigate-finish', onShortChange);
+  window.addEventListener('popstate', onShortChange);
 }

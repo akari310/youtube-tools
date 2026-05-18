@@ -1,11 +1,10 @@
 // Feature: Audio-only Mode — hides video, shows background art
 import { __ytToolsRuntime } from '../../utils/runtime.js';
-import { $id } from '../../utils/dom.js';
+import { $id, isYTMusic } from '../../utils/dom.js';
 import { readJsonGM } from '../../utils/storage.js';
-import { STORAGE_KEYS } from '../../config/storage-keys.js';
+import { SETTINGS_KEY } from '../../settings/storage-key.js';
 
 const AUDIO_ONLY_TAB_OVERRIDE_KEY = 'ytToolsAudioOnlyTabOverrideMDCM';
-const isYTMusic = location.hostname === 'music.youtube.com';
 
 function getAudioOnlyTabOverride() {
   const value = window.sessionStorage.getItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
@@ -107,8 +106,7 @@ export async function applyAudioOnlyMode(enabled) {
 
   rt.refreshTimer = setInterval(() => {
     if (document.visibilityState !== 'visible') return;
-    const settingsKey = isYTMusic ? STORAGE_KEYS.SETTINGS_YTM : STORAGE_KEYS.SETTINGS_YT;
-    const settings = readJsonGM(settingsKey, {});
+    const settings = readJsonGM(SETTINGS_KEY, {});
     applyAudioOnlyMode(getEffectiveAudioOnly(settings));
   }, 3000);
 }

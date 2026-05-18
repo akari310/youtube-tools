@@ -4,18 +4,29 @@
 
 import { $e, $id } from '../../../utils/dom.js';
 import { setHTML } from '../../../utils/trusted-types.js';
-import {
-  themeManager,
-  getAllThemePresets,
-  initThemeAnimations,
-  playThemeTransition,
-  getThemeCustomizer,
-  applyCustomTheme,
-  generateColorPalette,
-  adjustColorBrightness,
-} from '../../../themes/theme-engine.js';
+import { applySettings, saveSettingsFromDOM } from '../../../themes/theme-engine.js';
 import { loadSettings } from '../../../settings/settings-manager.js';
-import { saveSettingsFromDOM } from '../../../themes/theme-engine.js';
+
+// Stub implementations for planned features not yet implemented
+const themeManager = {
+  getAllThemes: () => [],
+  applyThemePreset: () => {},
+  stopPreview: () => {},
+  deleteCustomTheme: () => {},
+  applyRandomTheme: () => { applySettings(); },
+  saveCustomTheme: () => ({}),
+  exportTheme: () => ({}),
+  importTheme: () => null,
+  getTheme: () => null,
+  toggleThemeAnimations: () => false,
+};
+const getAllThemePresets = () => [];
+const initThemeAnimations = () => {};
+const playThemeTransition = () => {};
+const getThemeCustomizer = () => ({});
+const applyCustomTheme = () => {};
+const generateColorPalette = () => [];
+const adjustColorBrightness = (color) => color;
 
 /* global Notify */
 

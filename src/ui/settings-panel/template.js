@@ -34,7 +34,7 @@ export function createSettingsPanel() {
     'https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.user.js'
   );
 
-  let version = '2.4.3.2';
+  let version = '2.4.4.2';
   try {
     if (typeof GM_info !== 'undefined') version = GM_info.script.version;
   } catch (e) {}

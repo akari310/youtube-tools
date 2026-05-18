@@ -22,6 +22,9 @@ const PD = pageDocument;
 
 const s = getState();
 
+/** Cached wave accent color — refreshed on theme change or init. */
+let cachedWaveAccent = '#06b6d4';
+
 function getThemeCSS(varName, fallback = '') {
   try {
     const val = PW().getComputedStyle(PD().documentElement).getPropertyValue(varName).trim();
@@ -31,8 +34,12 @@ function getThemeCSS(varName, fallback = '') {
   }
 }
 
+function refreshWaveThemeColor() {
+  cachedWaveAccent = getThemeCSS('--yt-tools-wave-color', '#06b6d4');
+}
+
 function waveThemeColors() {
-  return { accent: getThemeCSS('--yt-tools-wave-color', '#06b6d4') };
+  return { accent: cachedWaveAccent };
 }
 /** After a failed tap into the video graph, avoid hammering setup on every DOM mutation (YouTube is noisy). */
 const WAVE_FAIL_RETRY_MS = 4000;
@@ -41,6 +48,8 @@ let videoObserver = null;
 let observerDebounce = null;
 /** Last settings object passed to `initWaveVisualizer` — used by `checkForVideo` / observer. */
 let waveSettingsSnapshot = null;
+/** Unlock gesture listeners — tracked for cleanup. */
+let waveUnlockHandlers = [];
 
 function ensureWaveMutationObserver() {
   if (!waveSettingsSnapshot?.waveVisualizer || videoObserver) return;
@@ -187,6 +196,12 @@ export function cleanupWaveVisualizer(isUnload = false) {
   }
   clearTimeout(observerDebounce);
   observerDebounce = null;
+
+  // Clean up unlock gesture listeners
+  waveUnlockHandlers.forEach(({ el, type, handler }) => {
+    try { el.removeEventListener(type, handler); } catch {}
+  });
+  waveUnlockHandlers = [];
 }
 
 export function hideCanvas() {
@@ -348,10 +363,14 @@ export function createVisualizerOverlay() {
 }
 
 function draw() {
-  setAnimationId(PW().requestAnimationFrame(draw));
-
-  if (!s.isSetup || !s.analyser || !s.ctx || !s.canvas) return;
-  if (parseFloat(s.canvas.style.opacity) <= 0) return;
+  if (!s.isSetup || !s.analyser || !s.ctx || !s.canvas) {
+    setAnimationId(PW().requestAnimationFrame(draw));
+    return;
+  }
+  if (parseFloat(s.canvas.style.opacity) <= 0) {
+    setAnimationId(PW().requestAnimationFrame(draw));
+    return;
+  }
 
   s.analyser.getByteTimeDomainData(s.dataArray);
 
@@ -497,6 +516,9 @@ export function initWaveVisualizer(settings) {
     return;
   }
 
+  // Cache wave theme color (avoids getComputedStyle per frame)
+  refreshWaveThemeColor();
+
   // Tell legacy code to skip its wave visualizer BEFORE touching any video
   PW().__ytModularWaveActive = true;
 
@@ -524,9 +546,19 @@ export function initWaveVisualizer(settings) {
         .catch(() => {});
     }
   };
+  // Remove previous unlock listeners before adding new ones
+  waveUnlockHandlers.forEach(({ el, type, handler }) => {
+    try { el.removeEventListener(type, handler); } catch {}
+  });
+  waveUnlockHandlers = [];
   PD().addEventListener('mousedown', unlock, { once: true });
   PD().addEventListener('keydown', unlock, { once: true });
   PD().addEventListener('touchstart', unlock, { once: true });
+  waveUnlockHandlers.push(
+    { el: PD(), type: 'mousedown', handler: unlock },
+    { el: PD(), type: 'keydown', handler: unlock },
+    { el: PD(), type: 'touchstart', handler: unlock },
+  );
 
   checkForVideo();
 

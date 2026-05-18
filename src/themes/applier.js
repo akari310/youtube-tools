@@ -124,7 +124,7 @@ export function applySettings() {
     bookmarks: $id('bookmarks-toggle')?.checked || false,
     continueWatching: $id('continue-watching-toggle')?.checked || false,
     shortsChannelName: $id('shorts-channel-name-toggle')?.checked || false,
-    nonstopPlayback: $id('nonstop-playback-toggle')?.checked ?? true,
+    nonstopPlayback: $id('nonstop-playback-toggle')?.checked ?? false,
     audioOnly: $id('audio-only-toggle')?.checked || false,
     themes: $id('themes-toggle')?.checked || false,
     translateComments: $id('translation-toggle')?.checked || false,

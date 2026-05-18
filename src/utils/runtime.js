@@ -34,7 +34,6 @@ export const __ytToolsRuntime = {
     scanT: null,
     cache: new Map(),
     inflight: new Map(),
-    fetchChain: Promise.resolve(),
   },
   dislikesCache: {
     videoId: null,

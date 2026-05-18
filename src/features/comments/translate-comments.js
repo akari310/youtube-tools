@@ -18,6 +18,7 @@ const languagesTranslate = {
 
 // Biến cờ phải nằm ngoài hàm để không bị reset
 let translatorEventBound = false;
+let translatorClickHandler = null;
 
 function traductor() {
   // Chỉ quét những comment chưa có nút dịch (dùng thuộc tính data-translated)
@@ -53,7 +54,7 @@ function traductor() {
   if (!translatorEventBound) {
     translatorEventBound = true;
 
-    document.addEventListener('click', e => {
+    translatorClickHandler = e => {
       const btn = e.target.closest('.buttons-tranlate[data-action="translate-comment"]');
       if (!btn) return;
 
@@ -99,12 +100,30 @@ function traductor() {
             btn.textContent = 'Error';
           });
       }
-    });
+    };
+
+    document.addEventListener('click', translatorClickHandler);
   }
 }
 
 function limpiarHTML(selector) {
   $m(selector).forEach(button => button.remove());
+}
+
+/** Remove translate buttons and document click listener. */
+export function cleanupTranslateComments() {
+  if (translatorClickHandler) {
+    document.removeEventListener('click', translatorClickHandler);
+    translatorClickHandler = null;
+  }
+  translatorEventBound = false;
+  limpiarHTML('.traductor-container');
+  // Remove data-translated marks so traductor() can re-attach on next init
+  document.querySelectorAll('#content-text[data-translated]').forEach(el => {
+    el.removeAttribute('data-translated');
+  });
+  if (_commentIO) { try { _commentIO.disconnect(); } catch {} _commentIO = null; }
+  if (_commentMO) { try { _commentMO.disconnect(); } catch {} _commentMO = null; }
 }
 
 // === CODE TỐI ƯU MỚI THAY THẾ CHO SCROLL EVENT === (YT only)
@@ -163,7 +182,13 @@ function initSmartCommentObserver() {
 }
 
 export function initTranslateComments(settings) {
-  if (!settings?.translateComments) return;
+  if (!settings?.translateComments) {
+    cleanupTranslateComments();
+    return;
+  }
+
+  // Clean up previous instances before re-initializing
+  cleanupTranslateComments();
 
   // Initialize smart observer for YouTube only
   if (!window.location.hostname.includes('music.youtube.com')) {

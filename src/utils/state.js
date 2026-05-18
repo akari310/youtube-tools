@@ -6,10 +6,6 @@
 // getState() is also deprecated — use `state` directly.
 
 export const state = {
-  selectedBgColor: '#252525',
-  selectedTextColor: '#ffffff',
-  selectedBgAccentColor: '#ff0000',
-
   currentVideo: null,
   waveStyle: 'dinamica',
   audioCtx: null,
@@ -23,12 +19,6 @@ export const state = {
   dataArray: null,
   smoothedData: [],
   isSetup: false,
-
-  usageTime: 0,
-  videoTime: 0,
-  shortsTime: 0,
-  activeVideo: null,
-  activeType: null,
 };
 
 export const getState = () => state;
@@ -72,28 +62,4 @@ export const setSmoothedData = v => {
 };
 export const setIsSetup = v => {
   state.isSetup = v;
-};
-export const setUsageTime = v => {
-  state.usageTime = v;
-};
-export const setVideoTime = v => {
-  state.videoTime = v;
-};
-export const setShortsTime = v => {
-  state.shortsTime = v;
-};
-export const setActiveVideo = v => {
-  state.activeVideo = v;
-};
-export const setActiveType = v => {
-  state.activeType = v;
-};
-export const setSelectedBgColor = v => {
-  state.selectedBgColor = v;
-};
-export const setSelectedTextColor = v => {
-  state.selectedTextColor = v;
-};
-export const setSelectedBgAccentColor = v => {
-  state.selectedBgAccentColor = v;
 };

@@ -49,8 +49,8 @@ export function saveSettingsFromDOM() {
     bookmarks: $id('bookmarks-toggle')?.checked || false,
     continueWatching: $id('continue-watching-toggle')?.checked || false,
     shortsChannelName: $id('shorts-channel-name-toggle')?.checked || false,
-    copyDescription: $id('copy-description-toggle')?.checked || false,
-    nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
+    copyDescription: $id('copy-description-toggle') ? $id('copy-description-toggle').checked : true,
+    nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : false,
     audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
     themes: $id('themes-toggle')?.checked || false,
     translateComments: $id('translation-toggle')?.checked || false,
@@ -66,7 +66,7 @@ export function saveSettingsFromDOM() {
     sidePanelStyle: $id('side-panel-style-select')?.value || 'blur',
     playerSize: $id('player-size-slider')?.value || 100,
     selectVideoQuality: $id('select-video-qualitys-select')?.value || 'user',
-    languagesComments: $id('select-languages-comments-select')?.value || 'en',
+    languagesComments: $id('select-languages-comments-select')?.value || 'vi',
     menu_akari: { bg: selectedBgColor, color: selectedTextColor, accent: selectedBgAccentColor },
   };
   gmRawSet(SETTINGS_KEY, JSON.stringify(s));

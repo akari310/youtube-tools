@@ -128,6 +128,9 @@ export async function videoDislike() {
     }
 
     const updateCount = () => {
+      const currentVideoId = getCurrentVideoId();
+      const currentSettings = loadSettings();
+
       // Dislikes calculation
       const isDislikePressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
       const wasDislikePressed = dislikes_btn.dataset.initialState === 'true';
@@ -153,13 +156,13 @@ export async function videoDislike() {
         newLikes = Math.max(0, originalLikes + likeOffset);
       }
 
-      // Update run-time cache
-      if (__ytToolsRuntime.dislikesCache.videoId === videoId) {
+      // Update run-time cache only if videoId matches
+      if (__ytToolsRuntime.dislikesCache.videoId === currentVideoId) {
         __ytToolsRuntime.dislikesCache.dislikes = newDislikes;
         __ytToolsRuntime.dislikesCache.likes = newLikes;
 
         // Also persist it so F5 uses the updated count as "original"
-        setLikesDislikesToPersistedCache(videoId, {
+        setLikesDislikesToPersistedCache(currentVideoId, {
           likes: newLikes,
           dislikes: newDislikes,
           viewCount: __ytToolsRuntime.dislikesCache.viewCount,
@@ -167,12 +170,12 @@ export async function videoDislike() {
         });
       }
 
-      if (settings.dislikes && textContent) {
+      if (currentSettings.dislikes && textContent) {
         textContent.textContent = FormatterNumber(newDislikes, 0);
       }
 
       // Sync the like/dislike bar immediately
-      if (settings.likeDislikeBar) {
+      if (currentSettings.likeDislikeBar) {
         updateLikeDislikeBar(newLikes, newDislikes);
       }
     };
