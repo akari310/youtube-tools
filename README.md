@@ -103,7 +103,7 @@ All-in-one YouTube userscript for Tampermonkey/Greasemonkey/Violentmonkey. Full 
 
 ```bash
 # Clone repository
-git clone https://github.com/DeveloperMDCM/youtube-tools.git
+git clone https://github.com/akari310/youtube-tools.git
 cd youtube-tools
 
 # Install dependencies
