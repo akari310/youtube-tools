@@ -1,4 +1,4 @@
-import { pageWindow, pageDocument } from '../utils/dom.js';
+import { pageWindow, pageDocument, isYTMusic } from '../utils/dom.js';
 import {
   getState,
   setCanvas,
@@ -32,11 +32,7 @@ function getThemeCSS(varName, fallback = '') {
 }
 
 function waveThemeColors() {
-  return {
-    accent: getThemeCSS('--yt-spec-static-brand-red', '#ff0000'),
-    primary: getThemeCSS('--yt-spec-text-primary', '#ffffff'),
-    bgGradient: getThemeCSS('--yt-spec-base-background', ''),
-  };
+  return { accent: getThemeCSS('--yt-tools-wave-color', '#06b6d4') };
 }
 /** After a failed tap into the video graph, avoid hammering setup on every DOM mutation (YouTube is noisy). */
 const WAVE_FAIL_RETRY_MS = 4000;
@@ -52,7 +48,10 @@ function ensureWaveMutationObserver() {
     clearTimeout(observerDebounce);
     observerDebounce = setTimeout(() => checkForVideo(), 200);
   });
-  const target = PD().querySelector('#movie_player') || PD().body;
+  const target = PD().querySelector('#movie_player') ||
+    PD().querySelector('ytmusic-player-bar') ||
+    PD().querySelector('#player-bar') ||
+    PD().body;
   videoObserver.observe(target, { childList: true, subtree: true });
 }
 
@@ -72,7 +71,7 @@ function checkForVideo() {
   const miniPlayer = PD().querySelector('.ytp-miniplayer-ui');
   const urlMatchesPlayer =
     href.includes('watch') || href.includes('/shorts/') || /youtube\.com\/live\//.test(href);
-  const inContext = (video && urlMatchesPlayer) || !!miniPlayer;
+  const inContext = (video && (urlMatchesPlayer || isYTMusic)) || !!miniPlayer;
 
   if (!inContext || !video) {
     cleanupWaveVisualizer(false);
@@ -83,6 +82,10 @@ function checkForVideo() {
   if (video !== s.currentVideo || !s.isSetup) {
     cleanupWaveVisualizer(false);
     setupWaveForVideo(video);
+    // Nếu setup chưa thành công, retry sau
+    if (!s.isSetup) {
+      setTimeout(() => checkForVideo(), WAVE_FAIL_RETRY_MS);
+    }
   } else if (!video.paused) {
     showCanvas();
   }
@@ -362,7 +365,11 @@ function draw() {
 
   const sliceWidth = w / s.bufferLength;
   const style = s.waveStyle || 'dinamica';
-  const { accent, bgGradient } = waveThemeColors();
+  const { accent } = waveThemeColors();
+
+  // Glow để wave dễ thấy trên mọi nền
+  s.ctx.shadowBlur = 16;
+  s.ctx.shadowColor = accent + '99';
 
   switch (style) {
     case 'linea': {
@@ -437,20 +444,9 @@ function draw() {
     }
     case 'dinamica': {
       const gradient = s.ctx.createLinearGradient(0, 0, w, 0);
-      if (bgGradient && bgGradient.includes('linear-gradient')) {
-        const colors = bgGradient.match(/#[0-9a-fA-F]{3,8}/g);
-        if (colors && colors.length >= 2) {
-          gradient.addColorStop(0, colors[0]);
-          gradient.addColorStop(1, colors[colors.length - 1]);
-        } else {
-          gradient.addColorStop(0, 'red');
-          gradient.addColorStop(1, accent);
-        }
-      } else {
-        gradient.addColorStop(0, accent);
-        gradient.addColorStop(0.5, accent + '80');
-        gradient.addColorStop(1, accent);
-      }
+      gradient.addColorStop(0, accent);
+      gradient.addColorStop(0.5, accent + '80');
+      gradient.addColorStop(1, accent);
       s.ctx.lineWidth = 3;
       s.ctx.strokeStyle = gradient;
       s.ctx.beginPath();
@@ -534,12 +530,11 @@ export function initWaveVisualizer(settings) {
 
   checkForVideo();
 
-  // Fallback: if the video wasn't ready when checkForVideo() first ran, retry after a delay.
-  // YouTube is an SPA — the <video> element may not exist yet on page reload.
+  // Fallback: nếu video chưa sẵn sàng, retry định kỳ
   let retryCount = 0;
-  const maxRetries = 5;
+  const maxRetries = isYTMusic ? 30 : 10;
   function retryCheck() {
-    if (s.isSetup) return; // already set up, stop retrying
+    if (s.isSetup) return;
     if (retryCount >= maxRetries) return;
     retryCount++;
     setTimeout(() => {

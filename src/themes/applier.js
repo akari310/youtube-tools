@@ -363,6 +363,17 @@ export function applySettings() {
 
   addCss(`#icon-menu-settings { color: ${settings.iconsColorPicker || '#fff'} !important; }`);
 
+  // Wave visualizer color — mỗi theme một màu riêng, tương phản với theme
+  let waveColor = '#06b6d4';
+  if (settings.themes && isDarkMode === 'dark') {
+    if (isThemeCustom) {
+      waveColor = settings.progressbarColorPicker || '#06b6d4';
+    } else if (selectedTheme) {
+      waveColor = selectedTheme.waveColor || '#06b6d4';
+    }
+  }
+  $sp('--yt-tools-wave-color', waveColor);
+
   // Apply custom page background with blur effect
   if (settings.backgroundImage) {
     console.log(

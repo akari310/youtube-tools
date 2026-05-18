@@ -6,7 +6,7 @@ export const themeOptionsHTML = THEMES.map(
       <div class="theme-option">
       <div class="theme-preview" style="background: ${theme.gradient};"></div>
       <input type="radio" name="theme" value="${index}" ${index === 0 ? 'checked' : ''}>
-          <span style="${theme.name === 'Default / Reload Page' ? 'color: red; ' : ''}" class="theme-name">${theme.name}</span>
+          <span style="${theme.name === 'Default / Reload' ? 'color: red; ' : ''}" class="theme-name">${theme.name}</span>
           </div>
     </label>
 `
