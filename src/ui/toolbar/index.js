@@ -4,6 +4,8 @@
 // ===========================================
 import { $e, $id, $cl, isYTMusic } from '../../utils/dom.js';
 import { Notify } from '../../utils/helpers.js';
+import { createSvgIcon, makeToolBtn } from './svg.js';
+import { buildDownloadContainer } from './download-container.js';
 
 let validoBotones = true;
 
@@ -13,39 +15,6 @@ let validoBotones = true;
  */
 export function resetToolbarFlag() {
   validoBotones = true;
-}
-
-// Helper: create SVG icon using DOM API (no innerHTML needed)
-function createSvgIcon(pathsData, size) {
-  const sz = size || 24;
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('width', String(sz));
-  svg.setAttribute('height', String(sz));
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('stroke-width', '2');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
-  pathsData.forEach(d => {
-    const p = document.createElementNS(svgNS, 'path');
-    p.setAttribute('d', d);
-    if (d === 'M0 0h24v24H0z') p.setAttribute('fill', 'none');
-    svg.appendChild(p);
-  });
-  return svg;
-}
-
-// Helper: create a toolbar button with SVG icon
-function makeToolBtn(title, id, className, paths) {
-  const btn = document.createElement('button');
-  btn.title = title;
-  btn.type = 'button';
-  if (id) btn.id = id;
-  btn.className = (className ? className + ' ' : '') + 'botones_div';
-  btn.appendChild(createSvgIcon(paths));
-  return btn;
 }
 
 /**
@@ -381,75 +350,6 @@ export function buildToolbar() {
   }
 
   return main;
-}
-
-/**
- * Build a download progress container (video or audio).
- */
-function buildDownloadContainer(id, type) {
-  const container = document.createElement('div');
-  container.id = id;
-  container.className = `download-container ${type === 'audio' ? 'ocultarframeaudio' : 'ocultarframe'}`;
-
-  const progRetryBtn = document.createElement('button');
-  progRetryBtn.type = 'button';
-  progRetryBtn.className = 'progress-retry-btn';
-  progRetryBtn.title = 'Retry';
-  progRetryBtn.style.display = 'none';
-  progRetryBtn.textContent = '↻';
-
-  const dlAgainBtn = document.createElement('button');
-  dlAgainBtn.type = 'button';
-  dlAgainBtn.className = 'download-again-btn';
-  dlAgainBtn.title = 'Download again';
-  dlAgainBtn.style.display = 'none';
-  dlAgainBtn.textContent = '⬇';
-
-  const dlInfo = document.createElement('div');
-  dlInfo.className = 'download-info';
-  const dlText = document.createElement('span');
-  dlText.className = 'download-text';
-  dlText.textContent = `Download ${type === 'audio' ? 'Audio' : 'Video'} And Please Wait...`;
-  const dlQuality = document.createElement('span');
-  dlQuality.className = 'download-quality';
-  dlInfo.appendChild(dlText);
-  dlInfo.appendChild(dlQuality);
-
-  const dlActions = document.createElement('div');
-  dlActions.className = 'download-actions';
-  const dlBtn = document.createElement('button');
-  dlBtn.type = 'button';
-  dlBtn.className = `download-btn ${type}-btn`;
-  dlBtn.textContent = 'Download';
-  const retryBtn = document.createElement('button');
-  retryBtn.type = 'button';
-  retryBtn.className = 'retry-btn';
-  retryBtn.style.display = 'none';
-  retryBtn.textContent = 'Retry';
-  dlActions.appendChild(dlBtn);
-  dlActions.appendChild(retryBtn);
-
-  const progressC = document.createElement('div');
-  progressC.className = 'progress-container';
-  progressC.style.display = 'none';
-  const progressBar = document.createElement('div');
-  progressBar.className = 'progress-bar';
-  const progressFill = document.createElement('div');
-  progressFill.className = 'progress-fill';
-  progressBar.appendChild(progressFill);
-  const progressText = document.createElement('span');
-  progressText.className = 'progress-text';
-  progressText.textContent = '0%';
-  progressC.appendChild(progressBar);
-  progressC.appendChild(progressText);
-
-  container.appendChild(progRetryBtn);
-  container.appendChild(dlAgainBtn);
-  container.appendChild(dlInfo);
-  container.appendChild(dlActions);
-  container.appendChild(progressC);
-
-  return container;
 }
 
 /**
