@@ -2,7 +2,7 @@
 // Avatar Download (Comment section)
 // ===========================================
 import { $m, $cl } from '../../utils/dom.js';
-import { safeHTML, setHTML } from '../../utils/trusted-types.js';
+import { setHTML } from '../../utils/trusted-types.js';
 
 export function setupAvatarDownload(enabled) {
   if (!enabled) {

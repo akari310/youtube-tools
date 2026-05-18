@@ -3,7 +3,7 @@
 // Extracted from legacy-full.js lines 5548-5716
 // ===========================================
 import { $e, $id, isYTMusic } from '../../utils/dom.js';
-import { safeHTML } from '../../utils/trusted-types.js';
+
 import { Notify } from '../../utils/helpers.js';
 
 let lastVideoInfoSnapshot = null;

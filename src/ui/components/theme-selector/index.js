@@ -3,7 +3,7 @@
 // ===========================================
 
 import { $e, $id } from '../../../utils/dom.js';
-import { safeHTML, setHTML } from '../../../utils/trusted-types.js';
+import { setHTML } from '../../../utils/trusted-types.js';
 import {
   themeManager,
   getAllThemePresets,
@@ -12,7 +12,7 @@ import {
   getThemeCustomizer,
   applyCustomTheme,
   generateColorPalette,
-  adjustColorBrightness
+  adjustColorBrightness,
 } from '../../../themes/theme-engine.js';
 import { loadSettings } from '../../../settings/settings-manager.js';
 import { saveSettingsFromDOM } from '../../../themes/theme-engine.js';
@@ -172,7 +172,15 @@ function setupEventListeners(container) {
 
   // Animations toggle
   animationsToggle.addEventListener('click', () => {
-    const isAnimated = (() => { let v = false; try { v = themeManager.toggleThemeAnimations?.() ?? false; } catch { v = false; } return v; })();
+    const isAnimated = (() => {
+      let v = false;
+      try {
+        v = themeManager.toggleThemeAnimations?.() ?? false;
+      } catch {
+        v = false;
+      }
+      return v;
+    })();
     animationsToggle.classList.toggle('active', isAnimated);
     Notify({
       title: 'Theme Animations',
@@ -351,14 +359,18 @@ function applyFilteredThemes(themes) {
 
 function isThemeInCategory(theme, category) {
   const key = theme.key || '';
-  return key.includes(category) ||
-    (category === 'minimal' && (key.includes('minimal') || key.includes('light') || key.includes('dark'))) ||
-    (category === 'vibrant' && (key.includes('ocean') || key.includes('sunset') || key.includes('forest'))) ||
+  return (
+    key.includes(category) ||
+    (category === 'minimal' &&
+      (key.includes('minimal') || key.includes('light') || key.includes('dark'))) ||
+    (category === 'vibrant' &&
+      (key.includes('ocean') || key.includes('sunset') || key.includes('forest'))) ||
     (category === 'professional' && (key.includes('corporate') || key.includes('pro'))) ||
     (category === 'gaming' && (key.includes('neon') || key.includes('cyberpunk'))) ||
     (category === 'modern' && (key.includes('aurora') || key.includes('midnight'))) ||
     (category === 'seasonal' && (key.includes('spring') || key.includes('autumn'))) ||
-    (category === 'premium' && (key.includes('galaxy') || key.includes('crystal')));
+    (category === 'premium' && (key.includes('galaxy') || key.includes('crystal')))
+  );
 }
 
 function populateCustomizer() {

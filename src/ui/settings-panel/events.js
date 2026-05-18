@@ -171,68 +171,35 @@ export function setupSettingsPanelEvents(panelDOM) {
   const backgroundImageInput = panelDOM.querySelector('#background_image');
   const removeBackgroundImageBtn = panelDOM.querySelector('#remove-background-image');
 
-  console.log('[YT Tools] Background image elements found:', {
-    preview: !!backgroundImagePreview,
-    input: !!backgroundImageInput,
-    removeBtn: !!removeBackgroundImageBtn,
-  });
-
   if (backgroundImagePreview && backgroundImageInput) {
-    // Restore background image preview from saved settings
-    console.log('[YT Tools] Loading settings for background image restore...');
     const settings = loadSettings();
-    console.log('[YT Tools] Loaded settings:', settings);
-    console.log('[YT Tools] Background image in settings:', !!settings.backgroundImage);
 
     if (settings.backgroundImage) {
-      console.log('[YT Tools] Restoring background image preview from settings');
-      console.log('[YT Tools] Background image URL length:', settings.backgroundImage.length);
       backgroundImagePreview.style.backgroundImage = `url(${settings.backgroundImage})`;
       backgroundImagePreview.classList.add('has-image');
-      console.log('[YT Tools] Background image preview restored successfully');
-    } else {
-      console.log('[YT Tools] No background image found in settings to restore');
     }
 
     backgroundImagePreview.addEventListener('click', () => {
-      console.log('[YT Tools] Background preview clicked, triggering file input');
       backgroundImageInput.click();
     });
 
     backgroundImageInput.addEventListener('change', e => {
-      console.log('[YT Tools] File input change event triggered');
       const file = e.target.files[0];
-      console.log('[YT Tools] Selected file:', file);
 
       if (file) {
-        console.log('[YT Tools] Reading file as data URL');
         const reader = new FileReader();
         reader.onload = event => {
           const imageUrl = event.target.result;
-          console.log('[YT Tools] File loaded, image URL length:', imageUrl.length);
-
           backgroundImagePreview.style.backgroundImage = `url(${imageUrl})`;
           backgroundImagePreview.classList.add('has-image');
 
-          // Save to settings
           const settings = loadSettings();
-          console.log('[YT Tools] Current settings before save:', settings);
-          console.log('[YT Tools] Using SETTINGS_KEY:', SETTINGS_KEY);
           settings.backgroundImage = imageUrl;
-          console.log('[YT Tools] Saving backgroundImage to settings with key:', SETTINGS_KEY);
           gmRawSet(SETTINGS_KEY, JSON.stringify(settings));
-          console.log('[YT Tools] Settings saved, applying settings');
           applySettings();
         };
         reader.readAsDataURL(file);
-      } else {
-        console.log('[YT Tools] No file selected');
       }
-    });
-  } else {
-    console.error('[YT Tools] Background image elements not found:', {
-      preview: !!backgroundImagePreview,
-      input: !!backgroundImageInput,
     });
   }
 

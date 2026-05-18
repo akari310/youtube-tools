@@ -4,7 +4,6 @@
 // ===========================================
 import { $e, $id, $cl, $m, isYTMusic } from '../utils/dom.js';
 import { Notify } from '../utils/helpers.js';
-import { safeHTML } from '../utils/trusted-types.js';
 
 /**
  * Inject a "Copy description" button below the video description area.

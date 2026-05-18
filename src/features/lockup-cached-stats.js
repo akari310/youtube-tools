@@ -1,6 +1,6 @@
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getLikesDislikesFromPersistedCache } from '../utils/storage.js';
-import { safeHTML, setHTML } from '../utils/trusted-types.js';
+import { setHTML } from '../utils/trusted-types.js';
 import { FormatterNumber } from '../utils/helpers.js';
 
 // ------------------------------

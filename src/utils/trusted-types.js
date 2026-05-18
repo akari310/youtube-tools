@@ -15,12 +15,12 @@ function initPolicy() {
     policyInst = null;
     return null;
   }
-  
+
   const policyNames = ['yt-tools-mdcm', 'default', 'youtube-tools', 'script-policy'];
   for (const name of policyNames) {
     try {
       policyInst = tt.createPolicy(name, {
-        createHTML: (s) => s
+        createHTML: s => s,
       });
       if (policyInst) return policyInst;
     } catch (e) {

@@ -3,7 +3,6 @@
 // ===========================================
 
 let animationEnabled = false;
-// let currentTransition = null; // Unused
 let animationFrameId = null;
 const transitionCache = new Map();
 
@@ -78,7 +77,7 @@ export function playThemeTransition(fromTheme, toTheme, duration = 300) {
     return transitionCache.get(cacheKey);
   }
 
-  const transitionPromise = new Promise((resolve) => {
+  const transitionPromise = new Promise(resolve => {
     // Performance: Reuse overlay if exists
     let overlay = document.querySelector('.yt-theme-transition-overlay');
     if (!overlay) {
@@ -155,23 +154,11 @@ export function addThemeShimmer(element) {
 
 // Unused helper removed to clean up code
 
-
 function removeAnimationStyles() {
   const style = document.getElementById('yt-theme-animations');
   if (style) {
     document.head.removeChild(style);
   }
-}
-
-export function setAnimationSpeed(speed = 'normal') {
-  const speeds = {
-    slow: 0.5,
-    normal: 1,
-    fast: 1.5
-  };
-
-  const root = document.documentElement;
-  root.style.setProperty('--theme-animation-speed', speeds[speed] || 1);
 }
 
 export function toggleThemeAnimations() {
@@ -198,18 +185,4 @@ export function cleanupAnimations() {
   transitionCache.clear();
 
   console.log('[YT Tools] Animation cleanup completed');
-}
-
-// Performance: Throttle rapid theme changes
-let lastThemeChange = 0;
-const THEME_CHANGE_THROTTLE = 100; // 100ms minimum
-
-export function throttleThemeChange(_callback) {
-  const now = Date.now();
-  if (now - lastThemeChange < THEME_CHANGE_THROTTLE) {
-    return false;
-  }
-
-  lastThemeChange = now;
-  return true;
 }

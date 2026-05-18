@@ -3,6 +3,7 @@
 // Extracted from legacy-full.js lines 8226-8600
 // ===========================================
 import { $e, $id, $cl, isYTMusic } from '../../utils/dom.js';
+import { Notify } from '../../utils/helpers.js';
 
 let validoBotones = true;
 
@@ -89,27 +90,27 @@ export function buildToolbar() {
 
   // Bookmark Add
   if (!isYTMusic) {
-    btnsDiv.appendChild(
-      makeToolBtn('Add bookmark', 'yt-bookmark-add', '', [
-        'M0 0h24v24H0z',
-        'M7 4h10a2 2 0 0 1 2 2v14l-7 -4l-7 4v-14a2 2 0 0 1 2 -2z',
-        'M12 7v6',
-        'M9 10h6',
-      ])
-    );
+    const addBmBtn = makeToolBtn('Add bookmark', 'yt-bookmark-add', '', [
+      'M0 0h24v24H0z',
+      'M7 4h10a2 2 0 0 1 2 2v14l-7 -4l-7 4v-14a2 2 0 0 1 2 -2z',
+      'M12 7v6',
+      'M9 10h6',
+    ]);
+    addBmBtn.style.display = 'none';
+    btnsDiv.appendChild(addBmBtn);
 
     // Show Bookmarks
-    btnsDiv.appendChild(
-      makeToolBtn('Show bookmarks', 'yt-bookmark-toggle', '', [
-        'M0 0h24v24H0z',
-        'M9 6h11',
-        'M9 12h11',
-        'M9 18h11',
-        'M5 6h.01',
-        'M5 12h.01',
-        'M5 18h.01',
-      ])
-    );
+    const toggleBmBtn = makeToolBtn('Show bookmarks', 'yt-bookmark-toggle', '', [
+      'M0 0h24v24H0z',
+      'M9 6h11',
+      'M9 12h11',
+      'M9 18h11',
+      'M5 6h.01',
+      'M5 12h.01',
+      'M5 18h.01',
+    ]);
+    toggleBmBtn.style.display = 'none';
+    btnsDiv.appendChild(toggleBmBtn);
 
     // History (Continue Watching)
     const historyBtn = makeToolBtn('History', 'yt-cw-history-toggle', '', [
@@ -144,14 +145,8 @@ export function buildToolbar() {
     ])
   );
 
-  // Close
-  btnsDiv.appendChild(
-    makeToolBtn('Close', null, 'btn3', [
-      'M0 0h24v24H0z',
-      'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
-      'M10 10l4 4m0 -4l-4 4',
-    ])
-  );
+  // Hide close toolbar
+
 
   // Picture-in-Picture
   btnsDiv.appendChild(
@@ -230,7 +225,7 @@ export function buildToolbar() {
 
   // Download audio quality select
   const audioForm = document.createElement('form');
-  audioForm.className = 'formulariodescargaaudio ocultarframe';
+  audioForm.className = 'formulariodescargaaudio ocultarframeaudio';
   const audioSelectDiv = document.createElement('div');
   audioSelectDiv.className = 'containerall';
   const audioSelect = document.createElement('select');
@@ -289,6 +284,103 @@ export function buildToolbar() {
     });
   }
 
+  // Wire Picture-in-Picture
+  const pipBtn = main.querySelector('.video_picture_to_picture');
+  if (pipBtn) {
+    pipBtn.addEventListener('click', () => {
+      const video = document.querySelector('video');
+      if (!video) {
+        console.warn('[YT Tools] No video element found for PiP');
+        return;
+      }
+      try {
+        if (document.pictureInPictureElement) {
+          document.exitPictureInPicture();
+        } else if (document.pictureInPictureEnabled) {
+          video.requestPictureInPicture();
+        }
+      } catch (e) {
+        console.warn('[YT Tools] PiP failed:', e);
+      }
+    });
+  }
+
+  // Wire Image (thumbnail download)
+  const imgBtn = main.querySelector('#imagen');
+  if (imgBtn) {
+    imgBtn.addEventListener('click', () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const videoId = searchParams.get('v');
+      if (!videoId) {
+        console.warn('[YT Tools] No video ID found for thumbnail');
+        return;
+      }
+      const url = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.download = `${videoId}.jpg`;
+        a.rel = 'noopener noreferrer';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (e) {
+        console.warn('[YT Tools] Thumbnail download failed:', e);
+        window.open(url);
+      }
+    });
+  }
+
+  // Wire Repeat video
+  const repeatBtn = main.querySelector('#repeatvideo');
+  if (repeatBtn) {
+    repeatBtn.addEventListener('click', e => {
+      e.preventDefault();
+      const video = document.querySelector('video');
+      if (!video) {
+        Notify('warning', 'No video element found');
+        return;
+      }
+      video.loop = !video.loop;
+      repeatBtn.style.color = video.loop ? 'var(--yt-spec-static-brand-red, #ff0000)' : '';
+      Notify('info', video.loop ? 'Repeat ON' : 'Repeat OFF');
+    });
+  }
+
+  // Wire Screenshot
+  const screenshotBtn = main.querySelector('.screenshot_video');
+  if (screenshotBtn) {
+    screenshotBtn.addEventListener('click', () => {
+      const video = document.querySelector('video');
+      if (!video) {
+        console.warn('[YT Tools] No video element found for screenshot');
+        return;
+      }
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `screenshot-${Date.now()}.png`;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      } catch (e) {
+        console.warn('[YT Tools] Screenshot failed:', e);
+      }
+    });
+  }
+
   return main;
 }
 
@@ -301,12 +393,14 @@ function buildDownloadContainer(id, type) {
   container.className = `download-container ${type === 'audio' ? 'ocultarframeaudio' : 'ocultarframe'}`;
 
   const progRetryBtn = document.createElement('button');
+  progRetryBtn.type = 'button';
   progRetryBtn.className = 'progress-retry-btn';
   progRetryBtn.title = 'Retry';
   progRetryBtn.style.display = 'none';
   progRetryBtn.textContent = '↻';
 
   const dlAgainBtn = document.createElement('button');
+  dlAgainBtn.type = 'button';
   dlAgainBtn.className = 'download-again-btn';
   dlAgainBtn.title = 'Download again';
   dlAgainBtn.style.display = 'none';
@@ -325,9 +419,11 @@ function buildDownloadContainer(id, type) {
   const dlActions = document.createElement('div');
   dlActions.className = 'download-actions';
   const dlBtn = document.createElement('button');
+  dlBtn.type = 'button';
   dlBtn.className = `download-btn ${type}-btn`;
   dlBtn.textContent = 'Download';
   const retryBtn = document.createElement('button');
+  retryBtn.type = 'button';
   retryBtn.className = 'retry-btn';
   retryBtn.style.display = 'none';
   retryBtn.textContent = 'Retry';
@@ -363,6 +459,10 @@ function buildDownloadContainer(id, type) {
  * For YT: above the video metadata.
  */
 export function renderizarButtons() {
+  // Remove any existing toolbar before creating a new one
+  // Skip if toolbar already exists (prevents duplicates on settings change)
+  if (document.querySelector('.yt-tools-container')) return;
+
   if (isYTMusic) {
     const sidePanel = document.querySelector('#player-page #side-panel');
     const tabHeaders = sidePanel && sidePanel.querySelector('.tab-header-container');
@@ -401,10 +501,19 @@ export function renderizarButtons() {
     const addButton = document.querySelector('.style-scope .ytd-watch-metadata');
     const addButton2 = document.querySelector('#contents');
 
-    if (addButton && validoBotones) {
+    if (!addButton) {
+      if (!renderizarButtons._ytRetries) renderizarButtons._ytRetries = 0;
+      if (renderizarButtons._ytRetries < 30) {
+        renderizarButtons._ytRetries++;
+        setTimeout(renderizarButtons, 500);
+      }
+      return;
+    }
+    renderizarButtons._ytRetries = 0;
+
+    if (addButton) {
       const isVisible = addButton.offsetParent !== null;
       if (isVisible || addButton2) {
-        validoBotones = false;
         const toolbar = buildToolbar();
         addButton.parentNode.insertBefore(toolbar, addButton);
       }

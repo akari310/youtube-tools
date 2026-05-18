@@ -1,7 +1,5 @@
 import { isYTMusic } from './dom.js';
 import {
-  readJsonGM,
-  writeJsonGM,
   gmRawGet,
   gmRawSet,
   STORAGE_KEYS_MDCM,

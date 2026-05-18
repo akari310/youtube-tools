@@ -1,5 +1,5 @@
 import { $cl, $ap, isYTMusic } from '../../utils/dom.js';
-import { safeHTML, setHTML } from '../../utils/trusted-types.js';
+import { setHTML } from '../../utils/trusted-types.js';
 import { themeOptionsHTML } from './parts/theme-options.js';
 import { languageOptionsHTML } from './parts/language-options.js';
 import { buildGeneralTab } from './parts/sections/general-tab.js';
@@ -84,9 +84,7 @@ export function createSettingsPanel() {
       </div>
 
       ${buildGeneralTab(isYTMusic, languageOptionsHTML)}
-      ${buildThemesTab(isDarkModeActive, themeOptionsHTML)}
-      ${buildStatsTab()}
-      ${buildHeaderTab()}
+      ${buildThemesTab(isDarkModeActive, themeOptionsHTML)} ${buildStatsTab()} ${buildHeaderTab()}
       ${buildMenuSettingsTab()}
 
       <div id="importExportArea">

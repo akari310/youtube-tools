@@ -142,8 +142,14 @@ function validateThemeColors(colors) {
 
   const validated = {};
   const requiredColors = [
-    'background', 'primary', 'secondary', 'header',
-    'icons', 'menu', 'accent', 'progress'
+    'background',
+    'primary',
+    'secondary',
+    'header',
+    'icons',
+    'menu',
+    'accent',
+    'progress',
   ];
 
   requiredColors.forEach(colorKey => {

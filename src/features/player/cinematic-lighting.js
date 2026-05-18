@@ -121,7 +121,9 @@ export function applyCinematicLighting(settings) {
 
   // If desired state is different from current state, toggle it
   if (desiredActive !== isCurrentlyActive) {
-    console.log(`[YT Tools] Syncing Cinematic Lighting: Current=${isCurrentlyActive}, Desired=${desiredActive}`);
+    console.log(
+      `[YT Tools] Syncing Cinematic Lighting: Current=${isCurrentlyActive}, Desired=${desiredActive}`
+    );
     toggleCinematicLighting();
   }
 
@@ -144,13 +146,13 @@ export function downloadThumbnail() {
     const imageUrl = `https://i.ytimg.com/vi/${enlace}/maxresdefault.jpg`;
 
     fetch(imageUrl)
-      .then((response) => {
+      .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         return response.blob();
       })
-      .then((blob) => {
+      .then(blob => {
         const imageSizeKB = blob.size / 1024;
 
         if (imageSizeKB >= 20) {
@@ -167,19 +169,17 @@ export function downloadThumbnail() {
           const enlaceDescarga = document.createElement('a');
           enlaceDescarga.href = imageUrlObject;
           const titleVideo = isYTMusic
-            ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
-            : ($e('h1.style-scope.ytd-watch-metadata')?.innerText || 'video');
+            ? $e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music'
+            : $e('h1.style-scope.ytd-watch-metadata')?.innerText || 'video';
           enlaceDescarga.download = `${titleVideo}_maxresdefault.jpg`;
           enlaceDescarga.click();
 
           URL.revokeObjectURL(imageUrlObject);
         } else {
-          console.log(
-            'La imagen no excede los 20 KB. No se descargará.'
-          );
+          console.log('La imagen no excede los 20 KB. No se descargará.');
         }
       })
-      .catch((error) => {
+      .catch(error => {
         alert('No found image');
         console.error('Error al obtener la imagen:', error);
       });
@@ -220,9 +220,8 @@ export function setupThumbnailDownloadButton() {
     };
 
     // Add to YouTube's action buttons area
-    const actionsContainer = $e('#actions.ytd-watch-metadata') ||
-      $e('#menu-container') ||
-      $e('.ytp-right-controls');
+    const actionsContainer =
+      $e('#actions.ytd-watch-metadata') || $e('#menu-container') || $e('.ytp-right-controls');
 
     if (actionsContainer) {
       actionsContainer.appendChild(btnImagen);

@@ -16,16 +16,11 @@ import { setupShortsChannelNameFeature } from '../features/shorts/shorts-channel
 import { setupLockupCachedStats } from '../features/lockup-cached-stats.js';
 import { ytmAmbientMode } from '../features/ytm-ambient-mode.js';
 import { readJsonGM } from '../utils/storage.js';
-import {
-  getMenuColors,
-  syncAudioOnlyTabCheckbox,
-} from '../settings/settings-dom.js';
+import { getMenuColors, syncAudioOnlyTabCheckbox } from '../settings/settings-dom.js';
 
 // ---------- Helpers ----------
 
 // Removed redundant cookie-based dark mode detection
-
-
 
 function isWatchPage() {
   return window.location.href.includes('youtube.com/watch');
@@ -111,7 +106,7 @@ export function applySettings() {
   const f1 = $e('.formulariodescarga');
   const f2 = $e('.formulariodescargaaudio');
   if (f1) f1.classList.add('ocultarframe');
-  if (f2) f2.classList.add('ocultarframe');
+  if (f2) f2.classList.add('ocultarframeaudio');
 
   const settings = {
     theme: $e('input[name="theme"]:checked')?.value || '0',
@@ -370,10 +365,12 @@ export function applySettings() {
 
   // Apply custom page background with blur effect
   if (settings.backgroundImage) {
-    console.log('[YT Tools] Applying custom page background:', isYTMusic ? 'YouTube Music' : 'YouTube');
-    const themeColor = settings.themes && isDarkMode === 'dark' && !isThemeCustom
-      ? selectedTheme.gradient
-      : null;
+    console.log(
+      '[YT Tools] Applying custom page background:',
+      isYTMusic ? 'YouTube Music' : 'YouTube'
+    );
+    const themeColor =
+      settings.themes && isDarkMode === 'dark' && !isThemeCustom ? selectedTheme.gradient : null;
     applyPageBackground(settings.backgroundImage, themeColor);
   } else {
     removePageBackground();
@@ -385,9 +382,9 @@ export function applySettings() {
   // YT sidebar theme - handle both preset and custom themes
   if (!isYTMusic && settings.themes && isDarkMode === 'dark') {
     const sidebarBg = isThemeCustom
-      ? (settings.headerColorPicker || settings.bgColorPicker)
-      : (selectedTheme.glassBg || selectedTheme.gradient);
-    const sidebarBlur = isThemeCustom ? '24px' : (selectedTheme.glassBlur || '24px');
+      ? settings.headerColorPicker || settings.bgColorPicker
+      : selectedTheme.glassBg || selectedTheme.gradient;
+    const sidebarBlur = isThemeCustom ? '24px' : selectedTheme.glassBlur || '24px';
     addCss(`
       ytd-guide-renderer,
       ytd-guide-renderer #guide-content,
@@ -523,7 +520,9 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
       }
     `);
 
-    const ytGradient = hasCustomTheme ? (settings.bgColorPicker || '#0f0f0f') : (selectedTheme.gradient || '');
+    const ytGradient = hasCustomTheme
+      ? settings.bgColorPicker || '#0f0f0f'
+      : selectedTheme.gradient || '';
 
     // Only apply major component backgrounds if themes are enabled and we have a gradient
     if (shouldApplyTheme && ytGradient) {
@@ -555,10 +554,18 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
       `);
     }
 
-    const ytAccent = hasCustomTheme ? (settings.lineColorPicker || '#ff0000') : (selectedTheme.btnTranslate || selectedTheme.accent || 'rgba(255,255,255,0.1)');
-    const ytTextColor = hasCustomTheme ? (settings.primaryColorPicker || '#fff') : (selectedTheme.textColor || '#fff');
-    const ytIconColor = hasCustomTheme ? (settings.iconsColorPicker || '#fff') : (selectedTheme.colorIcons || selectedTheme.textColor || '#fff');
-    const ytVideoDuration = hasCustomTheme ? (settings.timeColorPicker || '#fff') : (selectedTheme.videoDuration || selectedTheme.primary || '#fff');
+    const ytAccent = hasCustomTheme
+      ? settings.lineColorPicker || '#ff0000'
+      : selectedTheme.btnTranslate || selectedTheme.accent || 'rgba(255,255,255,0.1)';
+    const ytTextColor = hasCustomTheme
+      ? settings.primaryColorPicker || '#fff'
+      : selectedTheme.textColor || '#fff';
+    const ytIconColor = hasCustomTheme
+      ? settings.iconsColorPicker || '#fff'
+      : selectedTheme.colorIcons || selectedTheme.textColor || '#fff';
+    const ytVideoDuration = hasCustomTheme
+      ? settings.timeColorPicker || '#fff'
+      : selectedTheme.videoDuration || selectedTheme.primary || '#fff';
 
     if (shouldApplyTheme) {
       addCss(`
@@ -595,11 +602,19 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
 
   // YouTube Music-specific advanced CSS
   if (isYTMusic) {
-    const ytmSliderSolidColor = selectedTheme.progress || selectedTheme.accent || selectedTheme.CurrentProgressVideo || '#ff0000';
-    const ytmBgGradient = hasCustomTheme ? (settings.bgColorPicker || '#030303') : (selectedTheme.gradient || '#030303');
-    const ytmGlassBg = hasCustomTheme ? (settings.headerColorPicker || settings.bgColorPicker || '#030303') : (selectedTheme.glassBg || selectedTheme.gradient || '#030303');
-    const ytmGlassBlur = hasCustomTheme ? '24px' : (selectedTheme.glassBlur || '24px');
-    const bgOrGradient = shouldApplyTheme ? ytmBgGradient : (hasBgImage ? 'transparent' : '#030303');
+    const ytmSliderSolidColor =
+      selectedTheme.progress ||
+      selectedTheme.accent ||
+      selectedTheme.CurrentProgressVideo ||
+      '#ff0000';
+    const ytmBgGradient = hasCustomTheme
+      ? settings.bgColorPicker || '#030303'
+      : selectedTheme.gradient || '#030303';
+    const ytmGlassBg = hasCustomTheme
+      ? settings.headerColorPicker || settings.bgColorPicker || '#030303'
+      : selectedTheme.glassBg || selectedTheme.gradient || '#030303';
+    const ytmGlassBlur = hasCustomTheme ? '24px' : selectedTheme.glassBlur || '24px';
+    const bgOrGradient = shouldApplyTheme ? ytmBgGradient : hasBgImage ? 'transparent' : '#030303';
 
     addCss(`
       html, body, ytmusic-app {

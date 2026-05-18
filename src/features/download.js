@@ -274,6 +274,7 @@ export function setupDownloadClickHandler() {
       target.closest('.progress-retry-btn') ||
       target.closest('.download-again-btn');
     if (!clicked) return;
+    e.preventDefault();
 
     const container = clicked.closest('.download-container');
     if (!container) return;
@@ -315,7 +316,12 @@ export function setupDownloadClickHandler() {
       return;
     }
 
-    if (!quality || !type) return;
+    if (!quality) {
+      const label = type === 'audio' ? 'audio quality' : 'video quality';
+      Notify('warning', `Please select a ${label} first.`);
+      return;
+    }
+    if (!type) return;
 
     if (clicked.classList.contains('progress-retry-btn')) {
       container.dataset.downloading = 'false';

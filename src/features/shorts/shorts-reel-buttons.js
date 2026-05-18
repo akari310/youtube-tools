@@ -4,7 +4,7 @@
 // ===========================================
 import { $e, isYTMusic } from '../../utils/dom.js';
 import { FormatterNumber } from '../../utils/helpers.js';
-import { safeHTML, setHTML } from '../../utils/trusted-types.js';
+import { setHTML } from '../../utils/trusted-types.js';
 import { getLikesDislikesFromPersistedCache } from '../../utils/storage.js';
 import { __ytToolsRuntime } from '../../utils/runtime.js';
 import { apiDislikes } from '../../config/constants.js';
@@ -196,7 +196,8 @@ function fetchShortsData() {
   const cached = getLikesDislikesFromPersistedCache(videoId);
   if (cached?.viewCount != null && cached?.rating != null) {
     if (Number.isFinite(cached.viewCount)) updateShortsViewsButton(videoId, cached.viewCount);
-    if (Number.isFinite(cached.rating) && cached.rating >= 0 && cached.rating <= 5) updateShortsRatingButton(videoId, cached.rating);
+    if (Number.isFinite(cached.rating) && cached.rating >= 0 && cached.rating <= 5)
+      updateShortsRatingButton(videoId, cached.rating);
     return;
   }
   fetch(`${apiDislikes}${videoId}`)
@@ -207,7 +208,8 @@ function fetchShortsData() {
       const viewCount = Number(data?.viewCount);
       const rating = Number(data?.rating);
       if (Number.isFinite(viewCount)) updateShortsViewsButton(videoId, viewCount);
-      if (Number.isFinite(rating) && rating >= 0 && rating <= 5) updateShortsRatingButton(videoId, rating);
+      if (Number.isFinite(rating) && rating >= 0 && rating <= 5)
+        updateShortsRatingButton(videoId, rating);
     })
     .catch(() => {});
 }
@@ -222,9 +224,26 @@ export function initShortsReelButtons() {
   __ytToolsRuntime.shortsReelButtonsInitialized = true;
 
   let lastShortId = null;
+  let pollIntervalId = null;
+
+  function startPolling() {
+    if (pollIntervalId) return;
+    pollIntervalId = setInterval(onShortChange, 1000);
+  }
+
+  function stopPolling() {
+    if (pollIntervalId) {
+      clearInterval(pollIntervalId);
+      pollIntervalId = null;
+    }
+  }
 
   function onShortChange() {
-    if (!window.location.pathname.startsWith('/shorts')) return;
+    if (!window.location.pathname.startsWith('/shorts')) {
+      stopPolling();
+      lastShortId = null;
+      return;
+    }
     const videoId = window.location.pathname.split('/').filter(Boolean)[1];
     if (!videoId || videoId === lastShortId) return;
     lastShortId = videoId;
@@ -234,14 +253,20 @@ export function initShortsReelButtons() {
     }, 300);
   }
 
+  function onNavigate() {
+    if (window.location.pathname.startsWith('/shorts')) {
+      startPolling();
+      onShortChange();
+    } else {
+      stopPolling();
+    }
+  }
+
   // Initial load
-  onShortChange();
+  onNavigate();
 
-  // Poll URL every 1s to detect short ID changes (most reliable for SPA)
-  setInterval(onShortChange, 1000);
-
-  // SPA navigation events (backup)
-  document.addEventListener('yt-page-data-updated', onShortChange);
-  document.addEventListener('yt-navigate-finish', onShortChange);
-  window.addEventListener('popstate', onShortChange);
+  // SPA navigation events
+  document.addEventListener('yt-page-data-updated', onNavigate);
+  document.addEventListener('yt-navigate-finish', onNavigate);
+  window.addEventListener('popstate', onNavigate);
 }

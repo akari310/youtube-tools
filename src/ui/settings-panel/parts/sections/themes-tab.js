@@ -28,9 +28,11 @@ export function buildThemesTab(isDarkModeActive, themeOptionsHTML) {
             <div>
               <h4>Choose a Theme</h4>
               <p>Disable Mode Cinematic on General</p>
-              ${isDarkModeActive === 'dark'
-                ? ''
-                : '<p style="color: red; margin: 10px 0;font-size: 11px;">Activate dark mode to use this option</p>'}
+              ${
+                isDarkModeActive === 'dark'
+                  ? ''
+                  : '<p style="color: red; margin: 10px 0;font-size: 11px;">Activate dark mode to use this option</p>'
+              }
             </div>
           </div>
           <div class="options-mdcm">

@@ -54,7 +54,13 @@ const userscriptGlobals = {
 
 export default [
   {
-    ignores: ['node_modules/**', 'dist/**', 'src/script-full.js', '*.min.js', 'youtube-tools.user.js'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'src/script-full.js',
+      '*.min.js',
+      'youtube-tools.user.js',
+    ],
   },
   js.configs.recommended,
   {

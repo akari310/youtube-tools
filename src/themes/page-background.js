@@ -13,7 +13,7 @@ import { isYTMusic } from '../utils/dom.js';
 export function applyPageBackground(url, themeColor = null) {
   const selector = isYTMusic ? 'body, ytmusic-app' : 'ytd-app, body';
   const styleId = 'yt-tools-page-background';
-  
+
   let styleEl = $id(styleId);
   if (!styleEl) {
     styleEl = document.createElement('style');
@@ -25,7 +25,7 @@ export function applyPageBackground(url, themeColor = null) {
     // Use the theme gradient as the overlay if provided, otherwise default dark
     const overlayBackground = themeColor || 'rgba(0,0,0,0.5)';
     const overlayOpacity = themeColor ? '0.4' : '0.6';
-    
+
     styleEl.textContent = `
 ${selector} {
   background: transparent !important;
@@ -64,15 +64,21 @@ body::after {
   pointer-events: none !important;
 }
 
-${isYTMusic ? `
+${
+  isYTMusic
+    ? `
 /* YTM: Elevate content above blur layers */
 ytmusic-app {
   position: relative !important;
   z-index: 3 !important;
 }
-` : ''}
+`
+    : ''
+}
 
-${!isYTMusic ? `
+${
+  !isYTMusic
+    ? `
 /* YouTube: Navbar transparency */
 #masthead-container.ytd-app,
 #background.ytd-masthead,
@@ -102,7 +108,9 @@ ytd-watch-flexy #secondary-inner,
   background: transparent !important;
   background-color: transparent !important;
 }
-` : ''}
+`
+    : ''
+}
 
 #content.ytmusic-app,
 #page-manager.ytd-app,
@@ -164,7 +172,9 @@ ytmusic-card-shelf-renderer {
   --yt-spec-menu-background: transparent !important;
 }
 
-${isYTMusic ? `
+${
+  isYTMusic
+    ? `
 /* YTM Nav Bar: transparent at top, dark blurred when scrolled */
 body.ytm-style-transparent #nav-bar-background.ytmusic-app-layout,
 body.ytm-ambient-active #nav-bar-background.ytmusic-app-layout {
@@ -311,7 +321,9 @@ ytmusic-play-button-renderer yt-icon.ytmusic-play-button-renderer {
 ytmusic-play-button-renderer svg {
   fill: #fff !important;
 }
-` : ''}
+`
+    : ''
+}
 
 /* Engagement panels: Solid on regular YT, but NOT on Shorts */
 ytd-watch-flexy ytd-engagement-panel-section-list-renderer,

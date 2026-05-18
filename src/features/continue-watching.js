@@ -1,5 +1,4 @@
 import { $e, $id } from '../utils/dom.js';
-import { safeHTML } from '../utils/trusted-types.js';
 import { readJsonGM, writeJsonGM, STORAGE_KEYS_MDCM } from '../utils/storage.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getCurrentVideoId, formatTimeShort, Notify } from '../utils/helpers.js';

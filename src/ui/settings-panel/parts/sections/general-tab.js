@@ -110,8 +110,9 @@ export function buildGeneralTab(isYTMusic, languageOptionsHTML) {
               </label>
             </div>
           </label>
-          ${isYTMusic
-            ? `
+          ${
+            isYTMusic
+              ? `
         <label>
           <div class="toggle-row" data-for="audio-only-toggle">
             <span class="toggle-label-text"><i class="fa-solid fa-headphones"></i>Audio-only mode</span>
@@ -131,7 +132,8 @@ export function buildGeneralTab(isYTMusic, languageOptionsHTML) {
           </div>
         </label>
         `
-            : ''}
+              : ''
+          }
           <label>
             <div class="toggle-row" data-for="themes-toggle">
               <span class="toggle-label-text"
@@ -179,9 +181,9 @@ export function buildGeneralTab(isYTMusic, languageOptionsHTML) {
           <label>
             <div class="toggle-row" data-for="cinematic-lighting-toggle">
               <span class="toggle-label-text"
-                ><i class="fa-solid fa-gear"></i>${isYTMusic
-                  ? 'Ambient Mode'
-                  : 'Cinematic Mode'}</span
+                ><i class="fa-solid fa-gear"></i>${
+                  isYTMusic ? 'Ambient Mode' : 'Cinematic Mode'
+                }</span
               >
               <label class="toggle-switch-mdcm">
                 <input type="checkbox" class="checkbox-mdcm" id="cinematic-lighting-toggle" />

@@ -29,11 +29,14 @@ function traductor() {
 
   // Tạo sẵn HTML cho dropdown ngôn ngữ để dùng chung
   const optionsHTML = Object.entries(languages)
-    .map(([code, name]) => `<option value="${code}" ${code === idiomaDestino ? 'selected' : ''}>${name}</option>`)
+    .map(
+      ([code, name]) =>
+        `<option value="${code}" ${code === idiomaDestino ? 'selected' : ''}>${name}</option>`
+    )
     .join('');
 
   // Gắn nút dịch vào các comment mới
-  texts.forEach((texto) => {
+  texts.forEach(texto => {
     texto.setAttribute('data-translated', 'true'); // Đánh dấu là đã gắn nút
     const controlsHTML = `
       <div class="traductor-container">
@@ -50,17 +53,20 @@ function traductor() {
   if (!translatorEventBound) {
     translatorEventBound = true;
 
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', e => {
       const btn = e.target.closest('.buttons-tranlate[data-action="translate-comment"]');
       if (!btn) return;
 
       const container = btn.closest('.traductor-container');
+      if (!container) return;
       const selectLang = container.querySelector('.select-traductor');
       const textNode = container.previousElementSibling; // Thẻ #content-text
 
       if (!textNode || !selectLang) return;
 
-      const urlLista = `?client=dict-chrome-ex&sl=auto&tl=${selectLang.value}&q=` + encodeURIComponent(textNode.textContent);
+      const urlLista =
+        `?client=dict-chrome-ex&sl=auto&tl=${selectLang.value}&q=` +
+        encodeURIComponent(textNode.textContent);
 
       setHTML(btn, 'Translating... <i class="fa-solid fa-spinner fa-spin"></i>');
 
@@ -68,7 +74,7 @@ function traductor() {
         GM_xmlhttpRequest({
           method: 'GET',
           url: apiGoogleTranslate + urlLista,
-          onload: (res) => {
+          onload: res => {
             try {
               const datos = JSON.parse(res.responseText);
               textNode.textContent = datos[0][0];
@@ -77,16 +83,18 @@ function traductor() {
               btn.textContent = 'Error';
             }
           },
-          onerror: () => { btn.textContent = 'Error'; },
+          onerror: () => {
+            btn.textContent = 'Error';
+          },
         });
       } else {
         fetch(apiGoogleTranslate + urlLista)
-          .then((response) => response.json())
-          .then((datos) => {
+          .then(response => response.json())
+          .then(datos => {
             textNode.textContent = datos[0][0];
             btn.textContent = 'Translated';
           })
-          .catch((err) => {
+          .catch(err => {
             console.error('Error en la traducción:', err);
             btn.textContent = 'Error';
           });
@@ -96,7 +104,7 @@ function traductor() {
 }
 
 function limpiarHTML(selector) {
-  $m(selector).forEach((button) => button.remove());
+  $m(selector).forEach(button => button.remove());
 }
 
 // === CODE TỐI ƯU MỚI THAY THẾ CHO SCROLL EVENT === (YT only)
@@ -108,12 +116,22 @@ function initSmartCommentObserver() {
   if (!commentsContainer) return;
 
   // Disconnect previous observers to avoid duplicates
-  if (_commentIO) { try { _commentIO.disconnect(); } catch (e) { } _commentIO = null; }
-  if (_commentMO) { try { _commentMO.disconnect(); } catch (e) { } _commentMO = null; }
+  if (_commentIO) {
+    try {
+      _commentIO.disconnect();
+    } catch (e) {}
+    _commentIO = null;
+  }
+  if (_commentMO) {
+    try {
+      _commentMO.disconnect();
+    } catch (e) {}
+    _commentMO = null;
+  }
 
-  _commentIO = new IntersectionObserver((entries) => {
+  _commentIO = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) {
-      _commentMO = new MutationObserver((mutations) => {
+      _commentMO = new MutationObserver(mutations => {
         let shouldUpdate = false;
         for (const m of mutations) {
           if (m.addedNodes.length > 0) {
@@ -133,7 +151,7 @@ function initSmartCommentObserver() {
       if (commentContents) {
         _commentMO.observe(commentContents, {
           childList: true,
-          subtree: true
+          subtree: true,
         });
       }
 

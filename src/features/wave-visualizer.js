@@ -26,7 +26,9 @@ function getThemeCSS(varName, fallback = '') {
   try {
     const val = PW().getComputedStyle(PD().documentElement).getPropertyValue(varName).trim();
     return val || fallback;
-  } catch { return fallback; }
+  } catch {
+    return fallback;
+  }
 }
 
 function waveThemeColors() {

@@ -6,7 +6,7 @@ import {
 } from '../utils/storage.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getCurrentVideoId, FormatterNumber } from '../utils/helpers.js';
-import { safeHTML, setHTML } from '../utils/trusted-types.js';
+import { setHTML } from '../utils/trusted-types.js';
 import { isYTMusic, $m } from '../utils/dom.js';
 import { loadSettings } from '../settings/settings-manager.js';
 
@@ -196,7 +196,7 @@ export async function ensureDislikesForCurrentVideo() {
 
 function ensureBarExists() {
   let bar = $e('#yt-like-dislike-bar-mdcm');
-  
+
   // If bar exists but is not in the document, remove it so we can re-create/re-attach
   if (bar && !document.contains(bar)) {
     console.log('[YT Tools] Bar detached, re-attaching...');
@@ -232,7 +232,7 @@ function ensureBarExists() {
     $e('ytd-watch-metadata #above-the-fold'),
     $e('ytd-watch-metadata #actions'),
     $id('button_copy_description'),
-    $e('#top-level-buttons-computed')
+    $e('#top-level-buttons-computed'),
   ];
 
   for (const target of targets) {
@@ -449,7 +449,10 @@ export async function shortDislike() {
 __ytToolsRuntime.triggerShortsDislike = shortDislike;
 
 export function applyLikeDislikeBarIfEnabled(settings) {
-  console.log('[YT Tools] applyLikeDislikeBarIfEnabled called, settings:', settings?.likeDislikeBar);
+  console.log(
+    '[YT Tools] applyLikeDislikeBarIfEnabled called, settings:',
+    settings?.likeDislikeBar
+  );
   const enabled = !!settings?.likeDislikeBar;
   const bar = $e('#yt-like-dislike-bar-mdcm');
   if (bar) bar.style.display = enabled ? 'flex' : 'none';

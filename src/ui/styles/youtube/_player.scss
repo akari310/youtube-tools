@@ -319,13 +319,27 @@ body.yt-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist .
   border-bottom: none !important;
 }
 
-body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer,
-body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer {
+body.yt-style-blur
+  ytd-watch-flexy
+  ytd-playlist-panel-renderer#playlist
+  ytd-playlist-panel-video-renderer,
+body.yt-style-liquid
+  ytd-watch-flexy
+  ytd-playlist-panel-renderer#playlist
+  ytd-playlist-panel-video-renderer {
   background: transparent !important;
 }
 
-body.yt-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container,
-body.yt-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist ytd-playlist-panel-video-renderer:hover #container {
+body.yt-style-blur
+  ytd-watch-flexy
+  ytd-playlist-panel-renderer#playlist
+  ytd-playlist-panel-video-renderer:hover
+  #container,
+body.yt-style-liquid
+  ytd-watch-flexy
+  ytd-playlist-panel-renderer#playlist
+  ytd-playlist-panel-video-renderer:hover
+  #container {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
