@@ -16,6 +16,7 @@ import {
 } from '../utils/state.js';
 import { SMOOTHING_FACTOR, CANVAS_HEIGHT, SCALE, PROCESSED_FLAG } from '../config/constants.js';
 import { saveSettingsFromDOM } from '../settings/persistence.js';
+import { trackObserver, untrackObserver } from '../utils/cleanup-manager.js';
 
 const PW = pageWindow;
 const PD = pageDocument;
@@ -53,11 +54,14 @@ let waveUnlockHandlers = [];
 
 function ensureWaveMutationObserver() {
   if (!waveSettingsSnapshot?.waveVisualizer || videoObserver) return;
-  videoObserver = new MutationObserver(() => {
-    clearTimeout(observerDebounce);
-    observerDebounce = setTimeout(() => checkForVideo(), 200);
-  });
-  const target = PD().querySelector('#movie_player') ||
+  videoObserver = trackObserver(
+    new MutationObserver(() => {
+      clearTimeout(observerDebounce);
+      observerDebounce = setTimeout(() => checkForVideo(), 200);
+    })
+  );
+  const target =
+    PD().querySelector('#movie_player') ||
     PD().querySelector('ytmusic-player-bar') ||
     PD().querySelector('#player-bar') ||
     PD().body;
@@ -79,10 +83,13 @@ function checkForVideo() {
   const video = PD().querySelector('video');
   const miniPlayer = PD().querySelector('.ytp-miniplayer-ui');
   const urlMatchesPlayer =
-    href.includes('watch') || href.includes('/shorts/') || /youtube\.com\/live\//.test(href);
+    href.includes('/watch') || href.includes('/shorts/') || href.includes('youtu.be/') || /youtube\.com\/live\//.test(href);
   const inContext = (video && (urlMatchesPlayer || isYTMusic)) || !!miniPlayer;
 
+  console.log('[WaveViz] checkForVideo - video found:', !!video, 'inContext:', inContext, 'url:', href);
+
   if (!inContext || !video) {
+    console.log('[WaveViz] No video in context, skipping setup');
     cleanupWaveVisualizer(false);
     ensureWaveMutationObserver();
     return;
@@ -191,7 +198,7 @@ export function cleanupWaveVisualizer(isUnload = false) {
 
   // Clean up observer
   if (videoObserver) {
-    videoObserver.disconnect();
+    untrackObserver(videoObserver);
     videoObserver = null;
   }
   clearTimeout(observerDebounce);
@@ -199,12 +206,15 @@ export function cleanupWaveVisualizer(isUnload = false) {
 
   // Clean up unlock gesture listeners
   waveUnlockHandlers.forEach(({ el, type, handler }) => {
-    try { el.removeEventListener(type, handler); } catch {}
+    try {
+      el.removeEventListener(type, handler);
+    } catch {}
   });
   waveUnlockHandlers = [];
 }
 
 export function hideCanvas() {
+  console.log('[WaveViz] hideCanvas() called');
   const canvas = PD().getElementById('wave-visualizer-canvas');
   if (canvas) {
     canvas.style.opacity = '0';
@@ -212,12 +222,16 @@ export function hideCanvas() {
 }
 
 export function showCanvas() {
+  console.log('[WaveViz] showCanvas() called, audioCtx state:', s.audioCtx?.state);
   if (s.audioCtx && s.audioCtx.state === 'suspended') {
     s.audioCtx.resume().catch(() => {});
   }
   const canvas = PD().getElementById('wave-visualizer-canvas');
   if (canvas) {
     canvas.style.opacity = '1';
+    console.log('[WaveViz] Canvas opacity set to 1');
+  } else {
+    console.warn('[WaveViz] Canvas element not found in showCanvas()');
   }
 }
 
@@ -256,13 +270,21 @@ function teardownSource() {
 }
 
 export function setupWaveForVideo(video) {
-  if (!video || video[PROCESSED_FLAG]) return;
-  if (video._ytWaveRetryAfter && Date.now() < video._ytWaveRetryAfter) return;
+  console.log('[WaveViz] setupWaveForVideo called for video element');
+  if (!video || video[PROCESSED_FLAG]) {
+    console.log('[WaveViz] Video already processed or null, skipping');
+    return;
+  }
+  if (video._ytWaveRetryAfter && Date.now() < video._ytWaveRetryAfter) {
+    console.log('[WaveViz] In retry cooldown, skipping');
+    return;
+  }
 
   teardownSource();
   setCurrentVideo(video);
 
   createVisualizerOverlay();
+  console.log('[WaveViz] Canvas created/updated, id:', s.canvas?.id, 'opacity:', s.canvas?.style.opacity);
 
   try {
     // Reuse existing AudioContext if possible (suspend/resume pattern)
@@ -295,8 +317,16 @@ export function setupWaveForVideo(video) {
     }
 
     if (!sourceNode) {
+      console.error('[WaveViz] Failed to create audio source - YouTube may have already connected video to AudioContext');
       video._ytWaveFail = true;
       video._ytWaveRetryAfter = Date.now() + WAVE_FAIL_RETRY_MS;
+      // Show canvas anyway with a static wave as fallback
+      if (s.canvas) {
+        s.canvas.style.opacity = '0.3';
+        s.ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+        s.ctx.fillStyle = cachedWaveAccent + '40';
+        s.ctx.fillText('Wave visualizer: Audio source unavailable', 20, 30);
+      }
       // Do not mark PROCESSED_FLAG — allow retry after navigation, new video, or user gesture unlock.
       return;
     }
@@ -317,9 +347,13 @@ export function setupWaveForVideo(video) {
     video.addEventListener('play', showCanvas);
     video.addEventListener('pause', hideCanvas);
     video.addEventListener('ended', hideCanvas);
+    console.log('[WaveViz] Event listeners attached to video');
 
     // If video is already playing, show the canvas immediately
-    if (!video.paused && !video.ended) {
+    const isPlaying = !video.paused && !video.ended;
+    console.log('[WaveViz] Video playing state:', isPlaying, 'paused:', video.paused, 'ended:', video.ended);
+    if (isPlaying) {
+      console.log('[WaveViz] Video is playing, calling showCanvas()');
       showCanvas();
     }
 
@@ -343,7 +377,7 @@ export function createVisualizerOverlay() {
   const existing = PD().querySelector('#wave-visualizer-canvas');
   if (existing) {
     existing.style.cssText =
-      'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:10000;opacity:0;background:transparent;transition:opacity 0.3s;';
+      'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:9999;opacity:0;background:transparent;transition:opacity 0.3s;';
     existing.width = PW().innerWidth;
     existing.height = CANVAS_HEIGHT;
     setCanvas(existing);
@@ -356,26 +390,35 @@ export function createVisualizerOverlay() {
   newCanvas.width = PW().innerWidth;
   newCanvas.height = CANVAS_HEIGHT;
   newCanvas.style.cssText =
-    'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:10000;opacity:0;background:transparent;transition:opacity 0.3s;';
+    'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:9999;opacity:0;background:transparent;transition:opacity 0.3s;';
   PD().body.appendChild(newCanvas);
   setCanvas(newCanvas);
   setCtx(newCanvas.getContext('2d'));
 }
 
 function draw() {
+  // CRITICAL: Always schedule next frame, even when returning early, to keep animation loop alive
   if (!s.isSetup || !s.analyser || !s.ctx || !s.canvas) {
     setAnimationId(PW().requestAnimationFrame(draw));
     return;
   }
-  if (parseFloat(s.canvas.style.opacity) <= 0) {
+  // Performance: Pause drawing if tab is hidden or canvas is transparent
+  if (PD().visibilityState !== 'visible' || parseFloat(s.canvas.style.opacity) <= 0) {
     setAnimationId(PW().requestAnimationFrame(draw));
     return;
   }
 
   s.analyser.getByteTimeDomainData(s.dataArray);
 
+  let hasAudio = false;
   for (let i = 0; i < s.bufferLength; i++) {
+    if (s.dataArray[i] !== 128) hasAudio = true;
     s.smoothedData[i] += SMOOTHING_FACTOR * (s.dataArray[i] - s.smoothedData[i]);
+  }
+  
+  if (hasAudio && !s.canvas.dataset.hasAudioLogged) {
+    console.log('[WaveViz] 🌊 Audio data received! First non-zero frame drawing.');
+    s.canvas.dataset.hasAudioLogged = 'true';
   }
 
   const w = s.canvas.width;
@@ -386,16 +429,16 @@ function draw() {
   const style = s.waveStyle || 'dinamica';
   const { accent } = waveThemeColors();
 
-  // Glow để wave dễ thấy trên mọi nền
   s.ctx.shadowBlur = 16;
   s.ctx.shadowColor = accent + '99';
 
+  let x = 0;
   switch (style) {
-    case 'linea': {
+    case 'linea':
       s.ctx.lineWidth = 2;
       s.ctx.strokeStyle = accent;
       s.ctx.beginPath();
-      let x = 0;
+      x = 0;
       for (let i = 0; i < s.bufferLength; i++) {
         const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
         if (i === 0) s.ctx.moveTo(x, amplitude);
@@ -404,9 +447,8 @@ function draw() {
       }
       s.ctx.stroke();
       break;
-    }
-    case 'barras': {
-      let x = 0;
+    case 'barras':
+      x = 0;
       for (let i = 0; i < s.bufferLength; i += 5) {
         const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
         s.ctx.fillStyle = accent;
@@ -414,8 +456,7 @@ function draw() {
         x += sliceWidth * 5;
       }
       break;
-    }
-    case 'curva': {
+    case 'curva':
       s.ctx.lineWidth = 2;
       s.ctx.strokeStyle = accent;
       s.ctx.beginPath();
@@ -433,10 +474,9 @@ function draw() {
       }
       s.ctx.stroke();
       break;
-    }
-    case 'picos': {
+    case 'picos':
       s.ctx.fillStyle = accent;
-      let x = 0;
+      x = 0;
       for (let i = 0; i < s.bufferLength; i += 5) {
         const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
         s.ctx.beginPath();
@@ -445,10 +485,9 @@ function draw() {
         x += sliceWidth * 5;
       }
       break;
-    }
-    case 'solida': {
+    case 'solida':
       s.ctx.beginPath();
-      let x = 0;
+      x = 0;
       s.ctx.moveTo(0, 0);
       for (let i = 0; i < s.bufferLength; i++) {
         const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
@@ -460,7 +499,6 @@ function draw() {
       s.ctx.fillStyle = accent + '4d';
       s.ctx.fill();
       break;
-    }
     case 'dinamica': {
       const gradient = s.ctx.createLinearGradient(0, 0, w, 0);
       gradient.addColorStop(0, accent);
@@ -469,7 +507,7 @@ function draw() {
       s.ctx.lineWidth = 3;
       s.ctx.strokeStyle = gradient;
       s.ctx.beginPath();
-      let x = 0;
+      x = 0;
       for (let i = 0; i < s.bufferLength; i++) {
         const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
         if (i === 0) s.ctx.moveTo(x, amplitude);
@@ -479,9 +517,9 @@ function draw() {
       s.ctx.stroke();
       break;
     }
-    case 'montana': {
+    case 'montana':
       s.ctx.beginPath();
-      let x = 0;
+      x = 0;
       s.ctx.moveTo(0, 0);
       for (let i = 0; i < s.bufferLength; i++) {
         const amp = (s.smoothedData[i] - 128) * SCALE * 0.8;
@@ -493,10 +531,9 @@ function draw() {
       s.ctx.fillStyle = accent + '66';
       s.ctx.fill();
       break;
-    }
-    default:
-      break;
   }
+
+  setAnimationId(PW().requestAnimationFrame(draw));
 }
 
 export function onWaveStyleChange(value, saveSettingsFn) {
@@ -507,10 +544,12 @@ export function onWaveStyleChange(value, saveSettingsFn) {
 }
 
 export function initWaveVisualizer(settings) {
+  console.log('[WaveViz] initWaveVisualizer called, enabled:', settings?.waveVisualizer);
   bindWaveVisualizerUnload();
   waveSettingsSnapshot = settings;
 
   if (!settings?.waveVisualizer) {
+    console.log('[WaveViz] Wave visualizer disabled in settings');
     cleanupWaveVisualizer();
     waveSettingsSnapshot = null;
     return;
@@ -548,7 +587,9 @@ export function initWaveVisualizer(settings) {
   };
   // Remove previous unlock listeners before adding new ones
   waveUnlockHandlers.forEach(({ el, type, handler }) => {
-    try { el.removeEventListener(type, handler); } catch {}
+    try {
+      el.removeEventListener(type, handler);
+    } catch {}
   });
   waveUnlockHandlers = [];
   PD().addEventListener('mousedown', unlock, { once: true });
@@ -557,7 +598,7 @@ export function initWaveVisualizer(settings) {
   waveUnlockHandlers.push(
     { el: PD(), type: 'mousedown', handler: unlock },
     { el: PD(), type: 'keydown', handler: unlock },
-    { el: PD(), type: 'touchstart', handler: unlock },
+    { el: PD(), type: 'touchstart', handler: unlock }
   );
 
   checkForVideo();

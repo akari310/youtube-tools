@@ -145,14 +145,10 @@ body.yt-style-transparent #secondary-inner {
   background: var(--yt-glass-bg-sidebar) !important;
   backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--yt-glass-blur-sidebar)) saturate(var(--yt-glass-saturate)) !important;
-  border: 1px solid var(--yt-glass-border) !important;
-  border-top: 1px solid var(--yt-glass-border-top) !important;
-  border-radius: 12px !important;
   box-shadow: var(--yt-glass-shadow), var(--yt-glass-inset) !important;
   transition:
     backdrop-filter 0.6s ease,
-    background 0.6s ease,
-    border-color 0.6s ease;
+    background 0.6s ease;
   will-change: backdrop-filter;
 }
 
@@ -163,11 +159,9 @@ body.yt-style-transparent ytd-guide-renderer {
   background: var(--yt-glass-bg-guide) !important;
   backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--yt-glass-blur-guide)) saturate(var(--yt-glass-saturate)) !important;
-  border-right: 1px solid var(--yt-glass-border) !important;
   transition:
     backdrop-filter 0.6s ease,
-    background 0.6s ease,
-    border-color 0.6s ease;
+    background 0.6s ease;
   will-change: backdrop-filter;
 }
 

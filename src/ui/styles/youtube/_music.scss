@@ -311,3 +311,37 @@ ytmusic-player-bar {
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.2) !important;
 }
+
+/* Fix: Hide orphaned play button icons that spam when restoring player from miniplayer */
+/* These icons should only be visible within proper contexts like thumbnails/video cards */
+ytmusic-player-page {
+  /* Hide all orphaned play icons at the page root level */
+  > .yt-icon-shape,
+  > .ytSpecIconShapeHost {
+    display: none !important;
+  }
+}
+
+/* Ensure play icons are only visible in their intended containers */
+ytmusic-player-page .yt-icon-shape.ytSpecIconShapeHost:not([slot]):not([class*="thumbnail"]):not([class*="play"]) {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Additional safety: hide any floating play icons outside proper containers */
+body > .yt-icon-shape,
+ytmusic-app > .yt-icon-shape,
+#player-page > .yt-icon-shape {
+  display: none !important;
+}
+
+/* Fix: Hide stuck thumbnail overlays (play buttons and dark gradients on video cards) 
+   These get stuck visible when restoring player from miniplayer. 
+   Only show them when the parent is hovered OR if the item is currently playing/paused. */
+ytmusic-two-row-item-renderer:not(:hover) ytmusic-item-thumbnail-overlay-renderer[play-button-state="default"] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+
