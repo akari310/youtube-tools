@@ -1,9 +1,4 @@
-import {
-  getApiKey,
-  DOWNLOAD_API_FALLBACK_BASES,
-  DUBS_START_ENDPOINT,
-  DUBS_STATUS_ENDPOINT,
-} from '../config/constants.js';
+import { DUBS_START_ENDPOINT, DUBS_STATUS_ENDPOINT } from '../config/constants.js';
 import { $id } from '../utils/dom.js';
 import { Notify, paramsVideoURL } from '../utils/helpers.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
@@ -12,8 +7,36 @@ import { __ytToolsRuntime } from '../utils/runtime.js';
 // Feature: Video/Audio Download (full implementation)
 // ------------------------------
 
+/**
+ * Normalize YT/YTM URL → canonical youtube.com/watch?v=ID.
+ * Many download APIs choke on music.youtube.com host or `list=` playlist param.
+ */
+function normalizeYouTubeURL(rawURL) {
+  try {
+    const u = new URL(rawURL);
+    let videoId = u.searchParams.get('v');
+    if (!videoId && u.hostname === 'youtu.be') {
+      videoId = u.pathname.slice(1);
+    }
+    if (!videoId) return rawURL;
+    return `https://www.youtube.com/watch?v=${videoId}`;
+  } catch {
+    return rawURL;
+  }
+}
+
+const AUDIO_FORMATS = new Set(['mp3', 'ogg', 'opus', 'webm', 'm4a', 'wav', 'flac', 'aac']);
+const isAudioFormat = f => AUDIO_FORMATS.has(String(f).toLowerCase());
+
+// Cobalt v10 audioFormat: 'best' | 'mp3' | 'ogg' | 'wav' | 'opus'.
+// m4a/webm → 'best' (preserves source codec — AAC/m4a or opus/webm from YouTube).
+function toCobaltAudioFormat(f) {
+  if (f === 'mp3' || f === 'ogg' || f === 'opus' || f === 'wav') return f;
+  return 'best';
+}
+
 export async function startDownloadVideoOrAudio(format, container) {
-  const videoURL = window.location.href;
+  const videoURL = normalizeYouTubeURL(window.location.href);
 
   // Check if already downloading
   if (container.dataset.downloading === 'true') {
@@ -100,7 +123,7 @@ export async function startDownloadVideoOrAudio(format, container) {
         method: 'GET',
         url: url,
         responseType: 'json',
-        onload: function(res) {
+        onload: function (res) {
           if (aborted) return;
           clearTimeout(t);
           if (res.status !== 200) {
@@ -109,37 +132,24 @@ export async function startDownloadVideoOrAudio(format, container) {
           }
           let data = res.response;
           if (typeof data === 'string') {
-            try { data = JSON.parse(data); } catch(e) {}
+            try {
+              data = JSON.parse(data);
+            } catch {}
           }
           resolve(data);
         },
-        onerror: function() {
+        onerror: function () {
           if (aborted) return;
           clearTimeout(t);
           reject(new Error('Failed to fetch'));
         },
-        onabort: function() {
+        onabort: function () {
           if (aborted) return;
           clearTimeout(t);
           reject(new Error('Aborted'));
-        }
+        },
       });
     });
-  };
-
-  const fetchJsonWithRetry = async (url, timeoutMs = 20000, maxRetries = 2) => {
-    let lastErr;
-    for (let i = 0; i <= maxRetries; i++) {
-      try {
-        return await fetchJsonWithTimeout(url, timeoutMs);
-      } catch (e) {
-        lastErr = e;
-        if (i < maxRetries) {
-          await new Promise(r => setTimeout(r, 1000 * (i + 1)));
-        }
-      }
-    }
-    throw lastErr;
   };
 
   const setErrorState = message => {
@@ -178,19 +188,22 @@ export async function startDownloadVideoOrAudio(format, container) {
     container.dataset.downloading = 'false';
     Notify('success', 'Download started!');
     try {
-      const filename = `youtube-audio.${format === 'webm' || format === 'opus' || format === 'ogg' ? format : 'mp3'}`;
-      
+      const ext = isAudioFormat(format) ? format : 'mp4';
+      const prefix = isAudioFormat(format) ? 'youtube-audio' : 'youtube-video';
+      const filename = `${prefix}.${ext}`;
+
       GM_xmlhttpRequest({
         method: 'GET',
         url: downloadUrl,
         responseType: 'blob',
-        onload: function(res) {
+        onload: function (res) {
           if (res.status !== 200 || !res.response) {
             setErrorState('Lỗi máy chủ tải xuống. Vui lòng thử lại sau!');
             return;
           }
           const blob = res.response;
-          if (blob.size < 50000) { // < 50KB means it's likely an error page
+          if (blob.size < 50000) {
+            // < 50KB means it's likely an error page
             setErrorState('Lỗi: File bị hỏng (chỉ vài KB). API tải nhạc có thể đang bị quá tải!');
             return;
           }
@@ -203,73 +216,18 @@ export async function startDownloadVideoOrAudio(format, container) {
           a.click();
           a.remove();
           setTimeout(() => URL.revokeObjectURL(url), 60000);
-          
+
           if (downloadText) downloadText.textContent = 'Hoàn tất!';
           if (statusText) statusText.textContent = 'Đã tải xong!';
         },
-        onerror: function() {
+        onerror: function () {
           setErrorState('Lỗi mạng khi đang tải file!');
-        }
+        },
       });
     } catch (e) {
       console.warn('[YT Tools] Could not trigger download:', e);
       window.open(downloadUrl, '_blank');
     }
-  };
-
-  const pollProgressUrl = progressURL => {
-    let failCount = 0;
-    let delay = 2000;
-
-    const poll = async () => {
-      try {
-        const progressData = await fetchJsonWithTimeout(progressURL, 15000);
-        failCount = 0;
-        delay = 2000;
-
-        const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
-        updateProgress(progress, progress < 10 ? 'Processing...' : 'Downloading...');
-
-        if (Number(progressData.progress) >= 1000 && progressData.download_url) {
-          console.log('[YT Tools] Download ready:', {
-            progress: progressData.progress,
-            url: progressData.download_url,
-          });
-          clearTimeout(container.__ytDownloadPoll);
-          container.__ytDownloadPoll = null;
-          markCompleteAndOpen(progressData.download_url);
-          return;
-        }
-
-        if (Number(progressData.progress) >= 1000 && !progressData.download_url) {
-          console.warn('[YT Tools] Download reached 100% but no download_url:', progressData);
-        }
-      } catch (e) {
-        failCount++;
-        if (failCount >= 5) {
-          setErrorState('Download failed - server timeout. Please retry.');
-          return;
-        }
-        console.warn(`[YT Tools] Progress poll error (${failCount}/5):`, e);
-        delay = Math.min(delay * 2, 16000);
-      }
-      container.__ytDownloadPoll = setTimeout(poll, delay);
-    };
-    container.__ytDownloadPoll = setTimeout(poll, delay);
-  };
-
-  const trySaveNowProvider = async baseUrl => {
-    const url = new URL('/ajax/download.php', baseUrl);
-    url.searchParams.set('copyright', '0');
-    url.searchParams.set('allow_extended_duration', '1');
-    url.searchParams.set('format', String(format));
-    url.searchParams.set('url', videoURL);
-    url.searchParams.set('api', getApiKey());
-    const data = await fetchJsonWithRetry(url.toString(), 25000, 1);
-    if (!data?.success || !data?.progress_url) {
-      throw new Error('SaveNow provider did not return success/progress_url');
-    }
-    return data;
   };
 
   const tryDubsProvider = async () => {
@@ -326,28 +284,33 @@ export async function startDownloadVideoOrAudio(format, container) {
 
   const tryCobaltProvider = () => {
     return new Promise((resolve, reject) => {
-      const isAudio = format === 'mp3' || format === 'ogg' || format === 'opus' || format === 'webm';
-      let vQuality = format;
-      let aFormat = 'mp3';
+      // Cobalt doesn't support converting to m4a, aac, or flac. Bypass to fallback providers.
+      if (format === 'm4a' || format === 'aac' || format === 'flac') {
+        reject(new Error(`Cobalt unsupported format: ${format}`));
+        return;
+      }
+
+      const isAudio = isAudioFormat(format);
+      // Cobalt v10 schema: videoQuality/audioFormat/downloadMode (old vQuality/aFormat/isAudioOnly removed).
+      const body = {
+        url: videoURL,
+        downloadMode: isAudio ? 'audio' : 'auto',
+        videoQuality: 'max',
+        filenameStyle: 'pretty',
+      };
       if (isAudio) {
-        vQuality = 'max';
-        aFormat = format === 'mp3' ? 'mp3' : (format === 'ogg' ? 'ogg' : 'best');
+        body.audioFormat = toCobaltAudioFormat(format);
+        body.audioBitrate = '320';
       }
       GM_xmlhttpRequest({
         method: 'POST',
         url: 'https://api.cobalt.tools/',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
-        data: JSON.stringify({
-          url: videoURL,
-          vQuality: String(vQuality),
-          isAudioOnly: isAudio,
-          aFormat: aFormat,
-          isNoTTWatermark: true
-        }),
-        onload: function(res) {
+        data: JSON.stringify(body),
+        onload: function (res) {
           if (res.status !== 200) {
             reject(new Error(`Cobalt HTTP ${res.status}`));
             return;
@@ -355,21 +318,29 @@ export async function startDownloadVideoOrAudio(format, container) {
           let data;
           try {
             data = JSON.parse(res.response);
-          } catch(e) {
+          } catch {
             reject(new Error('Cobalt invalid JSON'));
             return;
           }
           if (data.status === 'error') {
-            reject(new Error(data.text));
-          } else if (data.status === 'redirect' || data.status === 'stream' || data.url) {
+            reject(new Error(data.error?.code || data.text || 'Cobalt error'));
+          } else if (data.status === 'picker' && Array.isArray(data.picker) && data.picker.length) {
+            // For audio: prefer audio entry; otherwise first.
+            const pick = isAudio
+              ? data.picker.find(p => p.type === 'audio') || data.picker[0]
+              : data.picker[0];
+            if (pick?.url) resolve({ success: true, download_url: pick.url });
+            else reject(new Error('Cobalt picker had no usable url'));
+          } else if (data.url) {
+            // Covers status: redirect, tunnel, stream (all return url).
             resolve({ success: true, download_url: data.url });
           } else {
-            reject(new Error('Cobalt unhandled response'));
+            reject(new Error(`Cobalt unhandled status: ${data.status}`));
           }
         },
-        onerror: function() {
+        onerror: function () {
           reject(new Error('Cobalt network error'));
-        }
+        },
       });
     });
   };
@@ -381,7 +352,7 @@ export async function startDownloadVideoOrAudio(format, container) {
     try {
       updateProgress(2, 'Trying Cobalt provider (Best Quality + Metadata)...');
       started = await tryCobaltProvider();
-    } catch(e) {
+    } catch (e) {
       console.warn('[YT Tools] Cobalt failed:', e);
       lastErr = e;
     }
@@ -391,23 +362,9 @@ export async function startDownloadVideoOrAudio(format, container) {
       return;
     }
 
-    for (const base of DOWNLOAD_API_FALLBACK_BASES) {
-      try {
-        updateProgress(5, `Trying SaveNow provider (${base})...`);
-        started = await trySaveNowProvider(base);
-        break;
-      } catch (e) {
-        lastErr = e;
-        console.warn(`[YT Tools] SaveNow (${base}) failed:`, e);
-      }
-    }
-
-    if (started?.success && started?.progress_url) {
-      pollProgressUrl(started.progress_url);
-      return;
-    }
-
-    console.warn('[YT Tools] SaveNow failed, trying dubs.io', lastErr);
+    // SaveNow disabled — returns broken low-bitrate files (~4MB, unplayable).
+    // Skip directly to Dubs.
+    console.warn('[YT Tools] Cobalt failed, trying dubs.io', lastErr);
     updateProgress(10, 'Fallback: Trying Dubs provider...');
     await tryDubsProvider();
   } catch (error) {
@@ -516,7 +473,7 @@ export function initDownloadFeature() {
     const tmpContainer = $id('download-status') || $id('download-status-mp3');
     if (tmpContainer) {
       tmpContainer.dataset.quality = quality;
-      tmpContainer.dataset.type = format === 'mp3' ? 'audio' : 'video';
+      tmpContainer.dataset.type = isAudioFormat(format) ? 'audio' : 'video';
       startDownloadVideoOrAudio(quality, tmpContainer);
     }
   });
