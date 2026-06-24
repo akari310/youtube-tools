@@ -5558,31 +5558,46 @@
             });
         };
 
+        // Helper: fetch text, trying native fetch first, fallback to GM_xmlhttpRequest
+        const fetchText = (url, timeoutMs = 120000) => {
+            return new Promise((resolve, reject) => {
+                const attempt = async () => {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), timeoutMs);
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(id);
+                        if (response.ok) {
+                            resolve(await response.text());
+                            return;
+                        }
+                    } catch (err) {}
+                    
+                    GM_xmlhttpRequest({
+                        method: 'GET',
+                        url: url,
+                        timeout: timeoutMs,
+                        onload: (r) => {
+                            if (r.status >= 200 && r.status < 300) resolve(r.responseText);
+                            else reject(new Error(`HTTP ${r.status}`));
+                        },
+                        onerror: () => reject(new Error('Network error')),
+                        ontimeout: () => reject(new Error('Timeout'))
+                    });
+                };
+                attempt();
+            });
+        };
+
         // ── M4A: embed metadata using ffmpeg-core directly (No Web Workers!) ──
         const tagM4a = async (audioBuffer, meta, coverBuffer) => {
             downloadText.textContent = 'Loading FFmpeg Core (30MB)...';
 
             // Fetch core JS and evaluate in main thread
-            const coreJsText = await new Promise((resolve, reject) => {
-                GM_xmlhttpRequest({
-                    method: 'GET',
-                    url: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-                    onload: (r) => resolve(r.responseText),
-                    onerror: reject
-                });
-            });
+            const coreJsText = await fetchText('https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js');
 
             // Fetch WASM binary
-            const wasmResponse = await new Promise((resolve, reject) => {
-                GM_xmlhttpRequest({
-                    method: 'GET',
-                    url: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
-                    responseType: 'arraybuffer',
-                    onload: resolve,
-                    onerror: reject
-                });
-            });
-            const wasmBuffer = wasmResponse.response;
+            const wasmBuffer = await fetchArrayBuffer('https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm');
 
             // Evaluate the core JS to get createFFmpegCore globally
             // TrustedTypes bypass for eval/inline script
