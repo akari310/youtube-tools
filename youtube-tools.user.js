@@ -5307,7 +5307,6 @@
                         if (src.includes('=w')) {
                             src = src.replace(/=w\d+-h\d+.*$/, '=w1000-h1000-l90-rj');
                         } else if (src.includes('i.ytimg.com/vi/')) {
-                            src = src.split('?')[0]; // Strip query parameters like sqp which cause 403 Forbidden on maxres
                             src = src.replace(/(hqdefault|mqdefault|sddefault|default)\.jpg/, 'maxresdefault.jpg');
                         }
                         meta.coverUrl = src;
