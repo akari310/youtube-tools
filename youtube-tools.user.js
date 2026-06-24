@@ -24,7 +24,7 @@
 // @description:ko 고품질 비디오/오디오 다운로드, 싫어요 표시, YouTube 및 YouTube Music을 위한 더 많은 VIP 기능.
 // @description:it Scarica video/audio di alta qualità, ripristina i dislike e altre funzioni VIP per YouTube e YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.6.3
+// @version      0.0.6.4
 // @author       Akari, DeveloperMDCM
 // @contributor  nvbangg
 // @match        *://www.youtube.com/*
@@ -5520,6 +5520,108 @@
             return new Blob([newSrc, listChunk], { type: 'audio/wav' });
         };
 
+        // ── Fetch via GM_xmlhttpRequest for CSP bypass ──
+        const fetchBlobUrlGM = (url, mimeType) => {
+            return new Promise((resolve, reject) => {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: url,
+                    responseType: 'arraybuffer',
+                    onload: (res) => {
+                        if (res.status >= 200 && res.status < 300) {
+                            const blob = new Blob([res.response], { type: mimeType });
+                            resolve(URL.createObjectURL(blob));
+                        } else {
+                            reject(new Error(`HTTP ${res.status}`));
+                        }
+                    },
+                    onerror: reject
+                });
+            });
+        };
+
+        // ── M4A: embed metadata using ffmpeg-core directly (No Web Workers!) ──
+        const tagM4a = async (audioBuffer, meta, coverBuffer) => {
+            downloadText.textContent = 'Loading FFmpeg Core (30MB)...';
+
+            // Fetch core JS and evaluate in main thread
+            const coreJsText = await new Promise((resolve, reject) => {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+                    onload: (r) => resolve(r.responseText),
+                    onerror: reject
+                });
+            });
+
+            // Fetch WASM binary
+            const wasmResponse = await new Promise((resolve, reject) => {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+                    responseType: 'arraybuffer',
+                    onload: resolve,
+                    onerror: reject
+                });
+            });
+            const wasmBuffer = wasmResponse.response;
+
+            // Evaluate the core JS to get createFFmpegCore globally
+            // TrustedTypes bypass for eval/inline script
+            const script = document.createElement('script');
+            let safeCode = coreJsText + '\nwindow.createFFmpegCore = createFFmpegCore;\n';
+            if (window.trustedTypes) {
+                const policyNames = ['default', 'ffmpeg-tt', 'dompurify', 'polymer-html-default', 'goog#html', 'youtube-music'];
+                let ttPolicy;
+                for (const name of policyNames) {
+                    try { ttPolicy = window.trustedTypes.createPolicy(name, { createScriptURL: s => s, createScript: s => s }); if (ttPolicy) break; } catch(e) {}
+                }
+                if (ttPolicy) safeCode = ttPolicy.createScript(safeCode);
+            }
+            script.textContent = safeCode;
+            document.body.appendChild(script);
+
+            downloadText.textContent = 'Initializing FFmpeg...';
+            
+            if (typeof createFFmpegCore === 'undefined') throw new Error('Failed to evaluate FFmpeg core');
+            
+            const core = await createFFmpegCore({
+                wasmBinary: wasmBuffer,
+                print: (msg) => console.log('[ffmpeg]', msg),
+                printErr: (msg) => console.error('[ffmpeg]', msg)
+            });
+
+            downloadText.textContent = 'Muxing M4A...';
+            
+            // Write input
+            core.FS.writeFile('input.m4a', new Uint8Array(audioBuffer));
+            
+            if (coverBuffer) {
+                core.FS.writeFile('cover.jpg', new Uint8Array(coverBuffer));
+            }
+
+            // Build arguments
+            const args = ['-i', 'input.m4a'];
+            if (coverBuffer) {
+                args.push('-i', 'cover.jpg', '-map', '0:a', '-map', '1:v', '-c:v', 'copy', '-disposition:v', 'attached_pic');
+            }
+            args.push('-c:a', 'copy');
+            
+            // Add metadata tags
+            if (meta.title) args.push('-metadata', `title=${meta.title}`);
+            if (meta.artist) args.push('-metadata', `artist=${meta.artist}`);
+            if (meta.album) args.push('-metadata', `album=${meta.album}`);
+            
+            args.push('output.m4a');
+
+            console.log('[ffmpeg] Executing:', args.join(' '));
+            const exitCode = core.exec(...args);
+            if (exitCode !== 0) throw new Error('FFmpeg failed with exit code ' + exitCode);
+
+            const outData = core.FS.readFile('output.m4a');
+            return new Blob([outData.buffer], { type: 'audio/mp4' });
+        };
+
         // ── Main: download audio with metadata tags ──
         const downloadWithTags = async (downloadUrl, fileName, fmtLower) => {
             const meta = getMediaMeta();
@@ -5529,8 +5631,8 @@
                 const audioBuffer = await fetchArrayBuffer(downloadUrl);
                 let coverBuffer = null;
 
-                // Fetch cover art (for MP3 and FLAC)
-                if (meta.coverUrl && (fmtLower === 'mp3' || fmtLower === 'flac')) {
+                // Fetch cover art (for MP3, FLAC, and M4A)
+                if (meta.coverUrl && (fmtLower === 'mp3' || fmtLower === 'flac' || fmtLower === 'm4a')) {
                     try {
                         coverBuffer = await fetchArrayBuffer(meta.coverUrl, 15000);
                     } catch (e) { 
@@ -5550,6 +5652,8 @@
                     blob = tagFlac(audioBuffer, meta, coverBuffer);
                 } else if (fmtLower === 'wav') {
                     blob = tagWav(audioBuffer, meta);
+                } else if (fmtLower === 'm4a') {
+                    blob = await tagM4a(audioBuffer, meta, coverBuffer);
                 } else {
                     throw new Error('Unsupported format for tagging: ' + fmtLower);
                 }
@@ -5603,7 +5707,7 @@
                 const fileName = title + ext;
 
                 // For supported audio formats: embed metadata tags
-                const taggableFormats = ['mp3', 'flac', 'wav'];
+                const taggableFormats = ['mp3', 'flac', 'wav', 'm4a'];
                 if (taggableFormats.includes(fmtLower)) {
                     downloadWithTags(downloadUrl, fileName, fmtLower);
                 } else {
