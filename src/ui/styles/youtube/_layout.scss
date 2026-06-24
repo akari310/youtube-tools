@@ -752,8 +752,6 @@ textarea.textarea-mdcm:focus {
   user-select: none !important;
   -webkit-user-select: none !important;
   background: rgba(30, 30, 30, 0.9) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
   padding: 0 20px !important;
@@ -769,7 +767,7 @@ textarea.textarea-mdcm:focus {
   cursor: pointer !important;
   outline: none !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
-  transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease !important;
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease !important;
   margin: 0 auto !important;
   display: block !important;
   min-width: 280px !important;
@@ -786,7 +784,6 @@ textarea.textarea-mdcm:focus {
 .selectcalidadesaudio:hover {
   border-color: #ff0000 !important;
   background: rgba(45, 45, 45, 0.95) !important;
-  transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(255, 0, 0, 0.15) !important;
 }
 
