@@ -154,6 +154,7 @@ export async function startDownloadVideoOrAudio(format, container) {
       const filename = `youtube-audio.${format === 'webm' || format === 'opus' || format === 'ogg' ? format : 'mp3'}`;
       a.href = downloadUrl;
       a.download = filename;
+      a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.style.display = 'none';
       document.body.appendChild(a);
@@ -161,7 +162,7 @@ export async function startDownloadVideoOrAudio(format, container) {
       a.remove();
     } catch (e) {
       console.warn('[YT Tools] Could not trigger download:', e);
-      window.open(downloadUrl);
+      window.open(downloadUrl, '_blank');
     }
   };
 
