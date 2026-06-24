@@ -46,6 +46,24 @@ A powerful, modular, and glassmorphic userscript designed to elevate your **YouT
 
 ---
 
+## ⚠️ Troubleshooting / Common Issues
+
+### "Network Error" during downloads or Metadata Tagging fails
+If you are using **uBlock Origin** or other strict adblockers, they might aggressively block the download API servers (`savenow.to` and `lbserver.xyz`), resulting in a `Network Error` or `xhr_failed` message.
+
+**How to fix (Add an exception to uBlock Origin):**
+1. Click the **uBlock Origin** icon in your browser and open the **Dashboard** (⚙️ gear icon).
+2. Go to the **My filters** tab.
+3. Copy and paste the following lines at the bottom:
+   ```text
+   @@||savenow.to^
+   @@||lbserver.xyz^
+   ```
+   *(Note: The `@@` prefix is the specific syntax that tells uBlock to whitelist/unblock these domains).*
+4. Click **Apply changes** and refresh the YouTube page.
+
+---
+
 ## 🛠️ Development & Contribution
 
 Built with a modern **Node.js** modular workflow for maximum performance and maintainability.
