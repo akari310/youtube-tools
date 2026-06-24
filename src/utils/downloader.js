@@ -510,8 +510,6 @@
                     blob = tagFlac(audioBuffer, meta, coverBuffer);
                 } else if (fmtLower === 'wav') {
                     blob = tagWav(audioBuffer, meta);
-                } else if (fmtLower === 'm4a') {
-                    blob = await tagM4a(audioBuffer, meta, coverBuffer);
                 } else {
                     throw new Error('Unsupported format for tagging: ' + fmtLower);
                 }
