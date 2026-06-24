@@ -5624,10 +5624,18 @@
                 printErr: (msg) => console.error('[ffmpeg]', msg)
             });
 
-            downloadText.textContent = 'Muxing M4A...';
-            
             // Write input
             core.FS.writeFile('input.m4a', new Uint8Array(audioBuffer));
+            
+            // Validate input audio stream
+            downloadText.textContent = 'Validating Audio...';
+            const validateArgs = ['-v', 'error', '-i', 'input.m4a', '-f', 'null', '-'];
+            const validateExitCode = core.exec(...validateArgs);
+            if (validateExitCode !== 0) {
+                throw new Error('Server returned a corrupted M4A file');
+            }
+            
+            downloadText.textContent = 'Muxing M4A...';
             
             if (coverBuffer) {
                 core.FS.writeFile('cover.jpg', new Uint8Array(coverBuffer));
@@ -5638,7 +5646,7 @@
             if (coverBuffer) {
                 args.push('-i', 'cover.jpg', '-map', '0:a', '-map', '1:v', '-c:v', 'copy', '-disposition:v', 'attached_pic');
             }
-            args.push('-c:a', 'copy');
+            args.push('-c:a', 'copy', '-movflags', '+faststart');
             
             // Add metadata tags
             if (meta.title) args.push('-metadata', `title=${meta.title}`);
@@ -5696,6 +5704,10 @@
                 console.log('✅ Downloaded with metadata:', fmtLower.toUpperCase(), meta);
             } catch (e) {
                 console.warn('Metadata tagging failed:', e);
+                const msg = e.message || '';
+                if (msg.includes('corrupted') || msg.includes('HTTP ')) {
+                    throw e; // Bubble up to trigger server fallback
+                }
                 downloadText.textContent = 'Tagging failed, downloading direct...';
                 GM_download({
                     url: downloadUrl,
@@ -5762,26 +5774,28 @@
         };
 
         const pollProgressUrl = (progressURL) => {
-            container.__ytDownloadPoll = setInterval(async () => {
-                try {
-                    const progressData = await fetchJsonWithTimeout(progressURL, 15000);
+            return new Promise((resolve, reject) => {
+                container.__ytDownloadPoll = setInterval(async () => {
+                    try {
+                        const progressData = await fetchJsonWithTimeout(progressURL, 15000);
 
-                    const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
-                    progressFill.style.width = `${progress}%`;
-                    progressText.textContent = `${Math.round(progress)}%`;
+                        const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
+                        progressFill.style.width = `${progress}%`;
+                        progressText.textContent = `${Math.round(progress)}%`;
 
-                    if (Number(progressData.progress) >= 1000 && progressData.download_url) {
+                        if (Number(progressData.progress) >= 1000 && progressData.download_url) {
+                            clearInterval(container.__ytDownloadPoll);
+                            container.__ytDownloadPoll = null;
+                            resolve(progressData.download_url);
+                        }
+                    } catch (e) {
+                        console.error('Error in progress:', e);
                         clearInterval(container.__ytDownloadPoll);
                         container.__ytDownloadPoll = null;
-                        markCompleteAndOpen(progressData.download_url);
+                        reject(e);
                     }
-                } catch (e) {
-                    console.error('Error in progress:', e);
-                    clearInterval(container.__ytDownloadPoll);
-                    container.__ytDownloadPoll = null;
-                    setErrorState();
-                }
-            }, 3000);
+                }, 3000);
+            });
         };
 
         const trySaveNowProvider = async (baseUrl) => {
@@ -5814,48 +5828,51 @@
             const statusUrl = new URL(DUBS_STATUS_ENDPOINT);
             statusUrl.searchParams.set('id', startData.progressId);
 
-            container.__ytDownloadPoll = setInterval(async () => {
-                try {
-                    const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
-                    const rawProgress = Number(st?.progress) || 0; // 0..1000
-                    const progress = Math.min(rawProgress / 10, 100);
-                    progressFill.style.width = `${progress}%`;
-                    progressText.textContent = `${Math.round(progress)}%`;
+            return new Promise((resolve, reject) => {
+                container.__ytDownloadPoll = setInterval(async () => {
+                    try {
+                        const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
+                        const rawProgress = Number(st?.progress) || 0; // 0..1000
+                        const progress = Math.min(rawProgress / 10, 100);
+                        progressFill.style.width = `${progress}%`;
+                        progressText.textContent = `${Math.round(progress)}%`;
 
-                    if (st?.finished && st?.downloadUrl) {
+                        if (st?.finished && st?.downloadUrl) {
+                            clearInterval(container.__ytDownloadPoll);
+                            container.__ytDownloadPoll = null;
+                            resolve(st.downloadUrl);
+                        }
+                    } catch (e) {
+                        console.error('❌ Error polling dubs status:', e);
                         clearInterval(container.__ytDownloadPoll);
                         container.__ytDownloadPoll = null;
-                        markCompleteAndOpen(st.downloadUrl);
+                        reject(e);
+                    }
+                }, 3000);
+            });
+        };
+
+        const doDownloadProcess = async () => {
+            for (const base of DOWNLOAD_API_FALLBACK_BASES) {
+                try {
+                    const started = await trySaveNowProvider(base);
+                    if (started?.success && started?.progress_url) {
+                        const downloadUrl = await pollProgressUrl(started.progress_url);
+                        await markCompleteAndOpen(downloadUrl);
+                        return;
                     }
                 } catch (e) {
-                    console.error('❌ Error polling dubs status:', e);
-                    clearInterval(container.__ytDownloadPoll);
-                    container.__ytDownloadPoll = null;
-                    setErrorState();
+                    console.warn(`Provider ${base} failed:`, e);
                 }
-            }, 3000);
+            }
+
+            console.warn('All SaveNow providers failed, falling back to dubs.io');
+            const dubsUrl = await tryDubsProvider();
+            await markCompleteAndOpen(dubsUrl);
         };
 
         try {
-            let started = null;
-            let lastErr = null;
-
-            for (const base of DOWNLOAD_API_FALLBACK_BASES) {
-                try {
-                    started = await trySaveNowProvider(base);
-                    break;
-                } catch (e) {
-                    lastErr = e;
-                }
-            }
-
-            if (started?.success && started?.progress_url) {
-                pollProgressUrl(started.progress_url);
-                return;
-            }
-
-            console.warn('SaveNow providers failed, falling back to dubs.io', lastErr);
-            await tryDubsProvider();
+            await doDownloadProcess();
         } catch (error) {
             setErrorState();
             console.error('❌ Error starting download:', error);
