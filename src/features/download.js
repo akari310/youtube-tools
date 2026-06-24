@@ -291,6 +291,8 @@ export async function startDownloadVideoOrAudio(format, container) {
     container.__ytDownloadPoll = setTimeout(pollDubs, dubsDelay);
   };
 
+  const COBALT_APIS = ['https://api.cobalt.tools/', 'https://co.wuk.sh/', 'https://cobalt.q0.wtf/'];
+
   const tryCobaltProvider = () => {
     return new Promise((resolve, reject) => {
       const isAudio = isAudioFormat(format);
@@ -305,46 +307,74 @@ export async function startDownloadVideoOrAudio(format, container) {
         body.audioFormat = toCobaltAudioFormat(format);
         body.audioBitrate = '320';
       }
-      GM_xmlhttpRequest({
-        method: 'POST',
-        url: 'https://api.cobalt.tools/',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        data: JSON.stringify(body),
-        onload: function (res) {
-          if (res.status !== 200) {
-            reject(new Error(`Cobalt HTTP ${res.status}`));
-            return;
-          }
-          let data;
-          try {
-            data = JSON.parse(res.response);
-          } catch {
-            reject(new Error('Cobalt invalid JSON'));
-            return;
-          }
-          if (data.status === 'error') {
-            reject(new Error(data.error?.code || data.text || 'Cobalt error'));
-          } else if (data.status === 'picker' && Array.isArray(data.picker) && data.picker.length) {
-            // For audio: prefer audio entry; otherwise first.
-            const pick = isAudio
-              ? data.picker.find(p => p.type === 'audio') || data.picker[0]
-              : data.picker[0];
-            if (pick?.url) resolve({ success: true, download_url: pick.url });
-            else reject(new Error('Cobalt picker had no usable url'));
-          } else if (data.url) {
-            // Covers status: redirect, tunnel, stream (all return url).
-            resolve({ success: true, download_url: data.url });
-          } else {
-            reject(new Error(`Cobalt unhandled status: ${data.status}`));
-          }
-        },
-        onerror: function () {
-          reject(new Error('Cobalt network error'));
-        },
-      });
+
+      let attempt = 0;
+
+      const makeRequest = () => {
+        if (attempt >= COBALT_APIS.length) {
+          reject(new Error('All Cobalt APIs failed'));
+          return;
+        }
+        const api = COBALT_APIS[attempt];
+        
+        let reqAborted = false;
+        const timeoutId = setTimeout(() => {
+          reqAborted = true;
+          attempt++;
+          makeRequest();
+        }, 10000); // 10s timeout per API
+
+        GM_xmlhttpRequest({
+          method: 'POST',
+          url: api,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          data: JSON.stringify(body),
+          onload: function (res) {
+            if (reqAborted) return;
+            clearTimeout(timeoutId);
+            if (res.status !== 200) {
+              attempt++;
+              makeRequest();
+              return;
+            }
+            let data;
+            try {
+              data = JSON.parse(res.response);
+            } catch {
+              attempt++;
+              makeRequest();
+              return;
+            }
+            if (data.status === 'error') {
+              console.warn(`[YT Tools] Cobalt (${api}) error:`, data.error?.code || data.text);
+              attempt++;
+              makeRequest();
+            } else if (data.status === 'picker' && Array.isArray(data.picker) && data.picker.length) {
+              const pick = isAudio
+                ? data.picker.find(p => p.type === 'audio') || data.picker[0]
+                : data.picker[0];
+              if (pick?.url) resolve({ success: true, download_url: pick.url });
+              else { attempt++; makeRequest(); }
+            } else if (data.url) {
+              resolve({ success: true, download_url: data.url });
+            } else {
+              attempt++;
+              makeRequest();
+            }
+          },
+          onerror: function () {
+            if (reqAborted) return;
+            clearTimeout(timeoutId);
+            attempt++;
+            makeRequest();
+          },
+        });
+      };
+      
+      makeRequest();
     });
   };
 
