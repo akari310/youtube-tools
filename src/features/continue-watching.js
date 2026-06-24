@@ -85,7 +85,7 @@ function navigateToWatchSpa(videoId, seconds) {
     a.click();
     a.remove();
     return;
-  } catch (e) {}
+  } catch {}
   location.href = url;
 }
 
@@ -126,7 +126,7 @@ function updateContinueWatchingPanelRow(videoId) {
     const author = String(entry?.author || '').trim();
     meta.textContent = `${formatTimeShort(t)}${author ? ` • ${author}` : ''}`;
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

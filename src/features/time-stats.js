@@ -1,7 +1,7 @@
 import { $id } from '../utils/dom.js';
 import { setHTML } from '../utils/trusted-types.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
-import { getCurrentVideoId } from '../utils/helpers.js';
+import { getCurrentVideoId, escapeHtml } from '../utils/helpers.js';
 import { gmRawGet, gmRawSet } from '../utils/storage.js';
 import { STORAGE_KEYS } from '../config/storage-keys.js';
 
@@ -130,7 +130,6 @@ function getStreak() {
     .sort()
     .reverse();
   let streak = 0;
-  const today = new Date().toISOString().slice(0, 10);
   // start from today, check consecutive days backwards
   for (let i = 0; i < days.length; i++) {
     const expected = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
@@ -174,13 +173,6 @@ export function formatTime(seconds, { compact = false, smart = true } = {}) {
   return `${h}h ${m}m ${sec}s`;
 }
 
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/"/g, '&quot;');
-}
-
 // --- Export ---
 
 function exportStats() {
@@ -215,9 +207,17 @@ export function updateUI() {
   const streak = getStreak();
 
   const _hash = [
-    usageTime, videoTime, shortsTime, sessionTime,
-    today.totalSec, videosWatched, avg, streak,
-    longest?.videoId ?? '', longest?.title ?? '', longest?.totalSec ?? '',
+    usageTime,
+    videoTime,
+    shortsTime,
+    sessionTime,
+    today.totalSec,
+    videosWatched,
+    avg,
+    streak,
+    longest?.videoId ?? '',
+    longest?.title ?? '',
+    longest?.totalSec ?? '',
     ...week.map(d => `${d.sec}:${d.pct}`),
     ...getTopVideos(10).map(v => `${v.videoId}:${v.title}:${v.channel}:${v.totalSec}`),
     isMusic,
@@ -334,6 +334,8 @@ export function initTimeStats() {
     let __lastVid = null;
     let __title = '';
     let __channel = '';
+    let __cachedVideo = null;
+    let __lastVideoCheck = 0;
 
     __ytToolsRuntime.modularStatsIntervalId = setInterval(() => {
       const now = Date.now();
@@ -345,7 +347,14 @@ export function initTimeStats() {
       usageTime += delta;
       sessionTime += delta;
 
-      const vid = document.querySelector('video.video-stream') || document.querySelector('video');
+      // Cache video element and only re-query every 5 seconds
+      if (!__cachedVideo || now - __lastVideoCheck > 5000) {
+        __cachedVideo =
+          document.querySelector('video.video-stream') || document.querySelector('video');
+        __lastVideoCheck = now;
+      }
+
+      const vid = __cachedVideo;
       if (vid && !vid.paused && !vid.ended && vid.readyState > 1) {
         if (location.pathname.startsWith('/shorts')) shortsTime += delta;
         else videoTime += delta;

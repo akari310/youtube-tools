@@ -5,6 +5,7 @@
 import { $e, isYTMusic } from '../utils/dom.js';
 import { SETTINGS_KEY } from '../settings/storage-key.js';
 import { readJsonGM } from '../utils/storage.js';
+import { trackInterval, untrackInterval, trackTimeout } from '../utils/cleanup-manager.js';
 
 export const ytmAmbientMode = {
   active: false,
@@ -26,7 +27,7 @@ export const ytmAmbientMode = {
           return `https://i.ytimg.com/vi/${vData.video_id}/sddefault.jpg`;
         }
       }
-    } catch (e) {
+    } catch {
       /* */
     }
 
@@ -108,30 +109,49 @@ export const ytmAmbientMode = {
         background: transparent !important;
         background-image: none !important;
       }
-      body.ytm-ambient-active #nav-bar-background,
-      body.ytm-ambient-active #player-bar-background,
-      body.ytm-ambient-active ytmusic-nav-bar,
-      body.ytm-ambient-active ytmusic-player-bar,
+      /* Nav bar — glassmorphic so it stays readable over ambient glow */
+      body.ytm-ambient-active #nav-bar-background {
+        background: transparent !important;
+      }
+      body.ytm-ambient-active ytmusic-nav-bar {
+        background: rgba(0, 0, 0, 0.35) !important;
+        backdrop-filter: blur(20px) saturate(1.3) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(1.3) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      }
+      /* Player bar — glassmorphic */
+      body.ytm-ambient-active #player-bar-background {
+        background: transparent !important;
+      }
+      body.ytm-ambient-active ytmusic-player-bar {
+        background: rgba(0, 0, 0, 0.4) !important;
+        backdrop-filter: blur(24px) saturate(1.4) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(1.4) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+      }
+      /* Sidebar — glassmorphic */
       body.ytm-ambient-active tp-yt-app-drawer,
-      body.ytm-ambient-active tp-yt-app-drawer #contentContainer,
+      body.ytm-ambient-active tp-yt-app-drawer #contentContainer {
+        background: rgba(0, 0, 0, 0.3) !important;
+        backdrop-filter: blur(18px) saturate(1.2) !important;
+        -webkit-backdrop-filter: blur(18px) saturate(1.2) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+        box-shadow: none !important;
+      }
       body.ytm-ambient-active #guide-wrapper,
       body.ytm-ambient-active #guide-content,
-      body.ytm-ambient-active ytmusic-guide-renderer,
+      body.ytm-ambient-active ytmusic-guide-renderer {
+        background: rgba(0, 0, 0, 0.25) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+        box-shadow: none !important;
+      }
       body.ytm-ambient-active #mini-guide-background,
       body.ytm-ambient-active #mini-guide {
-        background: transparent !important;
-        background-color: transparent !important;
-        background-image: none !important;
-      }
-      body.ytm-ambient-active tp-yt-app-drawer,
-      body.ytm-ambient-active tp-yt-app-drawer #contentContainer,
-      body.ytm-ambient-active #guide-wrapper,
-      body.ytm-ambient-active #guide-content,
-      body.ytm-ambient-active ytmusic-guide-renderer,
-      body.ytm-ambient-active #mini-guide-background {
-        border: none !important;
-        border-right: none !important;
-        box-shadow: none !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
       }
       body.ytm-ambient-active ytmusic-browse-response {
         visibility: hidden !important;
@@ -168,7 +188,7 @@ export const ytmAmbientMode = {
   hide() {
     this.active = false;
     if (this._pollId) {
-      clearInterval(this._pollId);
+      untrackInterval(this._pollId);
       this._pollId = null;
     }
     if (this._trackerId) {
@@ -207,6 +227,11 @@ export const ytmAmbientMode = {
       lastHeight = 0,
       lastLeft = 0;
     let frameCount = 0;
+
+    // Cache DOM elements to avoid querying them every frame
+    let nav, player, drawer, wrapper;
+    let cacheValid = false;
+
     function track() {
       if (!self.active) {
         self._trackerId = null;
@@ -218,14 +243,17 @@ export const ytmAmbientMode = {
         self._trackerId = requestAnimationFrame(track);
         return;
       }
-      const nav = document.querySelector('ytmusic-nav-bar');
-      const player = document.querySelector('ytmusic-player-bar');
-      const drawer = document.querySelector('tp-yt-app-drawer');
-      const wrapper =
-        document.querySelector('#guide-wrapper') ||
-        document.querySelector('#mini-guide-background');
+      if (!cacheValid || frameCount % 60 === 0) {
+        nav = document.querySelector('ytmusic-nav-bar');
+        player = document.querySelector('ytmusic-player-bar');
+        drawer = document.querySelector('tp-yt-app-drawer');
+        wrapper =
+          document.querySelector('#guide-wrapper') ||
+          document.querySelector('#mini-guide-background');
+        cacheValid = !!(nav && player && drawer && wrapper);
+      }
 
-      if (nav && player && drawer && wrapper && self.dividerEl) {
+      if (cacheValid && self.dividerEl) {
         const navRect = nav.getBoundingClientRect();
         const playerRect = player.getBoundingClientRect();
         const wrapperRect = wrapper.getBoundingClientRect();
@@ -268,20 +296,22 @@ export const ytmAmbientMode = {
   },
 
   _startPoll() {
-    if (this._pollId) clearInterval(this._pollId);
+    if (this._pollId) untrackInterval(this._pollId);
     const self = this;
-    this._pollId = setInterval(() => {
-      if (!self.active) {
-        clearInterval(self._pollId);
-        self._pollId = null;
-        return;
-      }
-      if (!window.location.href.includes('/watch')) {
-        self.hide();
-        return;
-      }
-      self._updateArt();
-    }, 3000);
+    this._pollId = trackInterval(
+      setInterval(() => {
+        if (!self.active) {
+          untrackInterval(self._pollId);
+          self._pollId = null;
+          return;
+        }
+        if (!window.location.href.includes('/watch')) {
+          self.hide();
+          return;
+        }
+        self._updateArt();
+      }, 3000)
+    );
   },
 
   _onPlay: function () {
@@ -305,22 +335,24 @@ export function startAmbientWatcher() {
   let _ambientWatcherId = null;
   function start() {
     if (_ambientWatcherId) return;
-    _ambientWatcherId = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      const s = readJsonGM(SETTINGS_KEY, {});
-      const onWatch = window.location.href.includes('/watch');
-      if (!s.cinematicLighting) {
-        if (ytmAmbientMode.active) ytmAmbientMode.hide();
-        return;
-      }
-      if (onWatch && !ytmAmbientMode.active) {
-        ytmAmbientMode.show();
-      } else if (!onWatch && ytmAmbientMode.active) {
-        ytmAmbientMode.hide();
-      }
-    }, 3000);
+    _ambientWatcherId = trackInterval(
+      setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
+        const s = readJsonGM(SETTINGS_KEY, {});
+        const onWatch = window.location.href.includes('/watch');
+        if (!s.cinematicLighting) {
+          if (ytmAmbientMode.active) ytmAmbientMode.hide();
+          return;
+        }
+        if (onWatch && !ytmAmbientMode.active) {
+          ytmAmbientMode.show();
+        } else if (!onWatch && ytmAmbientMode.active) {
+          ytmAmbientMode.hide();
+        }
+      }, 3000)
+    );
   }
-  setTimeout(start, 3000);
+  trackTimeout(setTimeout(start, 3000));
 
   // Also respond to YTM-specific events immediately
   document.addEventListener('yt-page-data-updated', () => {

@@ -1,11 +1,5 @@
 // Storage Keys - Import and Re-export from centralized config
-import {
-  STORAGE_KEYS,
-  UPDATE_META_URL,
-  VERSION_CHECK_INTERVAL_MS,
-  CACHE_TTL,
-  CACHE_LIMITS,
-} from '../config/storage-keys.js';
+import { STORAGE_KEYS, CACHE_TTL, CACHE_LIMITS } from '../config/storage-keys.js';
 
 export {
   STORAGE_KEYS as STORAGE_KEYS_MDCM,
@@ -29,7 +23,7 @@ export function gmRawGet(key, defaultValue) {
   try {
     const raw = unsafeWindow.localStorage.getItem('yt_tools_' + key);
     return raw !== null ? raw : defaultValue;
-  } catch (e) {
+  } catch {
     return defaultValue;
   }
 }
@@ -41,7 +35,7 @@ export function gmRawSet(key, value) {
   }
   try {
     unsafeWindow.localStorage.setItem('yt_tools_' + key, value);
-  } catch (e) {}
+  } catch {}
 }
 
 export function readJsonGM(key, defaultValue = null) {
@@ -49,7 +43,7 @@ export function readJsonGM(key, defaultValue = null) {
     const raw = gmRawGet(key, null);
     if (raw === null || raw === undefined) return defaultValue;
     return JSON.parse(String(raw));
-  } catch (e) {
+  } catch {
     return defaultValue;
   }
 }
@@ -57,7 +51,7 @@ export function readJsonGM(key, defaultValue = null) {
 export function writeJsonGM(key, value) {
   try {
     gmRawSet(key, JSON.stringify(value));
-  } catch (e) {}
+  } catch {}
 }
 
 // Cache functions
@@ -69,7 +63,7 @@ export function getShortsChannelFromPersistedCache(videoId) {
     const age = Date.now() - (Number(entry.ts) || 0);
     if (age > CACHE_TTL.SHORTS_CHANNEL) return null;
     return entry.channelName;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -87,7 +81,7 @@ export function setShortsChannelToPersistedCache(videoId, channelName) {
     );
     const pruned = Object.fromEntries(entries.slice(0, CACHE_LIMITS.PERSISTED_MAX_ENTRIES));
     writeJsonGM(STORAGE_KEYS.SHORTS_CHANNEL_CACHE, pruned);
-  } catch (e) {}
+  } catch {}
 }
 
 export function getLikesDislikesFromPersistedCache(videoId) {
@@ -107,7 +101,7 @@ export function getLikesDislikesFromPersistedCache(videoId) {
       viewCount: Number.isFinite(viewCount) ? viewCount : null,
       rating: Number.isFinite(rating) && rating >= 0 && rating <= 5 ? rating : null,
     };
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -128,5 +122,5 @@ export function setLikesDislikesToPersistedCache(videoId, data) {
     );
     const pruned = Object.fromEntries(entries.slice(0, CACHE_LIMITS.PERSISTED_MAX_ENTRIES));
     writeJsonGM(STORAGE_KEYS.LIKES_DISLIKES_CACHE, pruned);
-  } catch (e) {}
+  } catch {}
 }

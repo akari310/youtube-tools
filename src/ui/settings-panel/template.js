@@ -37,7 +37,7 @@ export function createSettingsPanel() {
   let version = '2.4.4.2';
   try {
     if (typeof GM_info !== 'undefined') version = GM_info.script.version;
-  } catch (e) {}
+  } catch {}
 
   const menuHTML = html`
     <div class="container-mdcm">

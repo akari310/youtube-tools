@@ -36,16 +36,14 @@ jobs:
         with:
           name: userscript
           path: |
-            dist/youtube-tools.user.js
-            dist/youtube-tools.min.user.js
+            dist/youtube-tools-userscript.user.js
 
       - name: Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/youtube-tools.user.js
-            dist/youtube-tools.min.user.js
+            dist/youtube-tools-userscript.user.js
           tag_name: v${{ github.run_number }}
           generate_release_notes: true
         env:

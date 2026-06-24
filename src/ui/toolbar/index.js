@@ -2,9 +2,9 @@
 // Toolbar (buttons below video / YTM side panel)
 // Extracted from legacy-full.js lines 8226-8600
 // ===========================================
-import { $e, $id, $cl, isYTMusic } from '../../utils/dom.js';
+import { $id, isYTMusic } from '../../utils/dom.js';
 import { Notify } from '../../utils/helpers.js';
-import { createSvgIcon, makeToolBtn } from './svg.js';
+import { makeToolBtn } from './svg.js';
 import { buildDownloadContainer } from './download-container.js';
 
 let validoBotones = true;
@@ -241,13 +241,13 @@ export function buildToolbar() {
   const btn2 = main.querySelector('.btn2');
   if (btn1) {
     btn1.addEventListener('click', () => {
-      const hidden = videoForm.classList.toggle('ocultarframe');
+      videoForm.classList.toggle('ocultarframe');
       audioForm.classList.add('ocultarframeaudio');
     });
   }
   if (btn2) {
     btn2.addEventListener('click', () => {
-      const hidden = audioForm.classList.toggle('ocultarframeaudio');
+      audioForm.classList.toggle('ocultarframeaudio');
       videoForm.classList.add('ocultarframe');
     });
   }

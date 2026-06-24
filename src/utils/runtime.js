@@ -38,6 +38,9 @@ export const __ytToolsRuntime = {
   dislikesCache: {
     videoId: null,
     dislikes: null,
+    likes: null,
+    viewCount: null,
+    rating: null,
     ts: 0,
   },
   downloadClickHandlerInitialized: false,

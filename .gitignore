@@ -5,3 +5,7 @@ build.log
 .env
 .DS_Store
 Thumbs.db
+
+# Reference DOM snapshots (local dev only)
+ytm-element.html
+*.tmp.*

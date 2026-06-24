@@ -41,8 +41,30 @@ export function parseCountText(text) {
   if (!s) return null;
 
   const dotThousandsLocales = [
-    'de', 'es', 'pt', 'id', 'tr', 'nl', 'it', 'pl', 'cs', 'da', 'fi', 'nb', 'sv',
-    'el', 'hu', 'ro', 'sk', 'sl', 'hr', 'bg', 'uk', 'ru', 'ar', 'vi',
+    'de',
+    'es',
+    'pt',
+    'id',
+    'tr',
+    'nl',
+    'it',
+    'pl',
+    'cs',
+    'da',
+    'fi',
+    'nb',
+    'sv',
+    'el',
+    'hu',
+    'ro',
+    'sk',
+    'sl',
+    'hr',
+    'bg',
+    'uk',
+    'ru',
+    'ar',
+    'vi',
   ];
   const isDotThousandsLocale = dotThousandsLocales.some(l => hl.startsWith(l));
 

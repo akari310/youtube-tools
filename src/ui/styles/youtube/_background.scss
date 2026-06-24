@@ -305,6 +305,61 @@ body.yt-style-liquid ytd-feed-filter-chip-bar-renderer,
 body.yt-style-transparent #chips-wrapper,
 body.yt-style-transparent ytd-feed-filter-chip-bar-renderer {
   background: transparent !important;
+  border: none !important;
+}
+
+/* Individual Chips */
+body.yt-style-blur yt-chip-cloud-chip-renderer,
+body.yt-style-liquid yt-chip-cloud-chip-renderer {
+  background: var(--yt-glass-bg-search) !important;
+  backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--yt-glass-blur-search)) saturate(var(--yt-glass-saturate)) !important;
+  border: 1px solid var(--yt-glass-border) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--yt-glass-shadow) !important;
+  color: var(--yt-search-text-color, #eee) !important;
+  transition: all 0.3s ease !important;
+}
+
+body.yt-style-blur yt-chip-cloud-chip-renderer > #chip-container,
+body.yt-style-liquid yt-chip-cloud-chip-renderer > #chip-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+body.yt-style-blur yt-chip-cloud-chip-renderer[selected],
+body.yt-style-liquid yt-chip-cloud-chip-renderer[selected] {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #fff !important;
+}
+
+body.yt-style-blur yt-chip-cloud-chip-renderer:hover,
+body.yt-style-liquid yt-chip-cloud-chip-renderer:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Light Mode Chip overrides */
+body:not(.ytd-dark-theme):not([dark]) yt-chip-cloud-chip-renderer[selected] {
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: #fff !important;
+}
+body:not(.ytd-dark-theme):not([dark]) yt-chip-cloud-chip-renderer:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Scroll arrows for chip bar */
+body.yt-style-blur #left-arrow.ytd-feed-filter-chip-bar-renderer,
+body.yt-style-blur #right-arrow.ytd-feed-filter-chip-bar-renderer,
+body.yt-style-liquid #left-arrow.ytd-feed-filter-chip-bar-renderer,
+body.yt-style-liquid #right-arrow.ytd-feed-filter-chip-bar-renderer {
+  background: transparent !important;
+}
+body.yt-style-blur #left-arrow.ytd-feed-filter-chip-bar-renderer::after,
+body.yt-style-blur #right-arrow.ytd-feed-filter-chip-bar-renderer::before,
+body.yt-style-liquid #left-arrow.ytd-feed-filter-chip-bar-renderer::after,
+body.yt-style-liquid #right-arrow.ytd-feed-filter-chip-bar-renderer::before {
+  background: transparent !important;
 }
 
 /* Rich grid / Home feed */

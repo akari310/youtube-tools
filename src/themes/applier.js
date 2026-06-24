@@ -149,6 +149,7 @@ export function applySettings() {
   // backgroundImage is not a DOM element — read it from GM storage
   const stored = readJsonGM(SETTINGS_KEY, {});
   if (stored.backgroundImage) settings.backgroundImage = stored.backgroundImage;
+  settings.lockupStats = stored.lockupStats ?? true;
 
   $sp('--yt-enhance-menu-bg', getMenuColors().bg);
   $sp('--yt-enhance-menu-text', getMenuColors().text);
@@ -432,7 +433,7 @@ export function applySettings() {
   setupContinueWatchingFeature(settings.continueWatching);
   if (!isYTMusic) {
     setupShortsChannelNameFeature(settings.shortsChannelName);
-    setupLockupCachedStats();
+    setupLockupCachedStats(settings.lockupStats ?? stored.lockupStats ?? true);
   }
 
   // Don't auto-save here — saveSettingsFromDOM() reads DOM values which may

@@ -82,12 +82,4 @@ export default [
       'prefer-const': 'error',
     },
   },
-  {
-    files: ['src/features/**/*.js', 'src/ui/**/*.js', 'src/utils/**/*.js', 'src/index-simple.js'],
-    rules: {
-      // These files are partial refactor modules that are not active in the production entrypoint yet.
-      // Keep syntax/undef checks on, but avoid unused noise until each module is wired in.
-      'no-unused-vars': 'off',
-    },
-  },
 ];

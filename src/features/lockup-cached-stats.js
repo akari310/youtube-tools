@@ -2,6 +2,8 @@ import { __ytToolsRuntime } from '../utils/runtime.js';
 import { getLikesDislikesFromPersistedCache } from '../utils/storage.js';
 import { setHTML } from '../utils/trusted-types.js';
 import { FormatterNumber } from '../utils/helpers.js';
+import { debounce } from '../utils/debounce.js';
+import { trackObserver, untrackObserver } from '../utils/cleanup-manager.js';
 
 // ------------------------------
 // Feature: Show cached rating/likes/dislikes on video cards
@@ -21,7 +23,15 @@ function getVideoIdFromLockup(lockup) {
   return null;
 }
 
+// Cache for SVG icons to avoid repeated DOM parsing
+const svgIconCache = new Map();
+
 function createSvgIconFromString(svgString, sizePx) {
+  const cacheKey = `${svgString}:${sizePx}`;
+  if (svgIconCache.has(cacheKey)) {
+    return svgIconCache.get(cacheKey).cloneNode(true);
+  }
+
   const div = document.createElement('div');
   setHTML(div, svgString.trim());
   const svg = div.firstElementChild;
@@ -31,6 +41,8 @@ function createSvgIconFromString(svgString, sizePx) {
   svg.style.display = 'inline-block';
   svg.style.verticalAlign = 'middle';
   svg.style.marginRight = '2px';
+
+  svgIconCache.set(cacheKey, svg.cloneNode(true));
   return svg;
 }
 
@@ -156,34 +168,26 @@ function hasUnprocessedLockups() {
   return normal || shorts;
 }
 
-function runLockupCachedStatsCatchUp() {
-  if (!window.location.href.includes('youtube.com')) return;
-  if (document.visibilityState !== 'visible') return;
-  if (!hasUnprocessedLockups()) return;
-  injectLockupCachedStats();
-  injectShortsLockupCachedStats();
-}
-
 function createLockupStatsObserver(target) {
-  let lockupStatsDebounceT = null;
-  let lockupStatsScheduled = false;
-  const obs = new MutationObserver(() => {
-    if (lockupStatsScheduled) return;
-    lockupStatsScheduled = true;
-    clearTimeout(lockupStatsDebounceT);
-    lockupStatsDebounceT = setTimeout(() => {
-      lockupStatsScheduled = false;
-      if (!window.location.href.includes('youtube.com')) return;
-      injectLockupCachedStats();
-      injectShortsLockupCachedStats();
-      setTimeout(() => {
-        if (!window.location.href.includes('youtube.com')) return;
-        if (!hasUnprocessedLockups()) return;
-        injectLockupCachedStats();
-        injectShortsLockupCachedStats();
-      }, 1200);
-    }, 280);
-  });
+  const debouncedInject = debounce(() => {
+    if (!window.location.href.includes('youtube.com')) return;
+    injectLockupCachedStats();
+    injectShortsLockupCachedStats();
+  }, 280);
+
+  const catchUpInject = debounce(() => {
+    if (!window.location.href.includes('youtube.com')) return;
+    if (!hasUnprocessedLockups()) return;
+    injectLockupCachedStats();
+    injectShortsLockupCachedStats();
+  }, 1200);
+
+  const obs = trackObserver(
+    new MutationObserver(() => {
+      debouncedInject();
+      catchUpInject();
+    })
+  );
   obs.observe(target, { childList: true, subtree: true });
   return obs;
 }
@@ -191,13 +195,22 @@ function createLockupStatsObserver(target) {
 export function setupLockupCachedStats(enabled) {
   if (!enabled) {
     if (__ytToolsRuntime.lockupCachedStatsObserver) {
-      __ytToolsRuntime.lockupCachedStatsObserver.disconnect();
+      untrackObserver(__ytToolsRuntime.lockupCachedStatsObserver);
       __ytToolsRuntime.lockupCachedStatsObserver = null;
     }
     if (__ytToolsRuntime.lockupCachedStatsIntervalId) {
       clearInterval(__ytToolsRuntime.lockupCachedStatsIntervalId);
       __ytToolsRuntime.lockupCachedStatsIntervalId = null;
     }
+    // Cleanup injected DOM elements and markings
+    document.querySelectorAll('[data-yt-tools-lockup-stats-row]').forEach(el => el.remove());
+    document.querySelectorAll('[data-yt-tools-lockup-stats]').forEach(el => {
+      el.removeAttribute('data-yt-tools-lockup-stats');
+    });
+    document.querySelectorAll('.yt-tools-shorts-stats-wrap').forEach(el => el.remove());
+    document.querySelectorAll('[data-yt-tools-shorts-stats]').forEach(el => {
+      el.removeAttribute('data-yt-tools-shorts-stats');
+    });
     return;
   }
 
@@ -212,7 +225,7 @@ export function setupLockupCachedStats(enabled) {
 
   if (__ytToolsRuntime.lockupCachedStatsObserver) {
     if (observeTarget !== __ytToolsRuntime.lockupCachedStatsObserveTarget) {
-      __ytToolsRuntime.lockupCachedStatsObserver.disconnect();
+      untrackObserver(__ytToolsRuntime.lockupCachedStatsObserver);
       __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
       __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
     }

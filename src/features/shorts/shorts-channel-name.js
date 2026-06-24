@@ -4,6 +4,7 @@ import {
   setShortsChannelToPersistedCache,
 } from '../../utils/storage.js';
 import { FetchQueue } from '../../utils/fetch-queue.js';
+import { trackObserver, untrackObserver } from '../../utils/cleanup-manager.js';
 
 // ------------------------------
 // Feature: Show channel name on Shorts list (Home / feeds)
@@ -15,11 +16,15 @@ export function setupShortsChannelNameFeature(enabled) {
 
   if (!enabled) {
     try {
-      __ytToolsRuntime.shortsChannelName.observer?.disconnect?.();
-    } catch (e) {}
+      if (__ytToolsRuntime.shortsChannelName.observer) {
+        untrackObserver(__ytToolsRuntime.shortsChannelName.observer);
+      }
+    } catch {}
     try {
-      __ytToolsRuntime.shortsChannelName.io?.disconnect?.();
-    } catch (e) {}
+      if (__ytToolsRuntime.shortsChannelName.io) {
+        untrackObserver(__ytToolsRuntime.shortsChannelName.io);
+      }
+    } catch {}
     __ytToolsRuntime.shortsChannelName.observer = null;
     __ytToolsRuntime.shortsChannelName.io = null;
     clearTimeout(__ytToolsRuntime.shortsChannelName.scanT);
@@ -79,7 +84,7 @@ export function setupShortsChannelNameFeature(enabled) {
           credentials: 'same-origin',
           cache: 'force-cache',
         });
-      } catch (e) {
+      } catch {
         return '';
       }
       if (!res?.ok) return '';
@@ -151,28 +156,29 @@ export function setupShortsChannelNameFeature(enabled) {
   };
 
   if (!rt.io) {
-    rt.io = new IntersectionObserver(
-      entries => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const item = entry.target;
-          const videoId = item?.dataset?.ytToolsShortsVideoId;
-          const subhead = findSubhead(item);
-          const label = subhead?.parentElement?.querySelector('.yt-tools-shorts-channel-name');
+    rt.io = trackObserver(
+      new IntersectionObserver(
+        entries => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const item = entry.target;
+            const videoId = item?.dataset?.ytToolsShortsVideoId;
+            const subhead = findSubhead(item);
+            const label = subhead?.parentElement?.querySelector('.yt-tools-shorts-channel-name');
 
-          if (!videoId || !label) {
-            rt.io.unobserve(item);
-            continue;
+            if (!videoId || !label) {
+              rt.io.unobserve(item);
+              continue;
+            }
+            getChannelName(videoId, item)
+              .then(name => {
+                if (name) label.textContent = name;
+              })
+              .finally(() => rt.io.unobserve(item));
           }
-
-          getChannelName(videoId, item)
-            .then(name => {
-              if (name) label.textContent = name;
-            })
-            .finally(() => rt.io.unobserve(item));
-        }
-      },
-      { threshold: 0.15 }
+        },
+        { threshold: 0.15 }
+      )
     );
   }
 
@@ -186,7 +192,7 @@ export function setupShortsChannelNameFeature(enabled) {
   };
 
   if (!rt.observer) {
-    rt.observer = new MutationObserver(scan);
+    rt.observer = trackObserver(new MutationObserver(scan));
     const observeTarget = document.querySelector('#page-manager') || document.body;
     rt.observer.observe(observeTarget, { childList: true, subtree: true });
   }

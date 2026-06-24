@@ -2,7 +2,7 @@ import { $e, $id } from '../utils/dom.js';
 import { setHTML } from '../utils/trusted-types.js';
 import { readJsonGM, writeJsonGM, STORAGE_KEYS_MDCM } from '../utils/storage.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
-import { getCurrentVideoId, formatTimeShort, Notify } from '../utils/helpers.js';
+import { getCurrentVideoId, formatTimeShort, Notify, escapeHtml } from '../utils/helpers.js';
 
 // ------------------------------
 // Feature: Bookmarks per video (persisted)
@@ -49,7 +49,7 @@ export function renderBookmarksPanel(videoId) {
   const itemsHtml = list
     .map(b => {
       const time = formatTimeShort(b.t);
-      const safeLabel = (b.label || time).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const safeLabel = escapeHtml(b.label || time);
       return `
         <div class="yt-bm-item">
           <button type="button" class="yt-bm-go" data-action="go" data-t="${b.t}" title="Go to ${time}">${time}</button>

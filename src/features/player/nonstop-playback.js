@@ -1,5 +1,6 @@
 // Feature: Nonstop Playback — prevents YouTube from pausing when tab loses focus
 import { __ytToolsRuntime } from '../../utils/runtime.js';
+import { trackInterval, untrackInterval } from '../../utils/cleanup-manager.js';
 
 export function applyNonstopPlayback(enabled) {
   const rt = __ytToolsRuntime.nonstopPlayback;
@@ -30,12 +31,12 @@ export function applyNonstopPlayback(enabled) {
       try {
         const pageWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
         if ('_lact' in pageWindow) pageWindow._lact = Date.now();
-      } catch (e) {
+      } catch {
         /* ignore */
       }
     };
     refreshActivity();
-    rt.keepAliveTimer = setInterval(refreshActivity, 60000);
+    rt.keepAliveTimer = trackInterval(setInterval(refreshActivity, 60000));
     return;
   }
 
@@ -47,7 +48,7 @@ export function applyNonstopPlayback(enabled) {
     rt.blockVisibilityEvent = null;
   }
   if (rt.keepAliveTimer) {
-    clearInterval(rt.keepAliveTimer);
+    untrackInterval(rt.keepAliveTimer);
     rt.keepAliveTimer = null;
   }
   try {
@@ -56,7 +57,7 @@ export function applyNonstopPlayback(enabled) {
     if (rt.visibilityStateDescriptor)
       Object.defineProperty(document, 'visibilityState', rt.visibilityStateDescriptor);
     else delete document.visibilityState;
-  } catch (e) {
+  } catch {
     /* ignore */
   }
   rt.hiddenDescriptor = null;

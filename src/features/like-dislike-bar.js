@@ -24,7 +24,14 @@ export async function ensureDislikesForCurrentVideo() {
   }
   const persisted = getLikesDislikesFromPersistedCache(videoId);
   if (persisted && persisted.dislikes != null) {
-    __ytToolsRuntime.dislikesCache = { videoId, dislikes: persisted.dislikes, ts: now };
+    __ytToolsRuntime.dislikesCache = {
+      videoId,
+      dislikes: persisted.dislikes,
+      likes: persisted.likes ?? null,
+      viewCount: persisted.viewCount ?? null,
+      rating: persisted.rating ?? null,
+      ts: now,
+    };
     return persisted.dislikes;
   }
   try {
@@ -34,8 +41,15 @@ export async function ensureDislikesForCurrentVideo() {
     const viewCount = Number(data?.viewCount);
     const rating = Number(data?.rating);
     if (Number.isFinite(dislikes)) {
-      __ytToolsRuntime.dislikesCache = { videoId, dislikes, ts: now };
       const likes = getLikesFromDom();
+      __ytToolsRuntime.dislikesCache = {
+        videoId,
+        dislikes,
+        likes: likes ?? null,
+        viewCount: Number.isFinite(viewCount) ? viewCount : null,
+        rating: Number.isFinite(rating) && rating >= 0 && rating <= 5 ? rating : null,
+        ts: now,
+      };
       setLikesDislikesToPersistedCache(videoId, {
         likes: likes != null ? likes : undefined,
         dislikes,

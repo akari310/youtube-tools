@@ -2,13 +2,14 @@
 // Settings Panel Events
 // Extracted from legacy-full.js lines 5800-6400
 // ===========================================
-import { $id, $e, $sp } from '../../utils/dom.js';
+import { $id, $sp } from '../../utils/dom.js';
 import { saveSettingsFromDOM, applySettings, setMenuColor } from '../../themes/theme-engine.js';
 import { loadSettings } from '../../settings/settings-manager.js';
 import { onWaveStyleChange } from '../../features/wave-visualizer.js';
 import { updateVideoInfoPanel } from '../video-info-panel/index.js';
 import { SETTINGS_KEY } from '../../settings/storage-key.js';
 import { gmRawSet } from '../../utils/storage.js';
+import { setAudioOnlyTabOverride, applyAudioOnlyMode } from '../../features/player/audio-only.js';
 
 /** Persist + theme pass, then tell `main.js` to re-run feature inits (wave visualizer, etc.). */
 function persistApplyAndNotifyFeatures() {
@@ -75,6 +76,22 @@ export function setupSettingsPanelEvents(panelDOM) {
         onWaveStyleChange(input.value, saveSettingsFromDOM);
         return;
       }
+
+      // Special handler for audio-only-tab-toggle (tab-specific override)
+      if (input.id === 'audio-only-tab-toggle') {
+        const enabled = input.checked;
+        const globalToggle = $id('audio-only-toggle');
+        const globalEnabled = globalToggle ? globalToggle.checked : false;
+        // Use static import since it's already in the main bundle
+        try {
+          setAudioOnlyTabOverride(enabled, globalEnabled);
+          applyAudioOnlyMode(enabled);
+        } catch (e) {
+          console.warn('[YT Tools] Failed to apply audio-only tab override:', e);
+        }
+        return;
+      }
+
       persistApplyAndNotifyFeatures();
     });
   });

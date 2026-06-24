@@ -69,8 +69,8 @@ ${
     ? `
 /* YTM: Elevate content above blur layers */
 ytmusic-app {
+  /* Removed z-index to prevent stacking context trap for dialogs */
   position: relative !important;
-  z-index: 3 !important;
 }
 `
     : ''

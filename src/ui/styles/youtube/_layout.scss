@@ -24,6 +24,7 @@
 }
 body .container-mdcm {
   font-family:
+    'Plus Jakarta Sans',
     'Inter',
     -apple-system,
     sans-serif;
@@ -37,12 +38,14 @@ body .container-mdcm {
 .container-mdcm {
   width: 420px;
   max-width: 420px;
-  background: rgba(30, 30, 30, 0.6) !important;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(22, 22, 22, 0.45) !important;
+  border-radius: 20px 20px 0 0;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
   max-height: 80vh;
@@ -76,8 +79,10 @@ body .container-mdcm {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 0;
-  background-color: var(--yt-enhance-menu-bg, #252525);
-  border-radius: 16px 16px 0 0;
+  background-color: rgba(22, 22, 22, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px 20px 0 0;
   z-index: 10;
   display: flex;
   justify-content: space-between;
@@ -129,15 +134,18 @@ body .container-mdcm {
 
 .tabs-mdcm {
   padding: 10px 12px;
-  margin: 10px 0;
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   position: sticky;
-  top: 50px;
-  background-color: var(--yt-enhance-menu-bg, #252525);
+  top: 52px;
+  background-color: rgba(22, 22, 22, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 10;
   display: flex;
   gap: 8px;
   -ms-overflow-style: none;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 
 .tabs-mdcm::-webkit-scrollbar {
@@ -184,14 +192,16 @@ body .container-mdcm {
 
 .tab-mdcm.active {
   background: var(--yt-enhance-menu-accent, var(--primary-custom)) !important;
-  color: var(--text-custom);
-  font-weight: 500;
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--yt-enhance-menu-accent, var(--primary-custom)) 40%, transparent);
 }
 
 .tab-mdcm:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .options-mdcm {
@@ -415,19 +425,17 @@ label {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 11px;
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.075);
-  border-radius: 10px;
-  transition:
-    background 0.16s ease,
-    border-color 0.16s ease,
-    transform 0.16s ease;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .container-mdcm .toggle-row:hover {
-  background: rgba(255, 255, 255, 0.085);
-  border-color: rgba(255, 255, 255, 0.14);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .container-mdcm .toggle-label-text {
@@ -468,12 +476,10 @@ label {
   position: absolute;
   inset: 0;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  transition:
-    background 0.16s ease,
-    border-color 0.16s ease;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .container-mdcm .toggle-slider-mdcm::before {
@@ -483,19 +489,22 @@ label {
   height: 16px;
   left: 2px;
   top: 2px;
-  background: #fff;
+  background: #ffffff;
   border-radius: 50%;
-  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
-  transition: transform 0.16s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .container-mdcm .checkbox-mdcm:checked + .toggle-slider-mdcm {
   background: var(--yt-enhance-menu-accent, var(--primary-custom));
   border-color: var(--yt-enhance-menu-accent, var(--primary-custom));
+  box-shadow: 0 0 12px
+    color-mix(in srgb, var(--yt-enhance-menu-accent, var(--primary-custom)) 50%, transparent);
 }
 
 .container-mdcm .checkbox-mdcm:checked + .toggle-slider-mdcm::before {
   transform: translateX(16px);
+  box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .container-mdcm .quality-selector-mdcm,
@@ -575,24 +584,27 @@ label {
 .action-btn-mdcm {
   flex: 1;
   padding: 8px;
-  border: none;
-  border-radius: 6px;
-  background: var(--primary-custom);
-  color: var(--text-custom);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: var(--yt-enhance-menu-accent, var(--primary-custom));
+  color: #fff;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.3s;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+  gap: 6px;
+  box-shadow: 0 4px 12px
+    color-mix(in srgb, var(--yt-enhance-menu-accent, var(--primary-custom)) 40%, transparent);
 }
 
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 0, 0, 0.3);
+.action-btn-mdcm:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px
+    color-mix(in srgb, var(--yt-enhance-menu-accent, var(--primary-custom)) 60%, transparent);
+  filter: brightness(1.1);
 }
 
 textarea.textarea-mdcm {
@@ -755,7 +767,7 @@ textarea.textarea-mdcm:focus {
   cursor: pointer !important;
   outline: none !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
-  transition: all 0.3s ease !important;
+  transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease !important;
   margin: 0 auto !important;
   display: block !important;
   min-width: 280px !important;
@@ -765,6 +777,7 @@ textarea.textarea-mdcm:focus {
   text-align: center !important;
   text-align-last: center !important;
   position: relative;
+  overflow: hidden;
 }
 
 .selectcalidades:hover,

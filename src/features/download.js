@@ -1,11 +1,10 @@
 import {
-  API_URL_AUDIO_VIDEO,
   getApiKey,
   DOWNLOAD_API_FALLBACK_BASES,
   DUBS_START_ENDPOINT,
   DUBS_STATUS_ENDPOINT,
 } from '../config/constants.js';
-import { $e, $id } from '../utils/dom.js';
+import { $id } from '../utils/dom.js';
 import { Notify, paramsVideoURL } from '../utils/helpers.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
 
@@ -46,14 +45,47 @@ export async function startDownloadVideoOrAudio(format, container) {
   container.dataset.urlOpened = 'false';
   container.dataset.lastDownloadUrl = '';
 
+  // Set gradient class based on type
+  const typeClass = container.classList.contains('ocultarframeaudio') ? 'audio' : 'video';
+  container.classList.remove('audio', 'video');
+  if (typeClass) container.classList.add(typeClass);
+
+  // Create or get status text element
+  let statusText = container.querySelector('.download-status-text');
+  if (!statusText) {
+    statusText = document.createElement('div');
+    statusText.className = 'download-status-text status-dot';
+    container.appendChild(statusText);
+  }
+
   // Update UI to show progress
   if (downloadBtn) downloadBtn.style.display = 'none';
   if (retryBtn) retryBtn.style.display = 'none';
   if (progressRetryBtn) progressRetryBtn.style.display = 'block';
   if (downloadAgainBtn) downloadAgainBtn.style.display = 'none';
   if (progressContainer) progressContainer.style.display = 'flex';
-  if (progressFill) progressFill.style.width = '0%';
+  if (progressFill) {
+    progressFill.style.width = '0%';
+    progressFill.classList.add('indeterminate');
+  }
   if (progressText) progressText.textContent = '0%';
+  if (statusText) {
+    statusText.textContent = 'Connecting to server...';
+    statusText.className = 'download-status-text status-dot';
+  }
+
+  const updateProgress = (pct, statusMsg) => {
+    if (progressFill) {
+      if (pct > 0) {
+        progressFill.classList.remove('indeterminate');
+      }
+      progressFill.style.width = `${pct}%`;
+    }
+    if (progressText) progressText.textContent = `${Math.round(pct)}%`;
+    if (statusText && statusMsg) {
+      statusText.textContent = statusMsg;
+    }
+  };
 
   const fetchJsonWithTimeout = async (url, timeoutMs = 20000) => {
     const ctrl = new AbortController();
@@ -98,26 +130,30 @@ export async function startDownloadVideoOrAudio(format, container) {
       setErrorState();
       return;
     }
-    // Save for the "download again" button
     container.dataset.lastDownloadUrl = String(downloadUrl);
-    // Check if URL was already opened
     if (container.dataset.urlOpened === 'true') return;
-    // Mark URL as opened
     container.dataset.urlOpened = 'true';
-    // Update UI to show completion
     container.classList.add('completed');
     container.classList.remove('video', 'audio');
     if (downloadText) downloadText.textContent = 'Download Complete!';
-    if (progressFill) progressFill.style.width = '100%';
+    if (progressFill) {
+      progressFill.classList.remove('indeterminate');
+      progressFill.style.width = '100%';
+    }
     if (progressText) progressText.textContent = '100%';
     if (progressRetryBtn) progressRetryBtn.style.display = 'none';
     if (downloadAgainBtn) downloadAgainBtn.style.display = 'flex';
+    if (statusText) {
+      statusText.className = 'download-status-text';
+      statusText.textContent = 'File ready. Downloading...';
+    }
     container.dataset.downloading = 'false';
     Notify('success', 'Download started!');
     try {
       const a = document.createElement('a');
+      const filename = `youtube-audio.${format === 'webm' || format === 'opus' || format === 'ogg' ? format : 'mp3'}`;
       a.href = downloadUrl;
-      a.target = '_blank';
+      a.download = filename;
       a.rel = 'noopener noreferrer';
       a.style.display = 'none';
       document.body.appendChild(a);
@@ -140,14 +176,21 @@ export async function startDownloadVideoOrAudio(format, container) {
         delay = 2000;
 
         const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
-        if (progressFill) progressFill.style.width = `${progress}%`;
-        if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+        updateProgress(progress, progress < 10 ? 'Processing...' : 'Downloading...');
 
         if (Number(progressData.progress) >= 1000 && progressData.download_url) {
+          console.log('[YT Tools] Download ready:', {
+            progress: progressData.progress,
+            url: progressData.download_url,
+          });
           clearTimeout(container.__ytDownloadPoll);
           container.__ytDownloadPoll = null;
           markCompleteAndOpen(progressData.download_url);
           return;
+        }
+
+        if (Number(progressData.progress) >= 1000 && !progressData.download_url) {
+          console.warn('[YT Tools] Download reached 100% but no download_url:', progressData);
         }
       } catch (e) {
         failCount++;
@@ -204,8 +247,7 @@ export async function startDownloadVideoOrAudio(format, container) {
 
         const rawProgress = Number(st?.progress) || 0;
         const progress = Math.min(rawProgress / 10, 100);
-        if (progressFill) progressFill.style.width = `${progress}%`;
-        if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+        updateProgress(progress, progress < 10 ? 'Processing...' : 'Downloading...');
 
         if (st?.finished && st?.downloadUrl) {
           clearTimeout(container.__ytDownloadPoll);
@@ -236,10 +278,12 @@ export async function startDownloadVideoOrAudio(format, container) {
 
     for (const base of DOWNLOAD_API_FALLBACK_BASES) {
       try {
+        updateProgress(5, 'Trying SaveNow provider...');
         started = await trySaveNowProvider(base);
         break;
       } catch (e) {
         lastErr = e;
+        console.warn(`[YT Tools] SaveNow (${base}) failed:`, e);
       }
     }
 
@@ -249,6 +293,7 @@ export async function startDownloadVideoOrAudio(format, container) {
     }
 
     console.warn('[YT Tools] SaveNow failed, trying dubs.io', lastErr);
+    updateProgress(10, 'Fallback: Trying Dubs provider...');
     await tryDubsProvider();
   } catch (error) {
     setErrorState('All download servers are busy. Please retry later.');
@@ -345,7 +390,6 @@ export function initDownloadFeature() {
   downloadBtn.dataset.ytDownloadBound = '1';
 
   downloadBtn.addEventListener('click', () => {
-    const videoUrl = window.location.href;
     const format = $id('downloadFormat')?.value || 'mp4';
     const quality = $id('downloadQuality')?.value || 'best';
 

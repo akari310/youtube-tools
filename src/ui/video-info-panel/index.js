@@ -2,9 +2,9 @@
 // Video Info Panel (Header tab in settings)
 // Extracted from legacy-full.js lines 5548-5716
 // ===========================================
-import { $e, $id, isYTMusic } from '../../utils/dom.js';
-
+import { $e, $id } from '../../utils/dom.js';
 import { Notify } from '../../utils/helpers.js';
+import { trackInterval } from '../../utils/cleanup-manager.js';
 
 let lastVideoInfoSnapshot = null;
 
@@ -23,7 +23,7 @@ function getCurrentVideoMeta() {
         thumb: d?.video_id ? `https://i.ytimg.com/vi/${d.video_id}/hqdefault.jpg` : '',
       };
     }
-  } catch (e) {
+  } catch {
     // fallback
   }
   return { title: '', author: '', thumb: '' };
@@ -37,7 +37,7 @@ function getCurrentVideoId() {
     if (location.href.includes('youtube.com/watch')) {
       return new URLSearchParams(window.location.search).get('v');
     }
-  } catch (e) {
+  } catch {
     /* */
   }
   return null;
@@ -47,7 +47,7 @@ function getVideoInfoPlayerResponse() {
   try {
     const w = typeof unsafeWindow !== 'undefined' && unsafeWindow ? unsafeWindow : window;
     return w?.ytInitialPlayerResponse || window.ytInitialPlayerResponse || null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -73,7 +73,7 @@ export function getVideoInfoSnapshot() {
       const levels = moviePlayer.getAvailableQualityLevels();
       if (Array.isArray(levels) && levels.length) availableQuality = levels.join(', ');
     }
-  } catch (e) {
+  } catch {
     /* */
   }
 
@@ -209,7 +209,7 @@ export function copyVideoInfoValue(type) {
   try {
     navigator.clipboard.writeText(text);
     Notify('success', 'Copied video info');
-  } catch (e) {
+  } catch {
     prompt('Copy video info:', text);
   }
 }
@@ -230,11 +230,14 @@ export function initVideoInfoPanel(panelEl) {
 
   // Periodic update when headers tab is active
   if (!window.__ytToolsVideoInfoIntervalId) {
-    window.__ytToolsVideoInfoIntervalId = setInterval(() => {
-      if ($id('headers')?.classList?.contains('active')) {
-        updateVideoInfoPanel();
-      }
-    }, 1000);
+    window.__ytToolsVideoInfoIntervalId = trackInterval(
+      setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
+        if ($id('headers')?.classList?.contains('active')) {
+          updateVideoInfoPanel();
+        }
+      }, 1000)
+    );
   }
 
   // Update when menu opens

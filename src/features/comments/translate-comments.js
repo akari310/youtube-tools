@@ -1,6 +1,12 @@
 import { $id, $m } from '../../utils/dom.js';
 import { safeHTML, setHTML } from '../../utils/trusted-types.js';
 import { apiGoogleTranslate } from '../../config/constants.js';
+import {
+  trackObserver,
+  untrackObserver,
+  trackEventListener,
+  untrackEventListener,
+} from '../../utils/cleanup-manager.js';
 
 // ------------------------------
 // Feature: Translate Comments - Optimized Version
@@ -80,7 +86,7 @@ function traductor() {
               const datos = JSON.parse(res.responseText);
               textNode.textContent = datos[0][0];
               btn.textContent = 'Translated';
-            } catch (e) {
+            } catch {
               btn.textContent = 'Error';
             }
           },
@@ -102,7 +108,7 @@ function traductor() {
       }
     };
 
-    document.addEventListener('click', translatorClickHandler);
+    trackEventListener(document, 'click', translatorClickHandler);
   }
 }
 
@@ -113,7 +119,7 @@ function limpiarHTML(selector) {
 /** Remove translate buttons and document click listener. */
 export function cleanupTranslateComments() {
   if (translatorClickHandler) {
-    document.removeEventListener('click', translatorClickHandler);
+    untrackEventListener(document, 'click', translatorClickHandler);
     translatorClickHandler = null;
   }
   translatorEventBound = false;
@@ -122,8 +128,18 @@ export function cleanupTranslateComments() {
   document.querySelectorAll('#content-text[data-translated]').forEach(el => {
     el.removeAttribute('data-translated');
   });
-  if (_commentIO) { try { _commentIO.disconnect(); } catch {} _commentIO = null; }
-  if (_commentMO) { try { _commentMO.disconnect(); } catch {} _commentMO = null; }
+  if (_commentIO) {
+    try {
+      untrackObserver(_commentIO);
+    } catch {}
+    _commentIO = null;
+  }
+  if (_commentMO) {
+    try {
+      untrackObserver(_commentMO);
+    } catch {}
+    _commentMO = null;
+  }
 }
 
 // === CODE TỐI ƯU MỚI THAY THẾ CHO SCROLL EVENT === (YT only)
@@ -137,46 +153,50 @@ function initSmartCommentObserver() {
   // Disconnect previous observers to avoid duplicates
   if (_commentIO) {
     try {
-      _commentIO.disconnect();
-    } catch (e) {}
+      untrackObserver(_commentIO);
+    } catch {}
     _commentIO = null;
   }
   if (_commentMO) {
     try {
-      _commentMO.disconnect();
-    } catch (e) {}
+      untrackObserver(_commentMO);
+    } catch {}
     _commentMO = null;
   }
 
-  _commentIO = new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting) {
-      _commentMO = new MutationObserver(mutations => {
-        let shouldUpdate = false;
-        for (const m of mutations) {
-          if (m.addedNodes.length > 0) {
-            shouldUpdate = true;
-            break;
-          }
-        }
+  _commentIO = trackObserver(
+    new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        _commentMO = trackObserver(
+          new MutationObserver(mutations => {
+            let shouldUpdate = false;
+            for (const m of mutations) {
+              if (m.addedNodes.length > 0) {
+                shouldUpdate = true;
+                break;
+              }
+            }
 
-        if (shouldUpdate) {
-          window.requestAnimationFrame(() => {
-            traductor();
+            if (shouldUpdate) {
+              window.requestAnimationFrame(() => {
+                traductor();
+              });
+            }
+          })
+        );
+
+        const commentContents = document.querySelector('ytd-comments #contents');
+        if (commentContents) {
+          _commentMO.observe(commentContents, {
+            childList: true,
+            subtree: true,
           });
         }
-      });
 
-      const commentContents = document.querySelector('ytd-comments #contents');
-      if (commentContents) {
-        _commentMO.observe(commentContents, {
-          childList: true,
-          subtree: true,
-        });
+        untrackObserver(_commentIO);
       }
-
-      _commentIO.disconnect();
-    }
-  });
+    })
+  );
 
   _commentIO.observe(commentsContainer);
 }
@@ -190,16 +210,9 @@ export function initTranslateComments(settings) {
   // Clean up previous instances before re-initializing
   cleanupTranslateComments();
 
-  // Initialize smart observer for YouTube only
+  // Initialize smart observer for YouTube only, with a delay for DOM readiness
   if (!window.location.hostname.includes('music.youtube.com')) {
-    if (!window.__ytToolsCommentNavBound) {
-      window.__ytToolsCommentNavBound = true;
-      document.addEventListener('yt-navigate-finish', () => {
-        setTimeout(initSmartCommentObserver, 1500);
-      });
-    }
-
-    initSmartCommentObserver();
+    setTimeout(initSmartCommentObserver, 1500);
   }
 
   // Run once immediately for any existing comments

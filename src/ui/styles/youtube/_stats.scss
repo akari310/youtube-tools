@@ -330,13 +330,18 @@
 }
 
 /* Streak fire animation */
-.stat-card[style*="fb923c"] .stat-card-icon i {
+.stat-card[style*='fb923c'] .stat-card-icon i {
   animation: streak-pulse 2s ease-in-out infinite;
 }
 
 @keyframes streak-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
 }
 
 /* Audio-only mode - hide video */

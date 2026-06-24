@@ -15,8 +15,12 @@ import {
   setWaveStyle,
 } from '../utils/state.js';
 import { SMOOTHING_FACTOR, CANVAS_HEIGHT, SCALE, PROCESSED_FLAG } from '../config/constants.js';
-import { saveSettingsFromDOM } from '../settings/persistence.js';
-import { trackObserver, untrackObserver } from '../utils/cleanup-manager.js';
+import {
+  trackObserver,
+  untrackObserver,
+  trackTimeout,
+  untrackTimeout,
+} from '../utils/cleanup-manager.js';
 
 const PW = pageWindow;
 const PD = pageDocument;
@@ -44,13 +48,14 @@ function waveThemeColors() {
 }
 /** After a failed tap into the video graph, avoid hammering setup on every DOM mutation (YouTube is noisy). */
 const WAVE_FAIL_RETRY_MS = 4000;
-let waveVisualizerUnloadBound = false;
 let videoObserver = null;
 let observerDebounce = null;
 /** Last settings object passed to `initWaveVisualizer` — used by `checkForVideo` / observer. */
 let waveSettingsSnapshot = null;
 /** Unlock gesture listeners — tracked for cleanup. */
 let waveUnlockHandlers = [];
+/** Pending retry timer (init fallback) — tracked for cleanup. */
+let waveRetryTimer = null;
 
 function ensureWaveMutationObserver() {
   if (!waveSettingsSnapshot?.waveVisualizer || videoObserver) return;
@@ -83,13 +88,13 @@ function checkForVideo() {
   const video = PD().querySelector('video');
   const miniPlayer = PD().querySelector('.ytp-miniplayer-ui');
   const urlMatchesPlayer =
-    href.includes('/watch') || href.includes('/shorts/') || href.includes('youtu.be/') || /youtube\.com\/live\//.test(href);
+    href.includes('/watch') ||
+    href.includes('/shorts/') ||
+    href.includes('youtu.be/') ||
+    /youtube\.com\/live\//.test(href);
   const inContext = (video && (urlMatchesPlayer || isYTMusic)) || !!miniPlayer;
 
-  console.log('[WaveViz] checkForVideo - video found:', !!video, 'inContext:', inContext, 'url:', href);
-
   if (!inContext || !video) {
-    console.log('[WaveViz] No video in context, skipping setup');
     cleanupWaveVisualizer(false);
     ensureWaveMutationObserver();
     return;
@@ -98,9 +103,13 @@ function checkForVideo() {
   if (video !== s.currentVideo || !s.isSetup) {
     cleanupWaveVisualizer(false);
     setupWaveForVideo(video);
-    // Nếu setup chưa thành công, retry sau
     if (!s.isSetup) {
-      setTimeout(() => checkForVideo(), WAVE_FAIL_RETRY_MS);
+      waveRetryTimer = trackTimeout(
+        setTimeout(() => {
+          waveRetryTimer = null;
+          checkForVideo();
+        }, WAVE_FAIL_RETRY_MS)
+      );
     }
   } else if (!video.paused) {
     showCanvas();
@@ -109,31 +118,37 @@ function checkForVideo() {
   ensureWaveMutationObserver();
 }
 
+let waveUnloadHandlers = null;
+
 function bindWaveVisualizerUnload() {
-  if (waveVisualizerUnloadBound) return;
-  PW().addEventListener('beforeunload', () => cleanupWaveVisualizer(true));
-  PW().addEventListener('pagehide', () => cleanupWaveVisualizer(true));
-  PW().addEventListener('yt-navigate-finish', () => {
-    cleanupWaveVisualizer(false);
-    waveVisualizerUnloadBound = false;
-  });
-  waveVisualizerUnloadBound = true;
+  if (waveUnloadHandlers) return;
+  const onUnload = () => cleanupWaveVisualizer(true);
+  const onNav = () => cleanupWaveVisualizer(false);
+  PW().addEventListener('beforeunload', onUnload);
+  PW().addEventListener('pagehide', onUnload);
+  PW().addEventListener('yt-navigate-finish', onNav);
+  waveUnloadHandlers = { onUnload, onNav };
+}
+
+function unbindWaveVisualizerUnload() {
+  if (!waveUnloadHandlers) return;
+  const { onUnload, onNav } = waveUnloadHandlers;
+  PW().removeEventListener('beforeunload', onUnload);
+  PW().removeEventListener('pagehide', onUnload);
+  PW().removeEventListener('yt-navigate-finish', onNav);
+  waveUnloadHandlers = null;
 }
 
 function createWaveSource(audioCtx, video) {
-  // Try to connect directly to the video element
   try {
     return audioCtx.createMediaElementSource(video);
-  } catch (e) {
+  } catch {
     // YouTube already connected the video to its own AudioContext.
-    // Fall back to captureStream() — this captures the media output independently.
+    // Fall back to captureStream() — captures media output independently.
     if (video.captureStream) {
       try {
-        const stream = video.captureStream();
-        return audioCtx.createMediaStreamSource(stream);
-      } catch (_) {
-        console.warn('[WaveViz] captureStream also failed:', _);
-      }
+        return audioCtx.createMediaStreamSource(video.captureStream());
+      } catch {}
     }
     console.warn(
       '[WaveViz] Cannot create audio source — video already connected and captureStream unavailable.'
@@ -157,32 +172,35 @@ function resetAudioState() {
 export function cleanupWaveVisualizer(isUnload = false) {
   resetAudioState();
 
-  // Close AudioContext only on full unload
+  if (waveRetryTimer) {
+    untrackTimeout(waveRetryTimer);
+    waveRetryTimer = null;
+  }
+
   if (isUnload) {
     if (s.audioCtx && s.audioCtx.state !== 'closed') {
       try {
         s.audioCtx.close();
-      } catch (_) {}
+      } catch {}
     }
     setAudioCtx(null);
-    // Clear cached sources on full unload
     PD()
       .querySelectorAll('video')
       .forEach(v => {
         delete v.__ytToolsAudioSource;
       });
+    unbindWaveVisualizerUnload();
+    removeUnlockHandlers();
   }
 
   PW().__ytModularWaveActive = false;
 
-  // Remove canvas
   if (s.canvas && s.canvas.parentNode) {
     s.canvas.parentNode.removeChild(s.canvas);
   }
   setCanvas(null);
   setCtx(null);
 
-  // Remove video event listeners
   PD()
     .querySelectorAll('video')
     .forEach(v => {
@@ -196,43 +214,25 @@ export function cleanupWaveVisualizer(isUnload = false) {
 
   PW().removeEventListener('resize', updateCanvasSize);
 
-  // Clean up observer
   if (videoObserver) {
     untrackObserver(videoObserver);
     videoObserver = null;
   }
   clearTimeout(observerDebounce);
   observerDebounce = null;
-
-  // Clean up unlock gesture listeners
-  waveUnlockHandlers.forEach(({ el, type, handler }) => {
-    try {
-      el.removeEventListener(type, handler);
-    } catch {}
-  });
-  waveUnlockHandlers = [];
 }
 
 export function hideCanvas() {
-  console.log('[WaveViz] hideCanvas() called');
   const canvas = PD().getElementById('wave-visualizer-canvas');
-  if (canvas) {
-    canvas.style.opacity = '0';
-  }
+  if (canvas) canvas.style.opacity = '0';
 }
 
 export function showCanvas() {
-  console.log('[WaveViz] showCanvas() called, audioCtx state:', s.audioCtx?.state);
   if (s.audioCtx && s.audioCtx.state === 'suspended') {
     s.audioCtx.resume().catch(() => {});
   }
   const canvas = PD().getElementById('wave-visualizer-canvas');
-  if (canvas) {
-    canvas.style.opacity = '1';
-    console.log('[WaveViz] Canvas opacity set to 1');
-  } else {
-    console.warn('[WaveViz] Canvas element not found in showCanvas()');
-  }
+  if (canvas) canvas.style.opacity = '1';
 }
 
 function teardownSource() {
@@ -242,13 +242,13 @@ function teardownSource() {
       if (s.audioCtx && s.audioCtx.state !== 'closed') {
         s.source.connect(s.audioCtx.destination);
       }
-    } catch (_) {}
+    } catch {}
     setSource(null);
   }
   if (s.analyser) {
     try {
       s.analyser.disconnect();
-    } catch (_) {}
+    } catch {}
     setAnalyser(null);
   }
   if (s.animationId) {
@@ -270,21 +270,13 @@ function teardownSource() {
 }
 
 export function setupWaveForVideo(video) {
-  console.log('[WaveViz] setupWaveForVideo called for video element');
-  if (!video || video[PROCESSED_FLAG]) {
-    console.log('[WaveViz] Video already processed or null, skipping');
-    return;
-  }
-  if (video._ytWaveRetryAfter && Date.now() < video._ytWaveRetryAfter) {
-    console.log('[WaveViz] In retry cooldown, skipping');
-    return;
-  }
+  if (!video || video[PROCESSED_FLAG]) return;
+  if (video._ytWaveRetryAfter && Date.now() < video._ytWaveRetryAfter) return;
 
   teardownSource();
   setCurrentVideo(video);
 
   createVisualizerOverlay();
-  console.log('[WaveViz] Canvas created/updated, id:', s.canvas?.id, 'opacity:', s.canvas?.style.opacity);
 
   try {
     // Reuse existing AudioContext if possible (suspend/resume pattern)
@@ -308,7 +300,7 @@ export function setupWaveForVideo(video) {
       sourceNode = video.__ytToolsAudioSource;
       try {
         sourceNode.disconnect();
-      } catch (_) {}
+      } catch {}
     } else {
       sourceNode = createWaveSource(s.audioCtx, video);
       if (sourceNode) {
@@ -317,7 +309,9 @@ export function setupWaveForVideo(video) {
     }
 
     if (!sourceNode) {
-      console.error('[WaveViz] Failed to create audio source - YouTube may have already connected video to AudioContext');
+      console.error(
+        '[WaveViz] Failed to create audio source - YouTube may have already connected video to AudioContext'
+      );
       video._ytWaveFail = true;
       video._ytWaveRetryAfter = Date.now() + WAVE_FAIL_RETRY_MS;
       // Show canvas anyway with a static wave as fallback
@@ -340,24 +334,15 @@ export function setupWaveForVideo(video) {
     setAnalyser(analyser);
     setSource(sourceNode);
 
-    // Attach play/pause/ended listeners to toggle canvas visibility
     video.removeEventListener('play', showCanvas);
     video.removeEventListener('pause', hideCanvas);
     video.removeEventListener('ended', hideCanvas);
     video.addEventListener('play', showCanvas);
     video.addEventListener('pause', hideCanvas);
     video.addEventListener('ended', hideCanvas);
-    console.log('[WaveViz] Event listeners attached to video');
 
-    // If video is already playing, show the canvas immediately
-    const isPlaying = !video.paused && !video.ended;
-    console.log('[WaveViz] Video playing state:', isPlaying, 'paused:', video.paused, 'ended:', video.ended);
-    if (isPlaying) {
-      console.log('[WaveViz] Video is playing, calling showCanvas()');
-      showCanvas();
-    }
+    if (!video.paused && !video.ended) showCanvas();
 
-    // Ensure resize handler is wired
     PW().removeEventListener('resize', updateCanvasSize);
     PW().addEventListener('resize', updateCanvasSize);
 
@@ -410,15 +395,8 @@ function draw() {
 
   s.analyser.getByteTimeDomainData(s.dataArray);
 
-  let hasAudio = false;
   for (let i = 0; i < s.bufferLength; i++) {
-    if (s.dataArray[i] !== 128) hasAudio = true;
     s.smoothedData[i] += SMOOTHING_FACTOR * (s.dataArray[i] - s.smoothedData[i]);
-  }
-  
-  if (hasAudio && !s.canvas.dataset.hasAudioLogged) {
-    console.log('[WaveViz] 🌊 Audio data received! First non-zero frame drawing.');
-    s.canvas.dataset.hasAudioLogged = 'true';
   }
 
   const w = s.canvas.width;
@@ -544,12 +522,10 @@ export function onWaveStyleChange(value, saveSettingsFn) {
 }
 
 export function initWaveVisualizer(settings) {
-  console.log('[WaveViz] initWaveVisualizer called, enabled:', settings?.waveVisualizer);
   bindWaveVisualizerUnload();
   waveSettingsSnapshot = settings;
 
   if (!settings?.waveVisualizer) {
-    console.log('[WaveViz] Wave visualizer disabled in settings');
     cleanupWaveVisualizer();
     waveSettingsSnapshot = null;
     return;
@@ -561,7 +537,6 @@ export function initWaveVisualizer(settings) {
   // Tell legacy code to skip its wave visualizer BEFORE touching any video
   PW().__ytModularWaveActive = true;
 
-  // Apply saved wave style from settings
   if (settings.waveVisualizerSelected) {
     setWaveStyle(settings.waveVisualizerSelected);
   }
@@ -572,8 +547,6 @@ export function initWaveVisualizer(settings) {
       s.audioCtx
         .resume()
         .then(() => {
-          console.warn('[WaveViz] AudioContext resumed via user gesture');
-          // Re-setup all videos now that we have permission
           PD()
             .querySelectorAll('video')
             .forEach(v => {
@@ -585,35 +558,36 @@ export function initWaveVisualizer(settings) {
         .catch(() => {});
     }
   };
-  // Remove previous unlock listeners before adding new ones
+  removeUnlockHandlers();
+  ['mousedown', 'keydown', 'touchstart'].forEach(type => {
+    PD().addEventListener(type, unlock, { once: true });
+    waveUnlockHandlers.push({ el: PD(), type, handler: unlock });
+  });
+
+  checkForVideo();
+
+  // Fallback: video chưa sẵn sàng — retry tối đa N lần, track timer để cleanup
+  let retryCount = 0;
+  const maxRetries = isYTMusic ? 30 : 10;
+  function retryCheck() {
+    if (s.isSetup || retryCount >= maxRetries) return;
+    retryCount++;
+    waveRetryTimer = trackTimeout(
+      setTimeout(() => {
+        waveRetryTimer = null;
+        checkForVideo();
+        retryCheck();
+      }, 2000)
+    );
+  }
+  retryCheck();
+}
+
+function removeUnlockHandlers() {
   waveUnlockHandlers.forEach(({ el, type, handler }) => {
     try {
       el.removeEventListener(type, handler);
     } catch {}
   });
   waveUnlockHandlers = [];
-  PD().addEventListener('mousedown', unlock, { once: true });
-  PD().addEventListener('keydown', unlock, { once: true });
-  PD().addEventListener('touchstart', unlock, { once: true });
-  waveUnlockHandlers.push(
-    { el: PD(), type: 'mousedown', handler: unlock },
-    { el: PD(), type: 'keydown', handler: unlock },
-    { el: PD(), type: 'touchstart', handler: unlock }
-  );
-
-  checkForVideo();
-
-  // Fallback: nếu video chưa sẵn sàng, retry định kỳ
-  let retryCount = 0;
-  const maxRetries = isYTMusic ? 30 : 10;
-  function retryCheck() {
-    if (s.isSetup) return;
-    if (retryCount >= maxRetries) return;
-    retryCount++;
-    setTimeout(() => {
-      checkForVideo();
-      retryCheck();
-    }, 2000);
-  }
-  retryCheck();
 }

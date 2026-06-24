@@ -23,7 +23,7 @@ function initPolicy() {
         createHTML: s => s,
       });
       if (policyInst) return policyInst;
-    } catch (e) {
+    } catch {
       /* Try next name */
     }
   }

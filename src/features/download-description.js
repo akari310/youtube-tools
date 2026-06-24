@@ -2,7 +2,7 @@
 // Download Description Video (copy description button)
 // Extracted from legacy-full.js lines 7411-7453
 // ===========================================
-import { $e, $id, $cl, $m, isYTMusic } from '../utils/dom.js';
+import { $e, $m, isYTMusic } from '../utils/dom.js';
 import { Notify } from '../utils/helpers.js';
 
 /**
@@ -66,7 +66,7 @@ export function initDownloadDescription(enabled = true) {
           navigator.clipboard.writeText(description);
           Notify('success', 'Description copied');
         }
-      } catch (e) {
+      } catch {
         Notify('error', 'Error parsing JSON-LD');
       }
     }

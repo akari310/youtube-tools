@@ -1,6 +1,7 @@
 // Feature: Cinematic/Ambient Lighting toggle
 import { $e, $m } from '../../utils/dom.js';
 import { setHTML } from '../../utils/trusted-types.js';
+import { trackInterval, untrackInterval, trackTimeout } from '../../utils/cleanup-manager.js';
 
 const isYTMusic = location.hostname === 'music.youtube.com';
 
@@ -94,23 +95,25 @@ export function toggleCinematicLighting() {
 
   let attempts = 0;
   const maxAttempts = 20;
-  const pollInterval = setInterval(() => {
-    attempts++;
-    if (findAndClickCinematic()) {
-      clearInterval(pollInterval);
-      setTimeout(closeMenu, 150);
-      return;
-    }
-    if (attempts >= maxAttempts) {
-      clearInterval(pollInterval);
-      console.warn(
-        '[YT Tools] Could not find cinematic/ambient toggle after',
-        maxAttempts,
-        'attempts'
-      );
-      closeMenu();
-    }
-  }, 200);
+  const pollInterval = trackInterval(
+    setInterval(() => {
+      attempts++;
+      if (findAndClickCinematic()) {
+        untrackInterval(pollInterval);
+        trackTimeout(setTimeout(closeMenu, 150));
+        return;
+      }
+      if (attempts >= maxAttempts) {
+        untrackInterval(pollInterval);
+        console.warn(
+          '[YT Tools] Could not find cinematic/ambient toggle after',
+          maxAttempts,
+          'attempts'
+        );
+        closeMenu();
+      }
+    }, 200)
+  );
 }
 
 export function applyCinematicLighting(settings) {

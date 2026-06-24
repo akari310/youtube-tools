@@ -5,7 +5,7 @@
 // ===========================================
 import { $e, $id } from '../utils/dom.js';
 import { SETTINGS_KEY } from './storage-key.js';
-import { gmRawGet, gmRawSet, readJsonGM } from '../utils/storage.js';
+import { gmRawSet, readJsonGM } from '../utils/storage.js';
 
 export let selectedBgColor = '#252525';
 export let selectedTextColor = '#ffffff';
@@ -16,11 +16,17 @@ export let selectedBgAccentColor = '#ff0000';
 export function syncAudioOnlyTabCheckbox() {
   const tabToggle = $id('audio-only-tab-toggle');
   if (!tabToggle) return;
-  const key = 'ytAudioOnlyTab_' + (window.__ytTabId || '0');
-  try {
-    tabToggle.checked = gmRawGet(key, false);
-  } catch {
-    /* */
+
+  // Read from sessionStorage (matches audio-only.js implementation)
+  const AUDIO_ONLY_TAB_OVERRIDE_KEY = 'ytToolsAudioOnlyTabOverrideMDCM';
+  const override = window.sessionStorage.getItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
+
+  // If no override (null), check follows global setting
+  if (override === null) {
+    const settings = readJsonGM(SETTINGS_KEY, {});
+    tabToggle.checked = !!settings?.audioOnly;
+  } else {
+    tabToggle.checked = override === 'true';
   }
 }
 
@@ -50,7 +56,9 @@ export function saveSettingsFromDOM() {
     continueWatching: $id('continue-watching-toggle')?.checked || false,
     shortsChannelName: $id('shorts-channel-name-toggle')?.checked || false,
     copyDescription: $id('copy-description-toggle') ? $id('copy-description-toggle').checked : true,
-    nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : false,
+    nonstopPlayback: $id('nonstop-playback-toggle')
+      ? $id('nonstop-playback-toggle').checked
+      : false,
     audioOnly: $id('audio-only-toggle') ? $id('audio-only-toggle').checked : false,
     themes: $id('themes-toggle')?.checked || false,
     translateComments: $id('translation-toggle')?.checked || false,

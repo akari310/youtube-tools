@@ -2,33 +2,13 @@
 // Theme Selector Component
 // ===========================================
 
-import { $e, $id } from '../../../utils/dom.js';
 import { setHTML } from '../../../utils/trusted-types.js';
-import { applySettings, saveSettingsFromDOM } from '../../../themes/theme-engine.js';
 import { loadSettings } from '../../../settings/settings-manager.js';
+import { Notify } from '../../../utils/helpers.js';
 
-// Stub implementations for planned features not yet implemented
-const themeManager = {
-  getAllThemes: () => [],
-  applyThemePreset: () => {},
-  stopPreview: () => {},
-  deleteCustomTheme: () => {},
-  applyRandomTheme: () => { applySettings(); },
-  saveCustomTheme: () => ({}),
-  exportTheme: () => ({}),
-  importTheme: () => null,
-  getTheme: () => null,
-  toggleThemeAnimations: () => false,
-};
-const getAllThemePresets = () => [];
-const initThemeAnimations = () => {};
-const playThemeTransition = () => {};
-const getThemeCustomizer = () => ({});
-const applyCustomTheme = () => {};
-const generateColorPalette = () => [];
-const adjustColorBrightness = (color) => color;
-
-/* global Notify */
+import { themeManager } from '../../../themes/utils/theme-manager.js';
+import { initThemeAnimations, toggleThemeAnimations } from '../../../themes/animations.js';
+import { applyCustomTheme, adjustColorBrightness } from '../../../themes/customizer.js';
 
 export function createThemeSelector() {
   const container = document.createElement('div');
@@ -150,7 +130,6 @@ function createThemeCard(theme) {
 function getPreviewColors(colors) {
   const bg = colors.background || '#ffffff';
   const primary = colors.primary || '#000000';
-  const accent = colors.accent || '#007bff';
 
   return `
     background: ${bg.includes('gradient') ? bg : bg};
@@ -186,18 +165,18 @@ function setupEventListeners(container) {
     const isAnimated = (() => {
       let v = false;
       try {
-        v = themeManager.toggleThemeAnimations?.() ?? false;
+        v = toggleThemeAnimations();
       } catch {
         v = false;
       }
       return v;
     })();
     animationsToggle.classList.toggle('active', isAnimated);
-    Notify({
-      title: 'Theme Animations',
-      text: isAnimated ? 'Animations enabled' : 'Animations disabled',
-      type: isAnimated ? 'success' : 'info',
-    });
+    Notify(
+      isAnimated ? 'success' : 'info',
+      isAnimated ? 'Animations enabled' : 'Animations disabled',
+      'Theme Animations'
+    );
   });
 
   themeGrid.addEventListener('click', e => {
@@ -242,10 +221,9 @@ function setupEventListeners(container) {
   });
 
   exportBtn?.addEventListener('click', () => {
-    const settings = loadSettings();
     const themeName = prompt('Enter theme name:', 'My Custom Theme');
     if (themeName) {
-      const theme = themeManager.saveCustomTheme(themeName);
+      themeManager.saveCustomTheme(themeName);
       const exportData = themeManager.exportTheme(themeName);
 
       // Download as JSON file
@@ -277,7 +255,7 @@ function setupEventListeners(container) {
             refreshThemeGrid(container);
             showNotification(`Theme "${theme.name}" imported!`, 'success');
           }
-        } catch (error) {
+        } catch {
           showNotification('Failed to import theme file', 'error');
         }
       };
@@ -302,12 +280,7 @@ function refreshThemeGrid(container) {
 }
 
 function showNotification(message, type = 'info') {
-  // Use existing notification system or create simple alert
-  if (typeof window.Notify === 'function') {
-    Notify(message, type);
-  } else {
-    console.log(`[YT Tools] ${message}`);
-  }
+  Notify(type, message);
 }
 
 const filteredThemesCache = new Map();

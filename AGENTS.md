@@ -1,8 +1,8 @@
 # AGENTS.md — Hướng dẫn cho AI Agent
 
 > **Dự án:** YouTube Tools Userscript  
-> **Version:** v2.4.4.2  
-> **Ngày tạo:** 10/05/2026 | **Cập nhật:** 14/05/2026  
+> **Version:** v2.4.4.3  
+> **Ngày tạo:** 10/05/2026 | **Cập nhật:** 14/06/2026  
 > **Ngôn ngữ:** Tiếng Việt (primary), English (code/docs)
 
 ---
@@ -16,6 +16,7 @@
 - ✅ **Migration hoàn tất** — `legacy-full.js` đã bị xóa, codebase 100% modular ES modules
 - ✅ **28/28 issues từ ERROR_ANALYSIS.md đã resolved**
 - ✅ **Hệ thống UI mới** — glassmorphic settings panel, toolbar, video info, theme engine
+- ✅ **CodeGraph Integration** — Đã tích hợp CodeGraph MCP server để tìm kiếm/đọc AST dự án
 - ⬜ **Chưa có test coverage**
 
 ---
@@ -125,6 +126,7 @@ youtube-tools/
 | **Rollup**                       | Dev build (watch mode) với `rollup.config.dev.js`                                                |
 | **Vite + vite-plugin-monkey**    | Production build, tự động tạo userscript header                                                  |
 | **GM APIs**                      | `GM_getValue`, `GM_setValue`, `GM_addStyle`, `GM_info`, `GM_registerMenuCommand`, `unsafeWindow` |
+| **CodeGraph MCP**                | Index và truy vấn codebase AST cho AI Agent                                                      |
 | **iziToast** (CDN)               | Thông báo toast (có fallback tự tạo)                                                             |
 | **ESLint v9**                    | Lint (flat config)                                                                               |
 | **Prettier**                     | Format code                                                                                      |
@@ -240,6 +242,9 @@ Xem chi tiết trong `ERROR_ANALYSIS.md`. **Tất cả 28 issues đã resolved**
 - ✅ **Locale parsing** — dùng `hl` URL param để locale-aware parsing
 - ✅ **Download polling backoff** — exponential backoff
 - ✅ **Tất cả 28 issues** — xem CHECKLIST.md
+
+### Mới resolved gần đây ✅
+- ✅ **YTM Dialog Overlay Bug** — Xóa lỗi `z-index` (stacking context trap) trên `ytmusic-app` khiến dialog bị chèn dưới lớp backdrop.
 
 ### Chưa có
 

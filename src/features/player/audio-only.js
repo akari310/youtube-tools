@@ -3,6 +3,7 @@ import { __ytToolsRuntime } from '../../utils/runtime.js';
 import { $id, isYTMusic } from '../../utils/dom.js';
 import { readJsonGM } from '../../utils/storage.js';
 import { SETTINGS_KEY } from '../../settings/storage-key.js';
+import { trackInterval, untrackInterval } from '../../utils/cleanup-manager.js';
 
 const AUDIO_ONLY_TAB_OVERRIDE_KEY = 'ytToolsAudioOnlyTabOverrideMDCM';
 
@@ -46,7 +47,7 @@ async function getAudioOnlyThumbnailUrl() {
       const data = moviePlayer.getVideoData();
       if (data?.video_id) return `https://i.ytimg.com/vi/${data.video_id}/hqdefault.jpg`;
     }
-  } catch (e) {
+  } catch {
     /* ignore */
   }
 
@@ -74,29 +75,43 @@ export async function applyAudioOnlyMode(enabled) {
   rt.enabled = !!enabled;
   document.body.classList.toggle('yt-tools-audio-only-active', rt.enabled);
 
-  document
-    .querySelectorAll('.yt-tools-audio-only-video')
-    .forEach(el => el.classList.remove('yt-tools-audio-only-video'));
-  document
-    .querySelectorAll('.yt-tools-audio-only-player')
-    .forEach(el => el.classList.remove('yt-tools-audio-only-player'));
-
   // Always clear existing timer before creating new one
   if (rt.refreshTimer) {
-    clearInterval(rt.refreshTimer);
+    untrackInterval(rt.refreshTimer);
     rt.refreshTimer = null;
   }
 
   if (!rt.enabled) {
     rt.lastArtUrl = '';
+    rt.lastVideoEl = null;
+    rt.lastPlayerEl = null;
     setAudioOnlyBackground('');
+    document
+      .querySelectorAll('.yt-tools-audio-only-video')
+      .forEach(el => el.classList.remove('yt-tools-audio-only-video'));
+    document
+      .querySelectorAll('.yt-tools-audio-only-player')
+      .forEach(el => el.classList.remove('yt-tools-audio-only-player'));
     return;
   }
 
   const video = getActiveAudioOnlyVideo();
   const player = video?.parentNode?.parentNode || video?.parentElement || null;
-  if (video) video.classList.add('yt-tools-audio-only-video');
-  if (player) player.classList.add('yt-tools-audio-only-player');
+
+  if (video !== rt.lastVideoEl || player !== rt.lastPlayerEl) {
+    document
+      .querySelectorAll('.yt-tools-audio-only-video')
+      .forEach(el => el.classList.remove('yt-tools-audio-only-video'));
+    document
+      .querySelectorAll('.yt-tools-audio-only-player')
+      .forEach(el => el.classList.remove('yt-tools-audio-only-player'));
+
+    if (video) video.classList.add('yt-tools-audio-only-video');
+    if (player) player.classList.add('yt-tools-audio-only-player');
+
+    rt.lastVideoEl = video;
+    rt.lastPlayerEl = player;
+  }
 
   const artUrl = await getAudioOnlyThumbnailUrl();
   if (artUrl && artUrl !== rt.lastArtUrl) {
@@ -104,9 +119,11 @@ export async function applyAudioOnlyMode(enabled) {
     setAudioOnlyBackground(artUrl);
   }
 
-  rt.refreshTimer = setInterval(() => {
-    if (document.visibilityState !== 'visible') return;
-    const settings = readJsonGM(SETTINGS_KEY, {});
-    applyAudioOnlyMode(getEffectiveAudioOnly(settings));
-  }, 3000);
+  rt.refreshTimer = trackInterval(
+    setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      const settings = readJsonGM(SETTINGS_KEY, {});
+      applyAudioOnlyMode(getEffectiveAudioOnly(settings));
+    }, 3000)
+  );
 }

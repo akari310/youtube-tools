@@ -221,6 +221,55 @@ export const THEME_PRESETS = {
       glass: true,
     },
   },
+
+  // Ultra-Premium themes
+  neonGenesis: {
+    name: 'Neon Genesis',
+    colors: {
+      background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+      primary: '#ff2a5f',
+      secondary: '#00e5ff',
+      header: 'rgba(0, 0, 0, 0.5)',
+      icons: '#ff2a5f',
+      menu: 'rgba(0, 0, 0, 0.4)',
+      accent: '#00e5ff',
+      progress: '#ff2a5f',
+      glass: true,
+      animation: true,
+    },
+  },
+
+  darkGlass: {
+    name: 'Dark Glass',
+    colors: {
+      background: 'rgba(10, 10, 10, 0.85)',
+      primary: '#ffffff',
+      secondary: '#888888',
+      header: 'rgba(20, 20, 20, 0.6)',
+      icons: '#ffffff',
+      menu: 'rgba(15, 15, 15, 0.5)',
+      accent: '#444444',
+      progress: '#ffffff',
+      glass: true,
+    },
+  },
+
+  holographic: {
+    name: 'Holographic',
+    colors: {
+      background:
+        'linear-gradient(135deg, rgba(255,107,107,0.8), rgba(85,98,112,0.8), rgba(78,205,196,0.8))',
+      primary: '#ffffff',
+      secondary: '#f0f0f0',
+      header: 'rgba(255, 255, 255, 0.1)',
+      icons: '#ffffff',
+      menu: 'rgba(255, 255, 255, 0.15)',
+      accent: '#ff6b6b',
+      progress: '#4ecdc4',
+      glass: true,
+      animation: true,
+    },
+  },
 };
 
 export function getThemePreset(name) {

@@ -3,6 +3,8 @@
 // Extracted from legacy-full.js
 // ===========================================
 import { $e, $id, $cl, isYTMusic } from '../utils/dom.js';
+import { trackObserver } from '../utils/cleanup-manager.js';
+import { debounce } from '../utils/debounce.js';
 
 let headerObserver = null;
 let openMenu = false;
@@ -42,12 +44,14 @@ export function toggleMenu() {
 function setupHeaderObserver() {
   if (headerObserver) return;
   const target = $e('#masthead-container') || $e('ytd-masthead') || document.body;
-  headerObserver = new MutationObserver(() => {
-    const icon = $id('icon-menu-settings');
-    if (!icon || !document.body.contains(icon)) {
-      addIcon();
-    }
-  });
+  headerObserver = trackObserver(
+    new MutationObserver(debounce(() => {
+      const icon = $id('icon-menu-settings');
+      if (!icon || !document.body.contains(icon)) {
+        addIcon();
+      }
+    }, 250))
+  );
   headerObserver.observe(target, { childList: true, subtree: true });
 }
 

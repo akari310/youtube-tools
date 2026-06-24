@@ -57,7 +57,7 @@ export function getCurrentVideoMeta() {
       }
     }
     return result;
-  } catch (e) {
+  } catch {
     return { title: '', author: '', thumb: '' };
   }
 }
@@ -77,7 +77,7 @@ export function pruneContinueWatchingMap(map, maxEntries = 200) {
     const next = {};
     for (const [k, v] of keep) next[k] = v;
     return next;
-  } catch (e) {
+  } catch {
     return map || {};
   }
 }
@@ -90,7 +90,7 @@ export function scheduleContinueWatchingFlush() {
       if (!rt.map) return;
       rt.map = pruneContinueWatchingMap(rt.map, 200);
       writeJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, rt.map);
-    } catch (e) {}
+    } catch {}
   }, 800);
 }
 

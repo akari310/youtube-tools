@@ -227,7 +227,7 @@ if (typeof window !== 'undefined') {
     globalCleanupManager.observers.forEach(observer => {
       try {
         observer.disconnect();
-      } catch (e) {}
+      } catch {}
     });
     globalCleanupManager.observers.clear();
 
