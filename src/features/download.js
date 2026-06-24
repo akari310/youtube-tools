@@ -38,6 +38,15 @@ function toCobaltAudioFormat(f) {
 export async function startDownloadVideoOrAudio(format, container) {
   const videoURL = normalizeYouTubeURL(window.location.href);
 
+  // Map unsupported Cobalt formats to supported high-quality equivalents
+  if (format === 'm4a' || format === 'aac') {
+    Notify('info', 'Cobalt không hỗ trợ tải M4A/AAC gốc, hệ thống đang tải file MP3 chất lượng cao thay thế...');
+    format = 'mp3';
+  } else if (format === 'flac') {
+    Notify('info', 'Cobalt không hỗ trợ tải FLAC gốc, hệ thống đang tải file WAV chất lượng cao thay thế...');
+    format = 'wav';
+  }
+
   // Check if already downloading
   if (container.dataset.downloading === 'true') {
     return;
@@ -230,57 +239,6 @@ export async function startDownloadVideoOrAudio(format, container) {
     }
   };
 
-  const pollProgressUrl = progressURL => {
-    let failCount = 0;
-    let delay = 2000;
-
-    const poll = async () => {
-      try {
-        const progressData = await fetchJsonWithTimeout(progressURL, 15000);
-        failCount = 0;
-        delay = 2000;
-
-        const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
-        updateProgress(progress, progress < 10 ? 'Processing...' : 'Downloading...');
-
-        if (Number(progressData.progress) >= 1000 && progressData.download_url) {
-          clearTimeout(container.__ytDownloadPoll);
-          container.__ytDownloadPoll = null;
-          markCompleteAndOpen(progressData.download_url);
-          return;
-        }
-
-        if (Number(progressData.progress) >= 1000 && !progressData.download_url) {
-          console.warn('[YT Tools] Download reached 100% but no download_url:', progressData);
-        }
-      } catch (e) {
-        failCount++;
-        if (failCount >= 5) {
-          setErrorState('Download failed - server timeout. Please retry.');
-          return;
-        }
-        console.warn(`[YT Tools] Progress poll error (${failCount}/5):`, e);
-        delay = Math.min(delay * 2, 16000);
-      }
-      container.__ytDownloadPoll = setTimeout(poll, delay);
-    };
-    container.__ytDownloadPoll = setTimeout(poll, delay);
-  };
-
-  const trySaveNowProvider = async baseUrl => {
-    const url = new URL('/ajax/download.php', baseUrl);
-    url.searchParams.set('copyright', '0');
-    url.searchParams.set('allow_extended_duration', '1');
-    url.searchParams.set('format', String(format));
-    url.searchParams.set('url', videoURL);
-    url.searchParams.set('api', getApiKey());
-    const data = await fetchJsonWithTimeout(url.toString(), 25000);
-    if (!data?.success || !data?.progress_url) {
-      throw new Error('SaveNow provider did not return success/progress_url');
-    }
-    return data;
-  };
-
   const tryDubsProvider = async () => {
     const videoId = paramsVideoURL();
     if (!videoId) throw new Error('Missing videoId');
@@ -335,12 +293,6 @@ export async function startDownloadVideoOrAudio(format, container) {
 
   const tryCobaltProvider = () => {
     return new Promise((resolve, reject) => {
-      // Cobalt doesn't support converting to m4a, aac, or flac. Bypass to fallback providers.
-      if (format === 'm4a' || format === 'aac' || format === 'flac') {
-        reject(new Error(`Cobalt unsupported format: ${format}`));
-        return;
-      }
-
       const isAudio = isAudioFormat(format);
       // Cobalt v10 schema: videoQuality/audioFormat/downloadMode (old vQuality/aFormat/isAudioOnly removed).
       const body = {
@@ -413,23 +365,7 @@ export async function startDownloadVideoOrAudio(format, container) {
       return;
     }
 
-    for (const base of DOWNLOAD_API_FALLBACK_BASES) {
-      try {
-        updateProgress(5, `Trying SaveNow provider (${base})...`);
-        started = await trySaveNowProvider(base);
-        break;
-      } catch (e) {
-        lastErr = e;
-        console.warn(`[YT Tools] SaveNow (${base}) failed:`, e);
-      }
-    }
-
-    if (started?.success && started?.progress_url) {
-      pollProgressUrl(started.progress_url);
-      return;
-    }
-
-    console.warn('[YT Tools] SaveNow failed, trying dubs.io', lastErr);
+    console.warn('[YT Tools] Cobalt failed, trying dubs.io', lastErr);
     updateProgress(10, 'Fallback: Trying Dubs provider...');
     await tryDubsProvider();
   } catch (error) {
