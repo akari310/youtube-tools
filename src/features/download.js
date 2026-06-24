@@ -87,16 +87,44 @@ export async function startDownloadVideoOrAudio(format, container) {
     }
   };
 
-  const fetchJsonWithTimeout = async (url, timeoutMs = 20000) => {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, { signal: ctrl.signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } finally {
-      clearTimeout(t);
-    }
+  const fetchJsonWithTimeout = (url, timeoutMs = 20000) => {
+    return new Promise((resolve, reject) => {
+      let aborted = false;
+      const t = setTimeout(() => {
+        aborted = true;
+        reject(new Error('Timeout'));
+        if (req && req.abort) req.abort();
+      }, timeoutMs);
+
+      const req = GM_xmlhttpRequest({
+        method: 'GET',
+        url: url,
+        responseType: 'json',
+        onload: function(res) {
+          if (aborted) return;
+          clearTimeout(t);
+          if (res.status !== 200) {
+            reject(new Error(`HTTP ${res.status}`));
+            return;
+          }
+          let data = res.response;
+          if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch(e) {}
+          }
+          resolve(data);
+        },
+        onerror: function() {
+          if (aborted) return;
+          clearTimeout(t);
+          reject(new Error('Failed to fetch'));
+        },
+        onabort: function() {
+          if (aborted) return;
+          clearTimeout(t);
+          reject(new Error('Aborted'));
+        }
+      });
+    });
   };
 
   const fetchJsonWithRetry = async (url, timeoutMs = 20000, maxRetries = 2) => {
