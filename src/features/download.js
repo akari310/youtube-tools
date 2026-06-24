@@ -324,13 +324,76 @@ export async function startDownloadVideoOrAudio(format, container) {
     container.__ytDownloadPoll = setTimeout(pollDubs, dubsDelay);
   };
 
+  const tryCobaltProvider = () => {
+    return new Promise((resolve, reject) => {
+      const isAudio = format === 'mp3' || format === 'ogg' || format === 'opus' || format === 'webm';
+      let vQuality = format;
+      let aFormat = 'mp3';
+      if (isAudio) {
+        vQuality = 'max';
+        aFormat = format === 'mp3' ? 'mp3' : (format === 'ogg' ? 'ogg' : 'best');
+      }
+      GM_xmlhttpRequest({
+        method: 'POST',
+        url: 'https://api.cobalt.tools/',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        data: JSON.stringify({
+          url: videoURL,
+          vQuality: String(vQuality),
+          isAudioOnly: isAudio,
+          aFormat: aFormat,
+          isNoTTWatermark: true
+        }),
+        onload: function(res) {
+          if (res.status !== 200) {
+            reject(new Error(`Cobalt HTTP ${res.status}`));
+            return;
+          }
+          let data;
+          try {
+            data = JSON.parse(res.response);
+          } catch(e) {
+            reject(new Error('Cobalt invalid JSON'));
+            return;
+          }
+          if (data.status === 'error') {
+            reject(new Error(data.text));
+          } else if (data.status === 'redirect' || data.status === 'stream' || data.url) {
+            resolve({ success: true, download_url: data.url });
+          } else {
+            reject(new Error('Cobalt unhandled response'));
+          }
+        },
+        onerror: function() {
+          reject(new Error('Cobalt network error'));
+        }
+      });
+    });
+  };
+
   try {
     let started = null;
     let lastErr = null;
 
+    try {
+      updateProgress(2, 'Trying Cobalt provider (Best Quality + Metadata)...');
+      started = await tryCobaltProvider();
+    } catch(e) {
+      console.warn('[YT Tools] Cobalt failed:', e);
+      lastErr = e;
+    }
+
+    if (started?.success && started?.download_url) {
+      markCompleteAndOpen(started.download_url);
+      return;
+    }
+
     for (const base of DOWNLOAD_API_FALLBACK_BASES) {
       try {
-        updateProgress(5, 'Trying SaveNow provider...');
+        updateProgress(5, `Trying SaveNow provider (${base})...`);
         started = await trySaveNowProvider(base);
         break;
       } catch (e) {
@@ -348,7 +411,7 @@ export async function startDownloadVideoOrAudio(format, container) {
     updateProgress(10, 'Fallback: Trying Dubs provider...');
     await tryDubsProvider();
   } catch (error) {
-    setErrorState('All download servers are busy. Please retry later.');
+    setErrorState('Tất cả API tải nhạc đều đang quá tải. Vui lòng thử lại sau!');
     console.error('[YT Tools] Download error:', error);
   }
 }
