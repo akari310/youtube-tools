@@ -69,10 +69,28 @@
             container.dataset.lastDownloadUrl = '';
         };
 
-        // Helper: fetch arraybuffer via GM_xmlhttpRequest with auto-retry for server errors
+        // Helper: fetch arraybuffer, trying native fetch first (to bypass strict extension blocking), fallback to GM_xmlhttpRequest
         const fetchArrayBuffer = (url, timeoutMs = 120000, maxRetries = 2) => {
             return new Promise((resolve, reject) => {
-                const attempt = (retriesLeft) => {
+                const attempt = async (retriesLeft) => {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), timeoutMs);
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(id);
+                        if (response.ok) {
+                            const buffer = await response.arrayBuffer();
+                            resolve(buffer);
+                            return;
+                        } else if (response.status >= 500 && retriesLeft > 0) {
+                            console.warn(`fetch HTTP ${response.status} for ${url}, retrying...`);
+                            setTimeout(() => attempt(retriesLeft - 1), 2000);
+                            return;
+                        }
+                    } catch (err) {
+                        // fetch failed (CORS or network error), fallback to GM_xmlhttpRequest
+                    }
+
                     GM_xmlhttpRequest({
                         method: 'GET',
                         url: url,
@@ -82,7 +100,7 @@
                             if (r.status >= 200 && r.status < 300) {
                                 resolve(r.response);
                             } else if (r.status >= 500 && retriesLeft > 0) {
-                                console.warn(`HTTP ${r.status} fetching ${url}, retrying...`);
+                                console.warn(`GM HTTP ${r.status} fetching ${url}, retrying...`);
                                 setTimeout(() => attempt(retriesLeft - 1), 2000);
                             } else {
                                 reject(new Error(`HTTP ${r.status}`));
