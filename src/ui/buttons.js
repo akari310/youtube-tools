@@ -198,7 +198,21 @@
                 // download-again just re-opens the last URL (no restart)
                 if (clicked.classList.contains('download-again-btn')) {
                     const url = container.dataset.lastDownloadUrl;
-                    if (url) window.open(url);
+                    if (url) {
+                        try {
+                            const rawTitle = isYTMusic
+                                ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
+                                : ($e('h1.style-scope.ytd-watch-metadata')?.innerText?.trim() || 'video');
+                            const title = rawTitle.replace(/[\\/:*?"<>|]/g, '_').trim() || 'download';
+                            GM_download({
+                                url: url,
+                                name: title,
+                                onerror: () => alert('Lỗi tải xuống từ máy chủ (Server Error). Vui lòng thử lại sau.')
+                            });
+                        } catch (e) {
+                            alert('Lỗi tải xuống (Download Error)');
+                        }
+                    }
                     return;
                 }
                 if (!quality || !type) return;
