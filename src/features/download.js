@@ -274,7 +274,7 @@ export async function startDownloadVideoOrAudio(format, container) {
     url.searchParams.set('format', String(format));
     url.searchParams.set('url', videoURL);
     url.searchParams.set('api', getApiKey());
-    const data = await fetchJsonWithRetry(url.toString(), 25000, 1);
+    const data = await fetchJsonWithTimeout(url.toString(), 25000);
     if (!data?.success || !data?.progress_url) {
       throw new Error('SaveNow provider did not return success/progress_url');
     }
