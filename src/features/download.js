@@ -150,16 +150,39 @@ export async function startDownloadVideoOrAudio(format, container) {
     container.dataset.downloading = 'false';
     Notify('success', 'Download started!');
     try {
-      const a = document.createElement('a');
       const filename = `youtube-audio.${format === 'webm' || format === 'opus' || format === 'ogg' ? format : 'mp3'}`;
-      a.href = downloadUrl;
-      a.download = filename;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      
+      GM_xmlhttpRequest({
+        method: 'GET',
+        url: downloadUrl,
+        responseType: 'blob',
+        onload: function(res) {
+          if (res.status !== 200 || !res.response) {
+            setErrorState('Lỗi máy chủ tải xuống. Vui lòng thử lại sau!');
+            return;
+          }
+          const blob = res.response;
+          if (blob.size < 50000) { // < 50KB means it's likely an error page
+            setErrorState('Lỗi: File bị hỏng (chỉ vài KB). API tải nhạc có thể đang bị quá tải!');
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          
+          if (downloadText) downloadText.textContent = 'Hoàn tất!';
+          if (statusText) statusText.textContent = 'Đã tải xong!';
+        },
+        onerror: function() {
+          setErrorState('Lỗi mạng khi đang tải file!');
+        }
+      });
     } catch (e) {
       console.warn('[YT Tools] Could not trigger download:', e);
       window.open(downloadUrl, '_blank');

@@ -749,6 +749,8 @@ textarea.textarea-mdcm:focus {
 
 .selectcalidades,
 .selectcalidadesaudio {
+  user-select: none !important;
+  -webkit-user-select: none !important;
   background: rgba(30, 30, 30, 0.9) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
