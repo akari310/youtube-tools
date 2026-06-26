@@ -13,6 +13,7 @@
 // @match        *://music.youtube.com/*
 // @match        *://*.music.youtube.com/*
 // @require      https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js
+// @connect      *
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_info
@@ -945,6 +946,52 @@
 		if (f === "mp3" || f === "ogg" || f === "opus" || f === "wav") return f;
 		return "best";
 	}
+	var COBALT_APIS_FALLBACK = [
+		"https://cobaltapi.kittycat.boo/",
+		"https://cobaltapi.cjs.nz/",
+		"https://api.cobalt.blackcat.sweeux.org/",
+		"https://dog.kittycat.boo/",
+		"https://rue-cobalt.xenon.zone/"
+	];
+	function fetchWorkingCobaltApis() {
+		return new Promise((resolve) => {
+			const key = window.location.hostname.includes("music.youtube.com") ? "youtube-music" : "youtube";
+			const t = setTimeout(() => {
+				console.warn("[YT Tools] Timeout fetching working Cobalt APIs, using fallback list");
+				resolve(COBALT_APIS_FALLBACK);
+			}, 4e3);
+			GM_xmlhttpRequest({
+				method: "GET",
+				url: "https://cobalt.directory/api/working?type=api",
+				responseType: "json",
+				onload: function(res) {
+					clearTimeout(t);
+					try {
+						const data = typeof res.response === "string" ? JSON.parse(res.response) : res.response || JSON.parse(res.responseText);
+						if (data && data.data) {
+							let list = data.data[key] || data.data["youtube"] || [];
+							if (list.length > 0) {
+								list = list.map((url) => url.endsWith("/") ? url : url + "/");
+								resolve(Array.from(new Set([...list, ...COBALT_APIS_FALLBACK])));
+								return;
+							}
+						}
+					} catch (e) {
+						console.warn("[YT Tools] Error parsing Cobalt directory response:", e);
+					}
+					resolve(COBALT_APIS_FALLBACK);
+				},
+				onerror: function() {
+					clearTimeout(t);
+					resolve(COBALT_APIS_FALLBACK);
+				},
+				onabort: function() {
+					clearTimeout(t);
+					resolve(COBALT_APIS_FALLBACK);
+				}
+			});
+		});
+	}
 	async function startDownloadVideoOrAudio(format, container) {
 		const videoURL = normalizeYouTubeURL(window.location.href);
 		if (format === "m4a" || format === "aac") {
@@ -1085,16 +1132,24 @@
 					url: downloadUrl,
 					responseType: "blob",
 					onload: function(res) {
-						if (res.status !== 200 || !res.response) {
-							setErrorState("Lỗi máy chủ tải xuống. Vui lòng thử lại sau!");
+						const responseBlob = res.response;
+						if (res.status !== 200 || !responseBlob) {
+							console.warn("[YT Tools] Blob download returned non-200 status, falling back to direct download link");
+							window.open(downloadUrl, "_blank");
+							if (downloadText) downloadText.textContent = "Hoàn tất (Trực tiếp)!";
+							if (statusText) statusText.textContent = "Đang tải qua trình duyệt...";
+							container.dataset.downloading = "false";
 							return;
 						}
-						const blob = res.response;
-						if (blob.size < 5e4) {
-							setErrorState("Lỗi: File bị hỏng (chỉ vài KB). API tải nhạc có thể đang bị quá tải!");
+						if (responseBlob.size < 5e4) {
+							console.warn("[YT Tools] Blob size too small, probably error page. Falling back to direct download link");
+							window.open(downloadUrl, "_blank");
+							if (downloadText) downloadText.textContent = "Hoàn tất (Trực tiếp)!";
+							if (statusText) statusText.textContent = "Đang tải qua trình duyệt...";
+							container.dataset.downloading = "false";
 							return;
 						}
-						const url = URL.createObjectURL(blob);
+						const url = URL.createObjectURL(responseBlob);
 						const a = document.createElement("a");
 						a.href = url;
 						a.download = filename;
@@ -1107,7 +1162,11 @@
 						if (statusText) statusText.textContent = "Đã tải xong!";
 					},
 					onerror: function() {
-						setErrorState("Lỗi mạng khi đang tải file!");
+						console.warn("[YT Tools] Blob download failed, falling back to direct download link");
+						window.open(downloadUrl, "_blank");
+						if (downloadText) downloadText.textContent = "Hoàn tất (Trực tiếp)!";
+						if (statusText) statusText.textContent = "Đang tải qua trình duyệt...";
+						container.dataset.downloading = "false";
 					}
 				});
 			} catch (e) {
@@ -1157,12 +1216,7 @@
 			};
 			container.__ytDownloadPoll = setTimeout(pollDubs, dubsDelay);
 		};
-		const COBALT_APIS = [
-			"https://api.cobalt.tools/",
-			"https://co.wuk.sh/",
-			"https://cobalt.q0.wtf/"
-		];
-		const tryCobaltProvider = () => {
+		const tryCobaltProvider = (cobaltApis) => {
 			return new Promise((resolve, reject) => {
 				const isAudio = isAudioFormat(format);
 				const body = {
@@ -1177,11 +1231,11 @@
 				}
 				let attempt = 0;
 				const makeRequest = () => {
-					if (attempt >= COBALT_APIS.length) {
+					if (attempt >= cobaltApis.length) {
 						reject(new Error("All Cobalt APIs failed"));
 						return;
 					}
-					const api = COBALT_APIS[attempt];
+					const api = cobaltApis[attempt];
 					let reqAborted = false;
 					const timeoutId = setTimeout(() => {
 						reqAborted = true;
@@ -1200,13 +1254,14 @@
 							if (reqAborted) return;
 							clearTimeout(timeoutId);
 							if (res.status !== 200) {
+								console.warn(`[YT Tools] Cobalt API ${api} returned status ${res.status}`);
 								attempt++;
 								makeRequest();
 								return;
 							}
 							let data;
 							try {
-								data = JSON.parse(res.response);
+								data = typeof res.response === "string" ? JSON.parse(res.response) : res.response || JSON.parse(res.responseText);
 							} catch {
 								attempt++;
 								makeRequest();
@@ -1250,8 +1305,10 @@
 			let started = null;
 			let lastErr = null;
 			try {
-				updateProgress(2, "Trying Cobalt provider (Best Quality + Metadata)...");
-				started = await tryCobaltProvider();
+				updateProgress(2, "Searching for active download channels...");
+				const cobaltApis = await fetchWorkingCobaltApis();
+				updateProgress(5, `Trying Cobalt provider (${cobaltApis.length} instances)...`);
+				started = await tryCobaltProvider(cobaltApis);
 			} catch (e) {
 				console.warn("[YT Tools] Cobalt failed:", e);
 				lastErr = e;

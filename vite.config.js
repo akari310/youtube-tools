@@ -30,6 +30,7 @@ export default defineConfig({
           'GM_registerMenuCommand',
           'GM_xmlhttpRequest',
         ],
+        connect: ['*'],
         require: ['https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js'],
         'run-at': 'document-end',
       },
