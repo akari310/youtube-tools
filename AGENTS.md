@@ -17,7 +17,7 @@
 - ✅ **28/28 issues từ ERROR_ANALYSIS.md đã resolved**
 - ✅ **Hệ thống UI mới** — glassmorphic settings panel, toolbar, video info, theme engine
 - ✅ **CodeGraph Integration** — Đã tích hợp CodeGraph MCP server để tìm kiếm/đọc AST dự án
-- ⬜ **Chưa có test coverage**
+- ✅ **Đã có test coverage** — Sử dụng Vitest + JSDOM
 
 ---
 
@@ -246,9 +246,9 @@ Xem chi tiết trong `ERROR_ANALYSIS.md`. **Tất cả 28 issues đã resolved**
 ### Mới resolved gần đây ✅
 - ✅ **YTM Dialog Overlay Bug** — Xóa lỗi `z-index` (stacking context trap) trên `ytmusic-app` khiến dialog bị chèn dưới lớp backdrop.
 
-### Chưa có
+### Mới bổ sung
 
-- ⬜ **Test coverage** — chưa có test framework
+- ✅ **Test coverage** — Đã triển khai unit test framework (Vitest + JSDOM) kiểm thử thành công các utility functions cốt lõi, lưu trữ và cơ chế giải phóng bộ nhớ.
 
 ---
 

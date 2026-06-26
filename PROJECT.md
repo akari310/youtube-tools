@@ -425,9 +425,11 @@ All 28 issues from ERROR_ANALYSIS.md have been resolved. Details:
 | Phase 4: Polish         | 8      | **8**  |
 | **TOTAL**               | **28** | **28** |
 
-### Not Yet Implemented
+### Automated Test Suite
 
-- ⬜ **Test coverage** — no test framework yet
+- **Test Framework:** Vitest + JSDOM
+- **Coverage:** Unit tests for core helper utilities, storage, and memory cleanup management (`src/tests/**/*.test.js`).
+- **Command:** `npm run test` (33 unit tests passing)
 
 ---
 
