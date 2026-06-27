@@ -38,13 +38,13 @@ body .container-mdcm {
 .container-mdcm {
   width: 420px;
   max-width: 420px;
-  background: rgba(22, 22, 22, 0.45) !important;
+  background: rgba(22, 22, 22, 0.7) !important;
   border-radius: 20px 20px 0 0;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
@@ -80,8 +80,6 @@ body .container-mdcm {
   position: sticky;
   top: 0;
   background-color: rgba(22, 22, 22, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-radius: 20px 20px 0 0;
   z-index: 10;
   display: flex;
@@ -139,8 +137,6 @@ body .container-mdcm {
   position: sticky;
   top: 52px;
   background-color: rgba(22, 22, 22, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   z-index: 10;
   display: flex;
   gap: 8px;
