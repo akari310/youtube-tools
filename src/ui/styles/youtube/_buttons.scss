@@ -48,31 +48,61 @@ button.botones_div:hover {
 }
 
 .containerButtons {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  width: 100% !important;
+  padding: 6px 0 !important;
 }
-.containerButtons > button:hover {
-  cursor: pointer;
+
+/* YouTube-native pill button style for toolbar icons */
+.containerButtons > button.botones_div {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  padding: 8px 12px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  color: var(--yt-spec-text-secondary, #aaa) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease !important;
+  backdrop-filter: none !important;
+}
+
+.containerButtons > button.botones_div:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: var(--yt-spec-text-primary, #fff) !important;
+  transform: scale(1.05) !important;
+}
+
+.containerButtons > button.botones_div:active {
+  transform: scale(0.95) !important;
+}
+
+.containerButtons > button.botones_div svg {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 /* Download Container Styles */
 .download-container {
   width: 90% !important;
   max-width: 450px !important;
-  padding: 20px 16px 16px !important;
-  border-radius: 16px !important;
-  margin: 10px auto !important;
+  padding: 16px 14px 14px !important;
+  border-radius: 14px !important;
+  margin: 8px auto !important;
   display: flex !important;
   flex-direction: column !important;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
@@ -80,18 +110,18 @@ button.botones_div:hover {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 60%);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 60%);
   pointer-events: none;
 }
 
 .download-container.video {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(127, 29, 29, 0.98));
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.92), rgba(127, 29, 29, 0.96));
   color: white;
 }
 
 .download-container.audio {
-  background: linear-gradient(135deg, rgba(22, 163, 74, 0.95), rgba(20, 83, 45, 0.98));
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.92), rgba(20, 83, 45, 0.96));
   color: white;
 }
 
@@ -341,15 +371,15 @@ button.botones_div:hover {
 
 .download-btn {
   flex: 1;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  font-weight: 700;
+  border-radius: 9999px;
+  font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   color: white;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
   position: relative;
   overflow: hidden;
@@ -370,17 +400,17 @@ button.botones_div:hover {
 
 .download-btn.video-btn {
   background: linear-gradient(135deg, #ff2a5f, #dc2626);
-  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 2px 12px rgba(220, 38, 38, 0.35);
 }
 
 .download-btn.audio-btn {
   background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.35);
 }
 
 .download-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -406,23 +436,23 @@ button.botones_div:hover {
 
 .retry-btn {
   flex: 1;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 10px;
-  font-weight: 700;
+  border-radius: 9999px;
+  font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.25s ease;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.3);
 }
 
 .retry-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .retry-btn:active {

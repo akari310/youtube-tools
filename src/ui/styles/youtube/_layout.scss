@@ -751,40 +751,44 @@ textarea.textarea-mdcm:focus {
 .selectcalidadesaudio {
   user-select: none !important;
   -webkit-user-select: none !important;
-  background: rgba(30, 30, 30, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(30, 30, 30, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
-  padding: 0 20px !important;
-  height: 40px !important;
-  line-height: 40px !important;
-  border-radius: 10px !important;
+  padding: 0 36px 0 16px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  border-radius: 9999px !important;
   font-family:
     'Inter',
     -apple-system,
     sans-serif !important;
-  font-size: 14px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   outline: none !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
-  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease !important;
   margin: 0 auto !important;
   display: block !important;
-  min-width: 280px !important;
-  max-width: 350px !important;
+  min-width: 240px !important;
+  max-width: 320px !important;
   appearance: none !important;
   -webkit-appearance: none !important;
   text-align: center !important;
   text-align-last: center !important;
   position: relative;
   overflow: hidden;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 12px !important;
 }
 
 .selectcalidades:hover,
 .selectcalidadesaudio:hover {
-  border-color: #ff0000 !important;
-  background: rgba(45, 45, 45, 0.95) !important;
-  box-shadow: 0 12px 40px rgba(255, 0, 0, 0.15) !important;
+  border-color: rgba(255, 0, 0, 0.6) !important;
+  background-color: rgba(45, 45, 45, 0.9) !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.1) !important;
 }
 
 .selectcalidades option,
