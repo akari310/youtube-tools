@@ -4,6 +4,8 @@
 // ===========================================
 import { $id, isYTMusic } from '../../utils/dom.js';
 import { Notify } from '../../utils/helpers.js';
+import { gmRawGet, gmRawSet } from '../../utils/storage.js';
+import { STORAGE_KEYS } from '../../config/storage-keys.js';
 import { makeToolBtn } from './svg.js';
 import { buildDownloadContainer } from './download-container.js';
 
@@ -155,22 +157,59 @@ export function buildToolbar() {
     form.appendChild(historyPanel);
   }
 
+  const syncDownloadChoice = (select, dlContainer) => {
+    const value = select.value;
+    dlContainer.dataset.quality = value;
+    const quality = dlContainer.querySelector('.download-quality');
+    if (quality) {
+      const shortLabels = {
+        mp3: 'MP3 320',
+        best: 'Original',
+        opus: 'OPUS',
+        ogg: 'OGG',
+        wav: 'WAV',
+        webm: 'WEBM',
+        '4k': '4K',
+        '8k': '8K',
+      };
+      quality.textContent = value
+        ? shortLabels[value] || select.selectedOptions[0]?.textContent || value
+        : 'Chưa chọn';
+    }
+  };
+
+  const applySavedSelectValue = (select, storageKey, fallbackValue = '') => {
+    const savedValue = String(gmRawGet(storageKey, fallbackValue) || fallbackValue);
+    const hasSavedOption = Array.from(select.options).some(option => option.value === savedValue);
+    if (hasSavedOption) {
+      select.value = savedValue;
+    } else if (fallbackValue) {
+      select.value = fallbackValue;
+    }
+  };
+
+  const saveSelectValue = (select, storageKey) => {
+    if (select.value) {
+      gmRawSet(storageKey, select.value);
+    }
+  };
+
   // Download video quality select
   const videoForm = document.createElement('form');
   videoForm.className = 'formulariodescarga ocultarframe';
   const videoSelectDiv = document.createElement('div');
   videoSelectDiv.className = 'containerall';
   const videoSelect = document.createElement('select');
-  videoSelect.className = 'selectcalidades ocultarframe';
+  videoSelect.className = 'selectcalidades';
   videoSelect.required = true;
   [
-    ['', 'Video Quality', true],
+    ['', 'Chọn chất lượng video', true],
     ['144', '144p MP4'],
     ['240', '240p MP4'],
     ['360', '360p MP4'],
     ['480', '480p MP4'],
-    ['720', '720p HD MP4 Default'],
-    ['1080', '1080p FULL HD MP4'],
+    ['720', '720p HD MP4'],
+    ['1080', '1080p Full HD MP4'],
     ['1440', '1440p 2K WEBM'],
     ['4k', '2160p 4K WEBM'],
     ['8k', '4320p 8K WEBM'],
@@ -188,6 +227,12 @@ export function buildToolbar() {
 
   // Download video container
   const dlVideoContainer = buildDownloadContainer('descargando', 'video');
+  applySavedSelectValue(videoSelect, STORAGE_KEYS.DOWNLOAD_VIDEO_QUALITY);
+  videoSelect.addEventListener('change', () => {
+    syncDownloadChoice(videoSelect, dlVideoContainer);
+    saveSelectValue(videoSelect, STORAGE_KEYS.DOWNLOAD_VIDEO_QUALITY);
+  });
+  syncDownloadChoice(videoSelect, dlVideoContainer);
   videoSelectDiv.appendChild(dlVideoContainer);
   videoForm.appendChild(videoSelectDiv);
 
@@ -197,18 +242,16 @@ export function buildToolbar() {
   const audioSelectDiv = document.createElement('div');
   audioSelectDiv.className = 'containerall';
   const audioSelect = document.createElement('select');
-  audioSelect.className = 'selectcalidadesaudio ocultarframeaudio';
+  audioSelect.className = 'selectcalidadesaudio';
   audioSelect.required = true;
   [
-    ['', 'Audio Quality', true],
-    ['flac', 'Audio FLAC UHQ'],
-    ['wav', 'Audio WAV UHQ'],
-    ['webm', 'Audio WEBM UHQ'],
-    ['mp3', 'Audio MP3 Default'],
-    ['m4a', 'Audio M4A'],
-    ['aac', 'Audio AAC'],
-    ['opus', 'Audio OPUS'],
-    ['ogg', 'Audio OGG'],
+    ['', 'Chọn định dạng nhạc', true],
+    ['mp3', 'MP3 320 kbps (khuyên dùng)'],
+    ['best', 'Original audio (giữ codec gốc)'],
+    ['opus', 'OPUS chất lượng cao'],
+    ['ogg', 'OGG chất lượng cao'],
+    ['wav', 'WAV không nén'],
+    ['webm', 'WEBM nguồn YouTube'],
   ].forEach(([val, text, dis]) => {
     const opt = document.createElement('option');
     opt.value = val;
@@ -219,10 +262,16 @@ export function buildToolbar() {
     }
     audioSelect.appendChild(opt);
   });
+  applySavedSelectValue(audioSelect, STORAGE_KEYS.DOWNLOAD_AUDIO_FORMAT, 'mp3');
   audioSelectDiv.appendChild(audioSelect);
 
   // Download audio container
   const dlAudioContainer = buildDownloadContainer('descargandomp3', 'audio');
+  audioSelect.addEventListener('change', () => {
+    syncDownloadChoice(audioSelect, dlAudioContainer);
+    saveSelectValue(audioSelect, STORAGE_KEYS.DOWNLOAD_AUDIO_FORMAT);
+  });
+  syncDownloadChoice(audioSelect, dlAudioContainer);
   audioSelectDiv.appendChild(dlAudioContainer);
   audioForm.appendChild(audioSelectDiv);
 
