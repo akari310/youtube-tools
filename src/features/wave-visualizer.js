@@ -14,7 +14,7 @@ import {
   setAnimationId,
   setWaveStyle,
 } from '../utils/state.js';
-import { SMOOTHING_FACTOR, CANVAS_HEIGHT, SCALE, PROCESSED_FLAG } from '../config/constants.js';
+import { SMOOTHING_FACTOR, CANVAS_HEIGHT, PROCESSED_FLAG } from '../config/constants.js';
 import {
   trackObserver,
   untrackObserver,
@@ -44,12 +44,19 @@ function refreshWaveThemeColor() {
 }
 
 function waveThemeColors() {
-  return { accent: cachedWaveAccent };
+  return {
+    accent: cachedWaveAccent,
+    glow: cachedWaveAccent + '66',
+    soft: cachedWaveAccent + '22',
+  };
 }
 /** After a failed tap into the video graph, avoid hammering setup on every DOM mutation (YouTube is noisy). */
 const WAVE_FAIL_RETRY_MS = 4000;
+const WAVE_MIN_HEIGHT = 84;
+const WAVE_SENSITIVITY = 2.15;
 let videoObserver = null;
 let observerDebounce = null;
+let frequencyData = null;
 /** Last settings object passed to `initWaveVisualizer` — used by `checkForVideo` / observer. */
 let waveSettingsSnapshot = null;
 /** Unlock gesture listeners — tracked for cleanup. */
@@ -124,18 +131,27 @@ function bindWaveVisualizerUnload() {
   if (waveUnloadHandlers) return;
   const onUnload = () => cleanupWaveVisualizer(true);
   const onNav = () => cleanupWaveVisualizer(false);
+  const onVisibilityChange = () => {
+    if (PD().visibilityState === 'visible' && s.currentVideo && !s.currentVideo.paused) {
+      showCanvas();
+    } else {
+      hideCanvas();
+    }
+  };
   PW().addEventListener('beforeunload', onUnload);
   PW().addEventListener('pagehide', onUnload);
   PW().addEventListener('yt-navigate-finish', onNav);
-  waveUnloadHandlers = { onUnload, onNav };
+  PD().addEventListener('visibilitychange', onVisibilityChange);
+  waveUnloadHandlers = { onUnload, onNav, onVisibilityChange };
 }
 
 function unbindWaveVisualizerUnload() {
   if (!waveUnloadHandlers) return;
-  const { onUnload, onNav } = waveUnloadHandlers;
+  const { onUnload, onNav, onVisibilityChange } = waveUnloadHandlers;
   PW().removeEventListener('beforeunload', onUnload);
   PW().removeEventListener('pagehide', onUnload);
   PW().removeEventListener('yt-navigate-finish', onNav);
+  PD().removeEventListener('visibilitychange', onVisibilityChange);
   waveUnloadHandlers = null;
 }
 
@@ -159,8 +175,22 @@ function createWaveSource(audioCtx, video) {
 
 function updateCanvasSize() {
   if (s.canvas) {
-    s.canvas.width = PW().innerWidth;
-    s.canvas.height = CANVAS_HEIGHT;
+    const dpr = Math.min(PW().devicePixelRatio || 1, 2);
+    const width = Math.max(1, Math.floor(PW().innerWidth));
+    const height = Math.max(
+      WAVE_MIN_HEIGHT,
+      Math.min(CANVAS_HEIGHT * 0.46, Math.floor(PW().innerHeight * 0.13))
+    );
+    
+    // Position above player bar in YTM to avoid being hidden
+    s.canvas.style.bottom = isYTMusic ? '72px' : '0';
+    // Increase z-index so it shows over other elements
+    s.canvas.style.zIndex = isYTMusic ? '100' : '1';
+    
+    s.canvas.style.width = `${width}px`;
+    s.canvas.style.height = `${height}px`;
+    s.canvas.width = Math.floor(width * dpr);
+    s.canvas.height = Math.floor(height * dpr);
   }
 }
 
@@ -200,6 +230,7 @@ export function cleanupWaveVisualizer(isUnload = false) {
   }
   setCanvas(null);
   setCtx(null);
+  frequencyData = null;
 
   PD()
     .querySelectorAll('video')
@@ -225,6 +256,10 @@ export function cleanupWaveVisualizer(isUnload = false) {
 export function hideCanvas() {
   const canvas = PD().getElementById('wave-visualizer-canvas');
   if (canvas) canvas.style.opacity = '0';
+  if (s.animationId) {
+    PW().cancelAnimationFrame(s.animationId);
+    setAnimationId(null);
+  }
 }
 
 export function showCanvas() {
@@ -232,7 +267,13 @@ export function showCanvas() {
     s.audioCtx.resume().catch(() => {});
   }
   const canvas = PD().getElementById('wave-visualizer-canvas');
-  if (canvas) canvas.style.opacity = '1';
+  if (canvas) {
+    canvas.style.bottom = '0';
+    canvas.style.opacity = '1';
+  }
+  if (s.isSetup && !s.animationId) {
+    draw();
+  }
 }
 
 function teardownSource() {
@@ -293,6 +334,7 @@ export function setupWaveForVideo(video) {
     setBufferLength(len);
     setDataArray(new Uint8Array(len));
     setSmoothedData(new Array(len).fill(128));
+    frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
     let sourceNode;
     // Reuse cached source ONLY if it belongs to the SAME AudioContext
@@ -317,9 +359,10 @@ export function setupWaveForVideo(video) {
       // Show canvas anyway with a static wave as fallback
       if (s.canvas) {
         s.canvas.style.opacity = '0.3';
-        s.ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+        const { w } = prepareCanvasFrame();
         s.ctx.fillStyle = cachedWaveAccent + '40';
         s.ctx.fillText('Wave visualizer: Audio source unavailable', 20, 30);
+        s.ctx.fillRect(20, 38, Math.min(320, w - 40), 2);
       }
       // Do not mark PROCESSED_FLAG — allow retry after navigation, new video, or user gesture unlock.
       return;
@@ -346,8 +389,8 @@ export function setupWaveForVideo(video) {
     PW().removeEventListener('resize', updateCanvasSize);
     PW().addEventListener('resize', updateCanvasSize);
 
-    draw();
     setIsSetup(true);
+    draw();
   } catch (e) {
     console.warn('Wave visualizer setup failed:', e);
     video._ytWaveFail = true;
@@ -360,90 +403,143 @@ export function setupWaveForVideo(video) {
  */
 export function createVisualizerOverlay() {
   const existing = PD().querySelector('#wave-visualizer-canvas');
+  const zIndex = isYTMusic ? '100' : '1';
+  const bottom = isYTMusic ? '72px' : '0';
+  const canvasStyle =
+    `position:fixed;bottom:${bottom};left:0;width:100%;pointer-events:none;z-index:${zIndex};opacity:0;background:transparent;transition:opacity 0.35s ease;`;
   if (existing) {
-    existing.style.cssText =
-      'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:9999;opacity:0;background:transparent;transition:opacity 0.3s;';
-    existing.width = PW().innerWidth;
-    existing.height = CANVAS_HEIGHT;
+    existing.style.cssText = canvasStyle;
     setCanvas(existing);
     setCtx(existing.getContext('2d'));
+    updateCanvasSize();
     return;
   }
 
   const newCanvas = PD().createElement('canvas');
   newCanvas.id = 'wave-visualizer-canvas';
-  newCanvas.width = PW().innerWidth;
-  newCanvas.height = CANVAS_HEIGHT;
-  newCanvas.style.cssText =
-    'position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:9999;opacity:0;background:transparent;transition:opacity 0.3s;';
+  newCanvas.style.cssText = canvasStyle;
   PD().body.appendChild(newCanvas);
   setCanvas(newCanvas);
   setCtx(newCanvas.getContext('2d'));
+  updateCanvasSize();
+}
+
+function getCanvasDrawMetrics() {
+  const dpr = Math.min(PW().devicePixelRatio || 1, 2);
+  return {
+    dpr,
+    w: s.canvas.width / dpr,
+    h: s.canvas.height / dpr,
+  };
+}
+
+function prepareCanvasFrame() {
+  const { dpr, w, h } = getCanvasDrawMetrics();
+  s.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  s.ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+  s.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w, h };
+}
+
+function drawAmbientFloor(w, h, colors) {
+  const floor = s.ctx.createLinearGradient(0, h * 0.2, 0, h);
+  floor.addColorStop(0, 'rgba(0,0,0,0)');
+  floor.addColorStop(0.6, colors.soft);
+  floor.addColorStop(1, 'rgba(0,0,0,0.34)');
+  s.ctx.fillStyle = floor;
+  s.ctx.fillRect(0, 0, w, h);
+}
+
+function waveY(index, centerY, amplitudeRange) {
+  const sample = Math.max(
+    -1,
+    Math.min(1, ((s.smoothedData[index] - 128) / 128) * WAVE_SENSITIVITY)
+  );
+  return centerY + sample * amplitudeRange;
 }
 
 function draw() {
-  // CRITICAL: Always schedule next frame, even when returning early, to keep animation loop alive
   if (!s.isSetup || !s.analyser || !s.ctx || !s.canvas) {
-    setAnimationId(PW().requestAnimationFrame(draw));
+    setAnimationId(null);
     return;
   }
-  // Performance: Pause drawing if tab is hidden or canvas is transparent
+
   if (PD().visibilityState !== 'visible' || parseFloat(s.canvas.style.opacity) <= 0) {
-    setAnimationId(PW().requestAnimationFrame(draw));
+    setAnimationId(null);
     return;
   }
 
   s.analyser.getByteTimeDomainData(s.dataArray);
+  if (frequencyData) s.analyser.getByteFrequencyData(frequencyData);
 
   for (let i = 0; i < s.bufferLength; i++) {
     s.smoothedData[i] += SMOOTHING_FACTOR * (s.dataArray[i] - s.smoothedData[i]);
   }
 
-  const w = s.canvas.width;
-  const h = s.canvas.height;
-  s.ctx.clearRect(0, 0, w, h);
-
+  const { w, h } = prepareCanvasFrame();
   const sliceWidth = w / s.bufferLength;
   const style = s.waveStyle || 'dinamica';
-  const { accent } = waveThemeColors();
+  const colors = waveThemeColors();
+  const { accent, glow } = colors;
+  const centerY = h * 0.48;
+  const amplitudeRange = h * 0.46;
 
-  s.ctx.shadowBlur = 16;
-  s.ctx.shadowColor = accent + '99';
+  drawAmbientFloor(w, h, colors);
+  s.ctx.lineCap = 'round';
+  s.ctx.lineJoin = 'round';
+  s.ctx.shadowBlur = 14;
+  s.ctx.shadowColor = glow;
 
   let x = 0;
   switch (style) {
     case 'linea':
-      s.ctx.lineWidth = 2;
+      s.ctx.lineWidth = 2.4;
       s.ctx.strokeStyle = accent;
       s.ctx.beginPath();
       x = 0;
       for (let i = 0; i < s.bufferLength; i++) {
-        const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
-        if (i === 0) s.ctx.moveTo(x, amplitude);
-        else s.ctx.lineTo(x, amplitude);
+        const y = waveY(i, centerY, amplitudeRange);
+        if (i === 0) s.ctx.moveTo(x, y);
+        else s.ctx.lineTo(x, y);
         x += sliceWidth;
       }
       s.ctx.stroke();
       break;
     case 'barras':
+      if (!frequencyData) break;
       x = 0;
-      for (let i = 0; i < s.bufferLength; i += 5) {
-        const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
-        s.ctx.fillStyle = accent;
-        s.ctx.fillRect(x, 0, sliceWidth * 4, amplitude);
-        x += sliceWidth * 5;
+      {
+        const bars = 96;
+        const gap = 3;
+        const barWidth = Math.max(2, w / bars - gap);
+        for (let i = 0; i < bars; i++) {
+          const bucket = Math.floor((i / bars) * frequencyData.length * 0.72);
+          const value = Math.min(1, ((frequencyData[bucket] || 0) / 255) * WAVE_SENSITIVITY);
+          const barHeight = Math.max(3, value * h * 0.58);
+          const gradient = s.ctx.createLinearGradient(
+            0,
+            centerY - barHeight,
+            0,
+            centerY + barHeight
+          );
+          gradient.addColorStop(0, accent + 'cc');
+          gradient.addColorStop(1, accent + '33');
+          s.ctx.fillStyle = gradient;
+          s.ctx.fillRect(x, centerY - barHeight / 2, barWidth, barHeight);
+          x += barWidth + gap;
+        }
       }
       break;
     case 'curva':
-      s.ctx.lineWidth = 2;
+      s.ctx.lineWidth = 2.6;
       s.ctx.strokeStyle = accent;
       s.ctx.beginPath();
-      s.ctx.moveTo(0, Math.max(0, s.smoothedData[0] - 128) * SCALE);
+      s.ctx.moveTo(0, waveY(0, centerY, amplitudeRange));
       for (let i = 0; i < s.bufferLength - 1; i++) {
         const x0 = i * sliceWidth;
         const x1 = (i + 1) * sliceWidth;
-        const y0 = Math.max(0, s.smoothedData[i] - 128) * SCALE;
-        const y1 = Math.max(0, s.smoothedData[i + 1] - 128) * SCALE;
+        const y0 = waveY(i, centerY, amplitudeRange);
+        const y1 = waveY(i + 1, centerY, amplitudeRange);
         const cp1x = x0 + sliceWidth / 3;
         const cp1y = y0;
         const cp2x = x1 - sliceWidth / 3;
@@ -454,57 +550,71 @@ function draw() {
       break;
     case 'picos':
       s.ctx.fillStyle = accent;
-      x = 0;
-      for (let i = 0; i < s.bufferLength; i += 5) {
-        const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
+      if (!frequencyData) break;
+      for (let i = 0; i < 110; i++) {
+        const bucket = Math.floor((i / 110) * frequencyData.length * 0.75);
+        const value = Math.min(1, ((frequencyData[bucket] || 0) / 255) * WAVE_SENSITIVITY);
+        const dotX = (i / 109) * w;
+        const dotY = centerY - value * h * 0.38;
+        const radius = 1.2 + value * 3.2;
         s.ctx.beginPath();
-        s.ctx.arc(x, amplitude, 2, 0, Math.PI * 2);
+        s.ctx.arc(dotX, dotY, radius, 0, Math.PI * 2);
         s.ctx.fill();
-        x += sliceWidth * 5;
       }
       break;
     case 'solida':
       s.ctx.beginPath();
       x = 0;
-      s.ctx.moveTo(0, 0);
+      s.ctx.moveTo(0, centerY);
       for (let i = 0; i < s.bufferLength; i++) {
-        const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
-        s.ctx.lineTo(x, amplitude);
+        s.ctx.lineTo(x, waveY(i, centerY, amplitudeRange));
         x += sliceWidth;
       }
-      s.ctx.lineTo(w, 0);
+      s.ctx.lineTo(w, h);
+      s.ctx.lineTo(0, h);
       s.ctx.closePath();
       s.ctx.fillStyle = accent + '4d';
       s.ctx.fill();
       break;
     case 'dinamica': {
       const gradient = s.ctx.createLinearGradient(0, 0, w, 0);
-      gradient.addColorStop(0, accent);
-      gradient.addColorStop(0.5, accent + '80');
-      gradient.addColorStop(1, accent);
-      s.ctx.lineWidth = 3;
+      gradient.addColorStop(0, accent + '44');
+      gradient.addColorStop(0.35, accent);
+      gradient.addColorStop(0.65, '#ffffffcc');
+      gradient.addColorStop(1, accent + '55');
+      s.ctx.lineWidth = 3.2;
       s.ctx.strokeStyle = gradient;
       s.ctx.beginPath();
       x = 0;
       for (let i = 0; i < s.bufferLength; i++) {
-        const amplitude = Math.max(0, s.smoothedData[i] - 128) * SCALE;
-        if (i === 0) s.ctx.moveTo(x, amplitude);
-        else s.ctx.lineTo(x, amplitude);
+        const y = waveY(i, centerY, amplitudeRange);
+        if (i === 0) s.ctx.moveTo(x, y);
+        else s.ctx.lineTo(x, y);
         x += sliceWidth;
       }
       s.ctx.stroke();
+
+      const fill = s.ctx.createLinearGradient(0, centerY - amplitudeRange, 0, h);
+      fill.addColorStop(0, accent + '22');
+      fill.addColorStop(0.55, accent + '10');
+      fill.addColorStop(1, 'rgba(0,0,0,0)');
+      s.ctx.lineTo(w, h);
+      s.ctx.lineTo(0, h);
+      s.ctx.closePath();
+      s.ctx.fillStyle = fill;
+      s.ctx.fill();
       break;
     }
     case 'montana':
       s.ctx.beginPath();
       x = 0;
-      s.ctx.moveTo(0, 0);
+      s.ctx.moveTo(0, h);
       for (let i = 0; i < s.bufferLength; i++) {
-        const amp = (s.smoothedData[i] - 128) * SCALE * 0.8;
-        s.ctx.lineTo(x, amp);
+        const y = waveY(i, centerY, amplitudeRange * 0.9);
+        s.ctx.lineTo(x, y);
         x += sliceWidth;
       }
-      s.ctx.lineTo(w, 0);
+      s.ctx.lineTo(w, h);
       s.ctx.closePath();
       s.ctx.fillStyle = accent + '66';
       s.ctx.fill();
