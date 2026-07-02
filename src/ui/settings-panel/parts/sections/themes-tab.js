@@ -61,7 +61,7 @@ export function buildThemesTab(isDarkModeActive, themeOptionsHTML) {
                     type="color"
                     id="progressbar-color-picker"
                     class="color-picker-mdcm"
-                    value="#ff0000"
+                    value="#22d3ee"
                   />
                 </div>
               </div>
@@ -72,7 +72,7 @@ export function buildThemesTab(isDarkModeActive, themeOptionsHTML) {
                     type="color"
                     id="bg-color-picker"
                     class="color-picker-mdcm"
-                    value="#000000"
+                    value="#0b1016"
                   />
                 </div>
               </div>
@@ -94,7 +94,7 @@ export function buildThemesTab(isDarkModeActive, themeOptionsHTML) {
                     type="color"
                     id="secondary-color-picker"
                     class="color-picker-mdcm"
-                    value="#ffffff"
+                    value="#a7b4c2"
                   />
                 </div>
               </div>
@@ -105,7 +105,7 @@ export function buildThemesTab(isDarkModeActive, themeOptionsHTML) {
                     type="color"
                     id="header-color-picker"
                     class="color-picker-mdcm"
-                    value="#000000"
+                    value="#0f1721"
                   />
                 </div>
               </div>
@@ -127,7 +127,7 @@ export function buildThemesTab(isDarkModeActive, themeOptionsHTML) {
                     type="color"
                     id="menu-color-picker"
                     class="color-picker-mdcm"
-                    value="#000000"
+                    value="#0f1721"
                   />
                 </div>
               </div>
@@ -138,7 +138,7 @@ export function buildThemesTab(isDarkModeActive, themeOptionsHTML) {
                     type="color"
                     id="line-color-picker"
                     class="color-picker-mdcm"
-                    value="#ff0000"
+                    value="#22d3ee"
                   />
                 </div>
               </div>

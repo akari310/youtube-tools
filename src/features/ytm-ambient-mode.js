@@ -5,7 +5,18 @@
 import { $e, isYTMusic } from '../utils/dom.js';
 import { SETTINGS_KEY } from '../settings/storage-key.js';
 import { readJsonGM } from '../utils/storage.js';
-import { trackInterval, untrackInterval, trackTimeout } from '../utils/cleanup-manager.js';
+import {
+  trackEventListener,
+  trackInterval,
+  trackTimeout,
+  untrackInterval,
+  untrackTimeout,
+} from '../utils/cleanup-manager.js';
+
+let ambientWatcherId = null;
+let ambientWatcherStartTimeout = null;
+let ambientPageDataHandler = null;
+let ambientNavResetBound = false;
 
 export const ytmAmbientMode = {
   active: false,
@@ -332,10 +343,9 @@ export const ytmAmbientMode = {
 export function startAmbientWatcher() {
   if (!isYTMusic) return;
 
-  let _ambientWatcherId = null;
   function start() {
-    if (_ambientWatcherId) return;
-    _ambientWatcherId = trackInterval(
+    if (ambientWatcherId) return;
+    ambientWatcherId = trackInterval(
       setInterval(() => {
         if (document.visibilityState !== 'visible') return;
         const s = readJsonGM(SETTINGS_KEY, {});
@@ -352,17 +362,40 @@ export function startAmbientWatcher() {
       }, 3000)
     );
   }
-  trackTimeout(setTimeout(start, 3000));
+  if (!ambientWatcherStartTimeout && !ambientWatcherId) {
+    ambientWatcherStartTimeout = trackTimeout(
+      setTimeout(() => {
+        ambientWatcherStartTimeout = null;
+        start();
+      }, 3000)
+    );
+  }
 
   // Also respond to YTM-specific events immediately
-  document.addEventListener('yt-page-data-updated', () => {
-    const settings = readJsonGM(SETTINGS_KEY, {});
-    if (!settings.cinematicLighting) return;
-    if (window.location.href.includes('/watch')) {
-      if (!ytmAmbientMode.active) ytmAmbientMode.show();
-      else ytmAmbientMode._updateArt();
-    } else if (ytmAmbientMode.active) {
-      ytmAmbientMode.hide();
-    }
-  });
+  if (!ambientPageDataHandler) {
+    ambientPageDataHandler = trackEventListener(document, 'yt-page-data-updated', () => {
+      const settings = readJsonGM(SETTINGS_KEY, {});
+      if (!settings.cinematicLighting) return;
+      if (window.location.href.includes('/watch')) {
+        if (!ytmAmbientMode.active) ytmAmbientMode.show();
+        else ytmAmbientMode._updateArt();
+      } else if (ytmAmbientMode.active) {
+        ytmAmbientMode.hide();
+      }
+    });
+  }
+
+  if (!ambientNavResetBound) {
+    ambientNavResetBound = true;
+    trackEventListener(window, 'yt-navigate-finish', () => {
+      if (ambientWatcherStartTimeout) {
+        untrackTimeout(ambientWatcherStartTimeout);
+        ambientWatcherStartTimeout = null;
+      }
+      if (ambientWatcherId) {
+        untrackInterval(ambientWatcherId);
+        ambientWatcherId = null;
+      }
+    });
+  }
 }

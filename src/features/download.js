@@ -1,4 +1,4 @@
-import { DUBS_START_ENDPOINT, DUBS_STATUS_ENDPOINT, DOWNLOAD_API_FALLBACK_BASES, getApiKey } from '../config/constants.js';
+import { DUBS_START_ENDPOINT, DUBS_STATUS_ENDPOINT } from '../config/constants.js';
 import { $id } from '../utils/dom.js';
 import { Notify, paramsVideoURL } from '../utils/helpers.js';
 import { __ytToolsRuntime } from '../utils/runtime.js';
@@ -25,14 +25,147 @@ function normalizeYouTubeURL(rawURL) {
   }
 }
 
-const AUDIO_FORMATS = new Set(['mp3', 'ogg', 'opus', 'webm', 'm4a', 'wav', 'flac', 'aac']);
+const AUDIO_FORMATS = new Set(['best', 'mp3', 'ogg', 'opus', 'webm', 'wav']);
 const isAudioFormat = f => AUDIO_FORMATS.has(String(f).toLowerCase());
 
 // Cobalt v10 audioFormat: 'best' | 'mp3' | 'ogg' | 'wav' | 'opus'.
-// m4a/webm → 'best' (preserves source codec — AAC/m4a or opus/webm from YouTube).
+// webm/original → 'best' (preserves YouTube source codec when available).
 function toCobaltAudioFormat(f) {
   if (f === 'mp3' || f === 'ogg' || f === 'opus' || f === 'wav') return f;
   return 'best';
+}
+
+function toCobaltVideoQuality(quality) {
+  if (quality === '4k') return '2160';
+  if (quality === '8k') return '4320';
+  if (/^\d+$/.test(String(quality))) return String(quality);
+  return 'max';
+}
+
+const FORMAT_LABELS = {
+  best: 'Original audio',
+  mp3: 'MP3 320 kbps',
+  ogg: 'OGG',
+  opus: 'OPUS',
+  webm: 'WEBM',
+  wav: 'WAV',
+  144: '144p',
+  240: '240p',
+  360: '360p',
+  480: '480p',
+  720: '720p HD',
+  1080: '1080p Full HD',
+  1440: '1440p 2K',
+  '4k': '2160p 4K',
+  '8k': '4320p 8K',
+};
+
+const MIME_EXTENSIONS = {
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/aac': 'aac',
+  'audio/ogg': 'ogg',
+  'audio/opus': 'opus',
+  'audio/wav': 'wav',
+  'audio/webm': 'webm',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+};
+
+function getFormatLabel(format) {
+  return FORMAT_LABELS[String(format).toLowerCase()] || String(format).toUpperCase();
+}
+
+function sanitizeFilename(value) {
+  const withoutControlChars = String(value || 'youtube-download')
+    .split('')
+    .filter(char => {
+      const code = char.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join('');
+
+  return (
+    withoutControlChars
+      .replace(/[<>:"/\\|?*]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 140) || 'youtube-download'
+  );
+}
+
+function getCurrentVideoTitle() {
+  return (
+    document.querySelector('h1 yt-formatted-string')?.textContent?.trim() ||
+    document.querySelector('ytmusic-player-bar .title')?.textContent?.trim() ||
+    document.title.replace(/\s*-\s*YouTube(?: Music)?\s*$/i, '').trim() ||
+    'youtube-download'
+  );
+}
+
+function getResponseHeader(headers, name) {
+  const match = String(headers || '').match(new RegExp(`^${name}:\\s*(.+)$`, 'im'));
+  return match?.[1]?.trim() || '';
+}
+
+function getFilenameFromDisposition(headers) {
+  const disposition = getResponseHeader(headers, 'content-disposition');
+  if (!disposition) return '';
+  const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded);
+    } catch {}
+  }
+  return disposition.match(/filename="?([^";]+)"?/i)?.[1] || '';
+}
+
+function getExtensionFromDownload(downloadUrl, blob, format, type, headers) {
+  const dispositionName = getFilenameFromDisposition(headers);
+  const dispositionExt = dispositionName.match(/\.([a-z0-9]+)$/i)?.[1];
+  if (dispositionExt) return dispositionExt.toLowerCase();
+
+  const contentType = getResponseHeader(headers, 'content-type') || blob?.type;
+  const mimeExt = MIME_EXTENSIONS[String(contentType).split(';')[0].toLowerCase()];
+  if (mimeExt) return mimeExt;
+
+  try {
+    const pathExt = new URL(downloadUrl).pathname.match(/\.([a-z0-9]+)$/i)?.[1];
+    if (pathExt) return pathExt.toLowerCase();
+  } catch {}
+
+  if (format === 'best') return type === 'audio' ? 'm4a' : 'mp4';
+  if (format === 'webm') return 'webm';
+  return type === 'audio' ? format : 'mp4';
+}
+
+function buildDownloadFilename(downloadUrl, blob, format, type, headers) {
+  const dispositionName = getFilenameFromDisposition(headers);
+  if (dispositionName) return sanitizeFilename(dispositionName);
+  const ext = getExtensionFromDownload(downloadUrl, blob, format, type, headers);
+  const prefix = type === 'audio' ? 'audio' : 'video';
+  return `${sanitizeFilename(getCurrentVideoTitle())}-${prefix}.${ext}`;
+}
+
+function clearDownloadPoll(container) {
+  if (container.__ytDownloadPoll) {
+    clearTimeout(container.__ytDownloadPoll);
+    container.__ytDownloadPoll = null;
+  }
+}
+
+function abortActiveDownload(container) {
+  clearDownloadPoll(container);
+  container.__ytDownloadToken = Symbol('cancelled-download');
+  if (container.__ytDownloadRequests) {
+    container.__ytDownloadRequests.forEach(req => {
+      try {
+        req.abort?.();
+      } catch {}
+    });
+    container.__ytDownloadRequests.clear();
+  }
 }
 
 const COBALT_APIS_FALLBACK = [
@@ -44,7 +177,7 @@ const COBALT_APIS_FALLBACK = [
 ];
 
 function fetchWorkingCobaltApis() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const isMusic = window.location.hostname.includes('music.youtube.com');
     const key = isMusic ? 'youtube-music' : 'youtube';
 
@@ -60,11 +193,14 @@ function fetchWorkingCobaltApis() {
       onload: function (res) {
         clearTimeout(t);
         try {
-          const data = typeof res.response === 'string' ? JSON.parse(res.response) : (res.response || JSON.parse(res.responseText));
+          const data =
+            typeof res.response === 'string'
+              ? JSON.parse(res.response)
+              : res.response || JSON.parse(res.responseText);
           if (data && data.data) {
             let list = data.data[key] || data.data['youtube'] || [];
             if (list.length > 0) {
-              list = list.map(url => url.endsWith('/') ? url : url + '/');
+              list = list.map(url => (url.endsWith('/') ? url : url + '/'));
               const combined = Array.from(new Set([...list, ...COBALT_APIS_FALLBACK]));
               resolve(combined);
               return;
@@ -82,37 +218,34 @@ function fetchWorkingCobaltApis() {
       onabort: function () {
         clearTimeout(t);
         resolve(COBALT_APIS_FALLBACK);
-      }
+      },
     });
   });
 }
 
 export async function startDownloadVideoOrAudio(format, container) {
+  format = String(format || '').toLowerCase();
   const videoURL = normalizeYouTubeURL(window.location.href);
-
-  // Map unsupported Cobalt formats to supported high-quality equivalents
-  if (format === 'm4a' || format === 'aac') {
-    Notify('info', 'Cobalt không hỗ trợ tải M4A/AAC gốc, hệ thống đang tải file MP3 chất lượng cao thay thế...');
-    format = 'mp3';
-  } else if (format === 'flac') {
-    Notify('info', 'Cobalt không hỗ trợ tải FLAC gốc, hệ thống đang tải file WAV chất lượng cao thay thế...');
-    format = 'wav';
-  }
+  const type = container.dataset.type || (isAudioFormat(format) ? 'audio' : 'video');
+  const isAudio = type === 'audio' || isAudioFormat(format);
 
   // Check if already downloading
   if (container.dataset.downloading === 'true') {
     return;
   }
 
-  // Stop any previous poller (avoid leaks on retry)
-  try {
-    if (container.__ytDownloadPoll) {
-      clearTimeout(container.__ytDownloadPoll);
-      container.__ytDownloadPoll = null;
-    }
-  } catch (e) {
-    console.warn('[YT Tools] Download poller cleanup error:', e);
-  }
+  abortActiveDownload(container);
+  const downloadToken = Symbol('yt-download');
+  container.__ytDownloadToken = downloadToken;
+  container.__ytDownloadRequests = new Set();
+  const isCurrentDownload = () => container.__ytDownloadToken === downloadToken;
+  const trackRequest = req => {
+    if (req?.abort) container.__ytDownloadRequests.add(req);
+    return req;
+  };
+  const untrackRequest = req => {
+    if (req?.abort) container.__ytDownloadRequests?.delete(req);
+  };
 
   // Get UI elements from the container
   const downloadBtn = container.querySelector('.download-btn');
@@ -123,16 +256,20 @@ export async function startDownloadVideoOrAudio(format, container) {
   const progressFill = container.querySelector('.progress-fill');
   const progressText = container.querySelector('.progress-text');
   const downloadText = container.querySelector('.download-text');
+  const downloadQuality = container.querySelector('.download-quality');
+  const providerText = container.querySelector('.download-provider');
 
   // Set downloading flag
   container.dataset.downloading = 'true';
+  container.dataset.type = isAudio ? 'audio' : 'video';
+  container.dataset.quality = format;
   container.dataset.urlOpened = 'false';
   container.dataset.lastDownloadUrl = '';
 
   // Set gradient class based on type
-  const typeClass = container.classList.contains('ocultarframeaudio') ? 'audio' : 'video';
-  container.classList.remove('audio', 'video');
-  if (typeClass) container.classList.add(typeClass);
+  const typeClass = isAudio ? 'audio' : 'video';
+  container.classList.remove('audio', 'video', 'completed', 'error', 'is-downloading');
+  container.classList.add(typeClass, 'is-downloading');
 
   // Create or get status text element
   let statusText = container.querySelector('.download-status-text');
@@ -148,83 +285,111 @@ export async function startDownloadVideoOrAudio(format, container) {
   if (progressRetryBtn) progressRetryBtn.style.display = 'block';
   if (downloadAgainBtn) downloadAgainBtn.style.display = 'none';
   if (progressContainer) progressContainer.style.display = 'flex';
+  if (downloadText)
+    downloadText.textContent = isAudio ? 'Đang chuẩn bị tải nhạc' : 'Đang chuẩn bị tải video';
+  if (downloadQuality) downloadQuality.textContent = getFormatLabel(format);
+  if (providerText) providerText.textContent = 'Provider: auto';
   if (progressFill) {
     progressFill.style.width = '0%';
     progressFill.classList.add('indeterminate');
   }
   if (progressText) progressText.textContent = '0%';
   if (statusText) {
-    statusText.textContent = 'Connecting to server...';
+    statusText.textContent = 'Đang kết nối máy chủ tải...';
     statusText.className = 'download-status-text status-dot';
   }
 
   const updateProgress = (pct, statusMsg) => {
+    if (!isCurrentDownload()) return;
+    const safePct = Math.max(0, Math.min(Number(pct) || 0, 100));
     if (progressFill) {
-      if (pct > 0) {
+      if (safePct > 0) {
         progressFill.classList.remove('indeterminate');
       }
-      progressFill.style.width = `${pct}%`;
+      progressFill.style.width = `${safePct}%`;
     }
-    if (progressText) progressText.textContent = `${Math.round(pct)}%`;
+    if (progressText) progressText.textContent = `${Math.round(safePct)}%`;
     if (statusText && statusMsg) {
       statusText.textContent = statusMsg;
     }
   };
 
+  const setProvider = provider => {
+    if (providerText) providerText.textContent = `Provider: ${provider}`;
+  };
+
   const fetchJsonWithTimeout = (url, timeoutMs = 20000) => {
     return new Promise((resolve, reject) => {
       let aborted = false;
+      let req = null;
       const t = setTimeout(() => {
         aborted = true;
+        untrackRequest(req);
         reject(new Error('Timeout'));
         if (req && req.abort) req.abort();
       }, timeoutMs);
 
-      const req = GM_xmlhttpRequest({
-        method: 'GET',
-        url: url,
-        responseType: 'json',
-        onload: function (res) {
-          if (aborted) return;
-          clearTimeout(t);
-          if (res.status !== 200) {
-            reject(new Error(`HTTP ${res.status}`));
-            return;
-          }
-          let data = res.response;
-          if (typeof data === 'string') {
-            try {
-              data = JSON.parse(data);
-            } catch {}
-          }
-          resolve(data);
-        },
-        onerror: function () {
-          if (aborted) return;
-          clearTimeout(t);
-          reject(new Error('Failed to fetch'));
-        },
-        onabort: function () {
-          if (aborted) return;
-          clearTimeout(t);
-          reject(new Error('Aborted'));
-        },
-      });
+      req = trackRequest(
+        GM_xmlhttpRequest({
+          method: 'GET',
+          url: url,
+          responseType: 'json',
+          onload: function (res) {
+            if (aborted) return;
+            clearTimeout(t);
+            untrackRequest(req);
+            if (res.status !== 200) {
+              reject(new Error(`HTTP ${res.status}`));
+              return;
+            }
+            let data = res.response;
+            if (typeof data === 'string') {
+              try {
+                data = JSON.parse(data);
+              } catch {}
+            }
+            resolve(data);
+          },
+          onerror: function () {
+            if (aborted) return;
+            clearTimeout(t);
+            untrackRequest(req);
+            reject(new Error('Failed to fetch'));
+          },
+          onabort: function () {
+            if (aborted) return;
+            clearTimeout(t);
+            untrackRequest(req);
+            reject(new Error('Aborted'));
+          },
+        })
+      );
     });
   };
 
   const setErrorState = message => {
+    if (!isCurrentDownload()) return;
     if (retryBtn) retryBtn.style.display = 'block';
+    if (downloadBtn) downloadBtn.style.display = 'none';
     if (progressContainer) progressContainer.style.display = 'none';
     if (progressRetryBtn) progressRetryBtn.style.display = 'none';
     if (downloadAgainBtn) downloadAgainBtn.style.display = 'none';
+    container.classList.remove('completed', 'video', 'audio', 'is-downloading');
+    container.classList.add('error');
     container.dataset.downloading = 'false';
     container.dataset.urlOpened = 'false';
     container.dataset.lastDownloadUrl = '';
+    if (downloadText)
+      downloadText.textContent = isAudio ? 'Tải nhạc chưa thành công' : 'Tải video chưa thành công';
+    if (statusText) {
+      statusText.className = 'download-status-text';
+      statusText.textContent = message || 'Máy chủ tải đang quá tải. Hãy thử lại.';
+    }
     if (message) Notify('error', message);
   };
 
   const markCompleteAndOpen = downloadUrl => {
+    if (!isCurrentDownload()) return;
     if (!downloadUrl) {
       setErrorState();
       return;
@@ -233,8 +398,8 @@ export async function startDownloadVideoOrAudio(format, container) {
     if (container.dataset.urlOpened === 'true') return;
     container.dataset.urlOpened = 'true';
     container.classList.add('completed');
-    container.classList.remove('video', 'audio');
-    if (downloadText) downloadText.textContent = 'Download Complete!';
+    container.classList.remove('video', 'audio', 'error', 'is-downloading');
+    if (downloadText) downloadText.textContent = 'Đã tạo link tải';
     if (progressFill) {
       progressFill.classList.remove('indeterminate');
       progressFill.style.width = '100%';
@@ -244,58 +409,72 @@ export async function startDownloadVideoOrAudio(format, container) {
     if (downloadAgainBtn) downloadAgainBtn.style.display = 'flex';
     if (statusText) {
       statusText.className = 'download-status-text';
-      statusText.textContent = 'File ready. Downloading...';
+      statusText.textContent = 'File sẵn sàng. Đang tải về máy...';
     }
     container.dataset.downloading = 'false';
-    Notify('success', 'Download started!');
+    Notify('success', isAudio ? 'Đã bắt đầu tải nhạc!' : 'Đã bắt đầu tải video!');
     try {
-      const ext = isAudioFormat(format) ? format : 'mp4';
-      const prefix = isAudioFormat(format) ? 'youtube-audio' : 'youtube-video';
-      const filename = `${prefix}.${ext}`;
+      let blobReq = null;
+      blobReq = trackRequest(
+        GM_xmlhttpRequest({
+          method: 'GET',
+          url: downloadUrl,
+          responseType: 'blob',
+          onload: function (res) {
+            untrackRequest(blobReq);
+            if (!isCurrentDownload()) return;
+            const responseBlob = res.response;
+            if (res.status !== 200 || !responseBlob) {
+              console.warn(
+                '[YT Tools] Blob download returned non-200 status, falling back to direct download link'
+              );
+              window.open(downloadUrl, '_blank');
+              if (downloadText) downloadText.textContent = 'Mở link tải trực tiếp';
+              if (statusText) statusText.textContent = 'Đang tải qua trình duyệt...';
+              container.dataset.downloading = 'false';
+              return;
+            }
+            if (responseBlob.size < 50000) {
+              console.warn(
+                '[YT Tools] Blob size too small, probably error page. Falling back to direct download link'
+              );
+              window.open(downloadUrl, '_blank');
+              if (downloadText) downloadText.textContent = 'Mở link tải trực tiếp';
+              if (statusText) statusText.textContent = 'Đang tải qua trình duyệt...';
+              container.dataset.downloading = 'false';
+              return;
+            }
+            const filename = buildDownloadFilename(
+              downloadUrl,
+              responseBlob,
+              format,
+              typeClass,
+              res.responseHeaders
+            );
+            const url = URL.createObjectURL(responseBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
 
-      GM_xmlhttpRequest({
-        method: 'GET',
-        url: downloadUrl,
-        responseType: 'blob',
-        onload: function (res) {
-          const responseBlob = res.response;
-          if (res.status !== 200 || !responseBlob) {
-            console.warn('[YT Tools] Blob download returned non-200 status, falling back to direct download link');
+            if (downloadText) downloadText.textContent = 'Tải xong';
+            if (statusText) statusText.textContent = 'Đã lưu file vào trình duyệt.';
+          },
+          onerror: function () {
+            untrackRequest(blobReq);
+            if (!isCurrentDownload()) return;
+            console.warn('[YT Tools] Blob download failed, falling back to direct download link');
             window.open(downloadUrl, '_blank');
-            if (downloadText) downloadText.textContent = 'Hoàn tất (Trực tiếp)!';
+            if (downloadText) downloadText.textContent = 'Mở link tải trực tiếp';
             if (statusText) statusText.textContent = 'Đang tải qua trình duyệt...';
             container.dataset.downloading = 'false';
-            return;
-          }
-          if (responseBlob.size < 50000) {
-            console.warn('[YT Tools] Blob size too small, probably error page. Falling back to direct download link');
-            window.open(downloadUrl, '_blank');
-            if (downloadText) downloadText.textContent = 'Hoàn tất (Trực tiếp)!';
-            if (statusText) statusText.textContent = 'Đang tải qua trình duyệt...';
-            container.dataset.downloading = 'false';
-            return;
-          }
-          const url = URL.createObjectURL(responseBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 60000);
-
-          if (downloadText) downloadText.textContent = 'Hoàn tất!';
-          if (statusText) statusText.textContent = 'Đã tải xong!';
-        },
-        onerror: function () {
-          console.warn('[YT Tools] Blob download failed, falling back to direct download link');
-          window.open(downloadUrl, '_blank');
-          if (downloadText) downloadText.textContent = 'Hoàn tất (Trực tiếp)!';
-          if (statusText) statusText.textContent = 'Đang tải qua trình duyệt...';
-          container.dataset.downloading = 'false';
-        },
-      });
+          },
+        })
+      );
     } catch (e) {
       console.warn('[YT Tools] Could not trigger download:', e);
       window.open(downloadUrl, '_blank');
@@ -305,11 +484,14 @@ export async function startDownloadVideoOrAudio(format, container) {
   const tryDubsProvider = async () => {
     const videoId = paramsVideoURL();
     if (!videoId) throw new Error('Missing videoId');
+    const dubsFormat = isAudio && (format === 'best' || format === 'webm') ? 'mp3' : format;
 
     const startUrl = new URL(DUBS_START_ENDPOINT);
     startUrl.searchParams.set('id', videoId);
-    startUrl.searchParams.set('format', String(format));
+    startUrl.searchParams.set('format', String(dubsFormat));
 
+    setProvider('Dubs');
+    updateProgress(12, 'Dubs đang tạo link dự phòng...');
     const startData = await fetchJsonWithTimeout(startUrl.toString(), 25000);
     if (!startData?.success || !startData?.progressId) {
       throw new Error('Dubs provider did not return success/progressId');
@@ -322,17 +504,21 @@ export async function startDownloadVideoOrAudio(format, container) {
     let dubsDelay = 2000;
 
     const pollDubs = async () => {
+      if (!isCurrentDownload()) return;
       try {
         const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
         dubsFailCount = 0;
         dubsDelay = 2000;
 
         const rawProgress = Number(st?.progress) || 0;
-        const progress = Math.min(rawProgress / 10, 100);
-        updateProgress(progress, progress < 10 ? 'Processing...' : 'Downloading...');
+        const progress = Math.max(15, Math.min(rawProgress / 10, 96));
+        updateProgress(
+          progress,
+          progress < 40 ? 'Dubs đang xử lý...' : 'Dubs đang chuẩn bị file...'
+        );
 
         if (st?.finished && st?.downloadUrl) {
-          clearTimeout(container.__ytDownloadPoll);
+          clearDownloadPoll(container);
           container.__ytDownloadPoll = null;
           markCompleteAndOpen(st.downloadUrl);
           return;
@@ -341,12 +527,12 @@ export async function startDownloadVideoOrAudio(format, container) {
         dubsFailCount++;
         if (dubsFailCount >= 5) {
           console.error('[YT Tools] Dubs polling failed after 5 retries:', e);
-          clearTimeout(container.__ytDownloadPoll);
-          container.__ytDownloadPoll = null;
+          clearDownloadPoll(container);
           setErrorState('Download failed - server error. Please retry.');
           return;
         }
         console.warn(`[YT Tools] Dubs poll error (${dubsFailCount}/5):`, e);
+        updateProgress(35, `Dubs chưa phản hồi, thử lại lần ${dubsFailCount}/5...`);
         dubsDelay = Math.min(dubsDelay * 2, 16000);
       }
       container.__ytDownloadPoll = setTimeout(pollDubs, dubsDelay);
@@ -354,14 +540,13 @@ export async function startDownloadVideoOrAudio(format, container) {
     container.__ytDownloadPoll = setTimeout(pollDubs, dubsDelay);
   };
 
-  const tryCobaltProvider = (cobaltApis) => {
+  const tryCobaltProvider = cobaltApis => {
     return new Promise((resolve, reject) => {
-      const isAudio = isAudioFormat(format);
       // Cobalt v10 schema: videoQuality/audioFormat/downloadMode (old vQuality/aFormat/isAudioOnly removed).
       const body = {
         url: videoURL,
         downloadMode: isAudio ? 'audio' : 'auto',
-        videoQuality: 'max',
+        videoQuality: toCobaltVideoQuality(format),
         filenameStyle: 'pretty',
       };
       if (isAudio) {
@@ -372,70 +557,96 @@ export async function startDownloadVideoOrAudio(format, container) {
       let attempt = 0;
 
       const makeRequest = () => {
+        if (!isCurrentDownload()) return;
         if (attempt >= cobaltApis.length) {
           reject(new Error('All Cobalt APIs failed'));
           return;
         }
         const api = cobaltApis[attempt];
-        
+        setProvider(`Cobalt ${attempt + 1}/${cobaltApis.length}`);
+        updateProgress(
+          Math.min(8 + attempt * 4, 55),
+          `Đang thử Cobalt ${attempt + 1}/${cobaltApis.length}...`
+        );
+
         let reqAborted = false;
+        let req = null;
         const timeoutId = setTimeout(() => {
           reqAborted = true;
+          untrackRequest(req);
+          try {
+            req?.abort?.();
+          } catch {}
           attempt++;
           makeRequest();
         }, 10000); // 10s timeout per API
 
-        GM_xmlhttpRequest({
-          method: 'POST',
-          url: api,
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          data: JSON.stringify(body),
-          onload: function (res) {
-            if (reqAborted) return;
-            clearTimeout(timeoutId);
-            if (res.status !== 200) {
-              console.warn(`[YT Tools] Cobalt API ${api} returned status ${res.status}`);
+        req = trackRequest(
+          GM_xmlhttpRequest({
+            method: 'POST',
+            url: api,
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            data: JSON.stringify(body),
+            onload: function (res) {
+              if (reqAborted) return;
+              clearTimeout(timeoutId);
+              untrackRequest(req);
+              if (res.status !== 200) {
+                console.warn(`[YT Tools] Cobalt API ${api} returned status ${res.status}`);
+                attempt++;
+                makeRequest();
+                return;
+              }
+              let data;
+              try {
+                data =
+                  typeof res.response === 'string'
+                    ? JSON.parse(res.response)
+                    : res.response || JSON.parse(res.responseText);
+              } catch {
+                attempt++;
+                makeRequest();
+                return;
+              }
+              if (data.status === 'error') {
+                console.warn(`[YT Tools] Cobalt (${api}) error:`, data.error?.code || data.text);
+                attempt++;
+                makeRequest();
+              } else if (
+                data.status === 'picker' &&
+                Array.isArray(data.picker) &&
+                data.picker.length
+              ) {
+                const pick = isAudio
+                  ? data.picker.find(p => p.type === 'audio') || data.picker[0]
+                  : data.picker[0];
+                if (pick?.url)
+                  resolve({ success: true, download_url: pick.url, provider: 'Cobalt' });
+                else {
+                  attempt++;
+                  makeRequest();
+                }
+              } else if (data.url) {
+                resolve({ success: true, download_url: data.url, provider: 'Cobalt' });
+              } else {
+                attempt++;
+                makeRequest();
+              }
+            },
+            onerror: function () {
+              if (reqAborted) return;
+              clearTimeout(timeoutId);
+              untrackRequest(req);
               attempt++;
               makeRequest();
-              return;
-            }
-            let data;
-            try {
-              data = typeof res.response === 'string' ? JSON.parse(res.response) : (res.response || JSON.parse(res.responseText));
-            } catch {
-              attempt++;
-              makeRequest();
-              return;
-            }
-            if (data.status === 'error') {
-              console.warn(`[YT Tools] Cobalt (${api}) error:`, data.error?.code || data.text);
-              attempt++;
-              makeRequest();
-            } else if (data.status === 'picker' && Array.isArray(data.picker) && data.picker.length) {
-              const pick = isAudio
-                ? data.picker.find(p => p.type === 'audio') || data.picker[0]
-                : data.picker[0];
-              if (pick?.url) resolve({ success: true, download_url: pick.url });
-              else { attempt++; makeRequest(); }
-            } else if (data.url) {
-              resolve({ success: true, download_url: data.url });
-            } else {
-              attempt++;
-              makeRequest();
-            }
-          },
-          onerror: function () {
-            if (reqAborted) return;
-            clearTimeout(timeoutId);
-            attempt++;
-            makeRequest();
-          },
-        });
+            },
+          })
+        );
       };
-      
+
       makeRequest();
     });
   };
@@ -445,9 +656,9 @@ export async function startDownloadVideoOrAudio(format, container) {
     let lastErr = null;
 
     try {
-      updateProgress(2, 'Searching for active download channels...');
+      updateProgress(2, 'Đang tìm máy chủ Cobalt còn hoạt động...');
       const cobaltApis = await fetchWorkingCobaltApis();
-      updateProgress(5, `Trying Cobalt provider (${cobaltApis.length} instances)...`);
+      updateProgress(5, `Tìm thấy ${cobaltApis.length} máy chủ, đang chọn máy chủ nhanh nhất...`);
       started = await tryCobaltProvider(cobaltApis);
     } catch (e) {
       console.warn('[YT Tools] Cobalt failed:', e);
@@ -455,15 +666,16 @@ export async function startDownloadVideoOrAudio(format, container) {
     }
 
     if (started?.success && started?.download_url) {
+      setProvider(started.provider || 'Cobalt');
       markCompleteAndOpen(started.download_url);
       return;
     }
 
     console.warn('[YT Tools] Cobalt failed, trying dubs.io', lastErr);
-    updateProgress(10, 'Fallback: Trying Dubs provider...');
+    updateProgress(10, 'Cobalt bận, chuyển sang máy chủ dự phòng...');
     await tryDubsProvider();
   } catch (error) {
-    setErrorState('Tất cả API tải nhạc đều đang quá tải. Vui lòng thử lại sau!');
+    setErrorState('Tất cả máy chủ tải đang quá tải. Vui lòng thử lại sau!');
     console.error('[YT Tools] Download error:', error);
   }
 }
@@ -529,13 +741,14 @@ export function setupDownloadClickHandler() {
     }
 
     if (!quality) {
-      const label = type === 'audio' ? 'audio quality' : 'video quality';
-      Notify('warning', `Please select a ${label} first.`);
+      const label = type === 'audio' ? 'định dạng nhạc' : 'chất lượng video';
+      Notify('warning', `Vui lòng chọn ${label} trước.`);
       return;
     }
     if (!type) return;
 
     if (clicked.classList.contains('progress-retry-btn')) {
+      abortActiveDownload(container);
       container.dataset.downloading = 'false';
       container.dataset.urlOpened = 'false';
       container.dataset.lastDownloadUrl = '';

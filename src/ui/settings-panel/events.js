@@ -150,6 +150,65 @@ export function setupSettingsPanelEvents(panelDOM) {
     });
   }
 
+  const waveIntensitySlider = panelDOM.querySelector('#wave-intensity-slider');
+  const waveIntensityValue = panelDOM.querySelector('#wave-intensity-value');
+  if (waveIntensitySlider && waveIntensityValue) {
+    waveIntensitySlider.addEventListener('input', () => {
+      waveIntensityValue.textContent = waveIntensitySlider.value;
+      persistApplyAndNotifyFeatures();
+    });
+  }
+
+  const ytmWaveColorPicker = panelDOM.querySelector('#ytm-wave-color-picker');
+  if (ytmWaveColorPicker) {
+    ytmWaveColorPicker.addEventListener('input', persistApplyAndNotifyFeatures);
+  }
+
+  const ytmWaveHeightSlider = panelDOM.querySelector('#ytm-wave-height-slider');
+  const ytmWaveHeightValue = panelDOM.querySelector('#ytm-wave-height-value');
+  if (ytmWaveHeightSlider && ytmWaveHeightValue) {
+    ytmWaveHeightSlider.addEventListener('input', () => {
+      ytmWaveHeightValue.textContent = ytmWaveHeightSlider.value;
+      persistApplyAndNotifyFeatures();
+    });
+  }
+
+  const ytmPlayerOpacitySlider = panelDOM.querySelector('#ytm-player-opacity-slider');
+  const ytmPlayerOpacityValue = panelDOM.querySelector('#ytm-player-opacity-value');
+  if (ytmPlayerOpacitySlider && ytmPlayerOpacityValue) {
+    ytmPlayerOpacitySlider.addEventListener('input', () => {
+      ytmPlayerOpacityValue.textContent = ytmPlayerOpacitySlider.value;
+      persistApplyAndNotifyFeatures();
+    });
+  }
+
+  const ytmPanelOpacitySlider = panelDOM.querySelector('#ytm-panel-opacity-slider');
+  const ytmPanelOpacityValue = panelDOM.querySelector('#ytm-panel-opacity-value');
+  if (ytmPanelOpacitySlider && ytmPanelOpacityValue) {
+    ytmPanelOpacitySlider.addEventListener('input', () => {
+      ytmPanelOpacityValue.textContent = ytmPanelOpacitySlider.value;
+      persistApplyAndNotifyFeatures();
+    });
+  }
+
+  const ytmPanelBlurSlider = panelDOM.querySelector('#ytm-panel-blur-slider');
+  const ytmPanelBlurValue = panelDOM.querySelector('#ytm-panel-blur-value');
+  if (ytmPanelBlurSlider && ytmPanelBlurValue) {
+    ytmPanelBlurSlider.addEventListener('input', () => {
+      ytmPanelBlurValue.textContent = ytmPanelBlurSlider.value;
+      persistApplyAndNotifyFeatures();
+    });
+  }
+
+  const menuFontSizeSlider = panelDOM.querySelector('#menu-font-size-slider');
+  const menuFontSizeValue = panelDOM.querySelector('#menu-font-size-value');
+  if (menuFontSizeSlider && menuFontSizeValue) {
+    menuFontSizeSlider.addEventListener('input', () => {
+      menuFontSizeValue.textContent = menuFontSizeSlider.value;
+      persistApplyAndNotifyFeatures();
+    });
+  }
+
   // 6. Header Buttons (Share, Import/Export)
   const shareBtn = panelDOM.querySelector('#shareBtn-mdcm');
   const importExportBtn = panelDOM.querySelector('#importExportBtn');

@@ -25,6 +25,8 @@ export const STORAGE_KEYS = {
   // Settings (YouTube & YouTube Music)
   SETTINGS_YT: 'ytSettingsMDCM',
   SETTINGS_YTM: 'ytmSettingsMDCM',
+  DOWNLOAD_AUDIO_FORMAT: 'ytDownloadAudioFormatMDCM',
+  DOWNLOAD_VIDEO_QUALITY: 'ytDownloadVideoQualityMDCM',
 
   // Time Statistics
   TOTAL_USAGE: 'YT_TOTAL_USAGE',

@@ -242,6 +242,110 @@ export function buildGeneralTab(isYTMusic, languageOptionsHTML) {
               </label>
             </div>
           </div>
+          <div class="quality-selector-mdcm" style="grid-column: span 2;">
+            <div class="select-wrapper-mdcm">
+              <label
+                >Wave FPS:
+                <select class="tab-button-active" id="wave-fps-select">
+                  <option value="24">24 FPS - tiết kiệm</option>
+                  <option value="30">30 FPS - cân bằng</option>
+                  <option value="45">45 FPS - mượt hơn</option>
+                  <option value="60">60 FPS - tối đa</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="slider-container-mdcm" style="grid-column: span 2;">
+            <label>Wave Intensity: <span id="wave-intensity-value">100</span>%</label>
+            <input
+              type="range"
+              id="wave-intensity-slider"
+              class="slider-mdcm"
+              min="40"
+              max="160"
+              value="100"
+            />
+          </div>
+          <div
+            class="slider-container-mdcm"
+            style="grid-column: span 2;${isYTMusic ? '' : ' display:none;'}"
+          >
+            <label>YTM Wave Color:</label>
+            <input
+              type="color"
+              id="ytm-wave-color-picker"
+              class="color-picker-mdcm"
+              value="#22d3ee"
+            />
+          </div>
+          <div
+            class="slider-container-mdcm"
+            style="grid-column: span 2;${isYTMusic ? '' : ' display:none;'}"
+          >
+            <label>YTM Wave Height: <span id="ytm-wave-height-value">36</span>px</label>
+            <input
+              type="range"
+              id="ytm-wave-height-slider"
+              class="slider-mdcm"
+              min="18"
+              max="64"
+              value="36"
+            />
+          </div>
+          <div class="quality-selector-mdcm" style="grid-column: span 2;">
+            <div class="select-wrapper-mdcm">
+              <label
+                >YTM Wave Position:
+                <select class="tab-button-active" id="ytm-wave-placement-select">
+                  <option value="edge">Edge glow</option>
+                  <option value="inside">Inside player top</option>
+                  <option value="bottom">Bottom trim</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div
+            class="slider-container-mdcm"
+            style="grid-column: span 2;${isYTMusic ? '' : ' display:none;'}"
+          >
+            <label>Player Bar Opacity: <span id="ytm-player-opacity-value">72</span>%</label>
+            <input
+              type="range"
+              id="ytm-player-opacity-slider"
+              class="slider-mdcm"
+              min="35"
+              max="95"
+              value="72"
+            />
+          </div>
+          <div
+            class="slider-container-mdcm"
+            style="grid-column: span 2;${isYTMusic ? '' : ' display:none;'}"
+          >
+            <label>Panel Opacity: <span id="ytm-panel-opacity-value">66</span>%</label>
+            <input
+              type="range"
+              id="ytm-panel-opacity-slider"
+              class="slider-mdcm"
+              min="30"
+              max="95"
+              value="66"
+            />
+          </div>
+          <div
+            class="slider-container-mdcm"
+            style="grid-column: span 2;${isYTMusic ? '' : ' display:none;'}"
+          >
+            <label>Panel Blur: <span id="ytm-panel-blur-value">22</span>px</label>
+            <input
+              type="range"
+              id="ytm-panel-blur-slider"
+              class="slider-mdcm"
+              min="0"
+              max="36"
+              value="22"
+            />
+          </div>
           <div
             class="quality-selector-mdcm"
             style="grid-column: span 2;${isYTMusic ? ' display:none;' : ''}"
@@ -289,6 +393,17 @@ export function buildGeneralTab(isYTMusic, languageOptionsHTML) {
               value="100"
             />
             <button class="reset-btn-mdcm" id="reset-player-size">Reset video size</button>
+          </div>
+          <div class="slider-container-mdcm" style="grid-column: span 2;">
+            <label>Menu Font Size: <span id="menu-font-size-value">13</span>px</label>
+            <input
+              type="range"
+              id="menu-font-size-slider"
+              class="slider-mdcm"
+              min="11"
+              max="16"
+              value="13"
+            />
           </div>
         </div>
       </div>`;

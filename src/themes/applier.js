@@ -88,6 +88,12 @@ function initYTMHeaderScroll() {
   );
 }
 
+function clampNumber(value, min, max, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(min, Math.min(max, num));
+}
+
 // ---------- Core ----------
 
 /**
@@ -110,14 +116,14 @@ export function applySettings() {
 
   const settings = {
     theme: $e('input[name="theme"]:checked')?.value || '0',
-    bgColorPicker: $id('bg-color-picker')?.value || '#000000',
-    progressbarColorPicker: $id('progressbar-color-picker')?.value || '#ff0000',
+    bgColorPicker: $id('bg-color-picker')?.value || '#0b1016',
+    progressbarColorPicker: $id('progressbar-color-picker')?.value || '#22d3ee',
     primaryColorPicker: $id('primary-color-picker')?.value || '#ffffff',
-    secondaryColorPicker: $id('secondary-color-picker')?.value || '#ffffff',
-    headerColorPicker: $id('header-color-picker')?.value || '#000',
-    iconsColorPicker: $id('icons-color-picker')?.value || '#ffffff',
-    menuColorPicker: $id('menu-color-picker')?.value || '#000',
-    lineColorPicker: $id('line-color-picker')?.value || '#ff0000',
+    secondaryColorPicker: $id('secondary-color-picker')?.value || '#a7b4c2',
+    headerColorPicker: $id('header-color-picker')?.value || '#0f1721',
+    iconsColorPicker: $id('icons-color-picker')?.value || '#22d3ee',
+    menuColorPicker: $id('menu-color-picker')?.value || '#0f1721',
+    lineColorPicker: $id('line-color-picker')?.value || '#22d3ee',
     timeColorPicker: $id('time-color-picker')?.value || '#ffffff',
     dislikes: $id('dislikes-toggle')?.checked || false,
     likeDislikeBar: $id('like-dislike-bar-toggle')?.checked || false,
@@ -131,6 +137,15 @@ export function applySettings() {
     avatars: $id('avatars-toggle')?.checked || false,
     reverseMode: $id('reverse-mode-toggle')?.checked || false,
     waveVisualizer: $id('wave-visualizer-toggle')?.checked || false,
+    waveVisualizerSelected: $id('select-wave-visualizer-select')?.value || 'dinamica',
+    waveVisualizerFps: $id('wave-fps-select')?.value || '30',
+    waveVisualizerIntensity: $id('wave-intensity-slider')?.value || '100',
+    ytmWaveColor: $id('ytm-wave-color-picker')?.value || '#22d3ee',
+    ytmWaveHeight: $id('ytm-wave-height-slider')?.value || '36',
+    ytmWavePlacement: $id('ytm-wave-placement-select')?.value || 'edge',
+    ytmPlayerBarOpacity: $id('ytm-player-opacity-slider')?.value || '72',
+    ytmPanelOpacity: $id('ytm-panel-opacity-slider')?.value || '66',
+    ytmPanelBlur: $id('ytm-panel-blur-slider')?.value || '22',
     hideComments: $id('hide-comments-toggle')?.checked || false,
     hideSidebar: $id('hide-sidebar-toggle')?.checked || false,
     disableAutoplay: $id('autoplay-toggle')?.checked || false,
@@ -138,6 +153,7 @@ export function applySettings() {
     syncCinematic: $id('sync-cinematic-toggle')?.checked || false,
     sidePanelStyle: $id('side-panel-style-select')?.value || 'blur',
     playerSize: $id('player-size-slider')?.value || 100,
+    menuFontSize: $id('menu-font-size-slider')?.value || '13',
     selectVideoQuality: $id('select-video-qualitys-select')?.value || 'user',
     menu_developermdcm: {
       bg: getMenuColors().bg,
@@ -154,6 +170,17 @@ export function applySettings() {
   $sp('--yt-enhance-menu-bg', getMenuColors().bg);
   $sp('--yt-enhance-menu-text', getMenuColors().text);
   $sp('--yt-enhance-menu-accent', getMenuColors().accent);
+  $sp(
+    '--yt-tools-menu-font-size',
+    `${Math.max(11, Math.min(16, Number(settings.menuFontSize) || 13))}px`
+  );
+  $sp(
+    '--yt-tools-ytm-player-alpha',
+    `${clampNumber(settings.ytmPlayerBarOpacity, 35, 95, 72) / 100}`
+  );
+  $sp('--yt-tools-ytm-panel-alpha', `${clampNumber(settings.ytmPanelOpacity, 30, 95, 66) / 100}`);
+  $sp('--yt-tools-ytm-panel-blur', `${clampNumber(settings.ytmPanelBlur, 0, 36, 22)}px`);
+  $sp('--yt-tools-wave-height', `${clampNumber(settings.ytmWaveHeight, 18, 64, 36)}px`);
 
   renderizarButtons();
   applyNonstopPlayback(settings.nonstopPlayback);
@@ -365,12 +392,14 @@ export function applySettings() {
   addCss(`#icon-menu-settings { color: ${settings.iconsColorPicker || '#fff'} !important; }`);
 
   // Wave visualizer color — mỗi theme một màu riêng, tương phản với theme
-  let waveColor = '#06b6d4';
-  if (settings.themes && isDarkMode === 'dark') {
+  let waveColor = '#22d3ee';
+  if (settings.ytmWaveColor) {
+    waveColor = settings.ytmWaveColor;
+  } else if (settings.themes && isDarkMode === 'dark') {
     if (isThemeCustom) {
-      waveColor = settings.progressbarColorPicker || '#06b6d4';
+      waveColor = settings.progressbarColorPicker || '#22d3ee';
     } else if (selectedTheme) {
-      waveColor = selectedTheme.waveColor || '#06b6d4';
+      waveColor = selectedTheme.waveColor || '#22d3ee';
     }
   }
   $sp('--yt-tools-wave-color', waveColor);
@@ -627,6 +656,10 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
       : selectedTheme.glassBg || selectedTheme.gradient || '#030303';
     const ytmGlassBlur = hasCustomTheme ? '24px' : selectedTheme.glassBlur || '24px';
     const bgOrGradient = shouldApplyTheme ? ytmBgGradient : hasBgImage ? 'transparent' : '#030303';
+    const ytmPlayerAlpha = clampNumber(settings.ytmPlayerBarOpacity, 35, 95, 72) / 100;
+    const ytmPanelAlpha = clampNumber(settings.ytmPanelOpacity, 30, 95, 66) / 100;
+    const ytmPanelBlur = clampNumber(settings.ytmPanelBlur, 0, 36, 22);
+    const ytmWaveColor = settings.ytmWaveColor || '#22d3ee';
 
     addCss(`
       html, body, ytmusic-app {
@@ -637,8 +670,11 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
         background-attachment: fixed !important;
       }
       ytmusic-player-bar {
-        background: ${hasBgImage ? 'transparent' : bgOrGradient} !important;
-        ${hasBgImage && shouldApplyTheme ? 'backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;' : ''}
+        background: linear-gradient(180deg, rgba(15, 23, 33, ${Math.max(0.35, ytmPlayerAlpha - 0.14)}), rgba(7, 11, 18, ${ytmPlayerAlpha})) !important;
+        backdrop-filter: blur(20px) saturate(1.2) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(1.2) !important;
+        border-top: 1px solid ${ytmWaveColor}42 !important;
+        box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.2), 0 -1px 16px ${ytmWaveColor}24 !important;
       }
       ytmusic-nav-bar {
         background: ${shouldApplyTheme ? ytmBgGradient : 'transparent'} !important;
@@ -677,6 +713,18 @@ function applyAdvancedThemeCSS(selectedTheme, settings, addCss) {
 
       #layout { background: transparent !important; }
       .content.ytmusic-player-page { background: transparent !important; }
+
+      body.ytm-style-blur #ytm-side-panel-wrapper,
+      body.ytm-style-blur ytmusic-player-page #side-panel ytmusic-tab-renderer,
+      body.ytm-style-liquid #ytm-side-panel-wrapper,
+      body.ytm-style-liquid ytmusic-player-page #side-panel ytmusic-tab-renderer {
+        background:
+          radial-gradient(circle at 14% 0%, ${ytmWaveColor}24, transparent 36%),
+          rgba(10, 15, 23, ${ytmPanelAlpha}) !important;
+        backdrop-filter: blur(${ytmPanelBlur}px) saturate(145%) !important;
+        -webkit-backdrop-filter: blur(${ytmPanelBlur}px) saturate(145%) !important;
+        border-color: ${ytmWaveColor}2e !important;
+      }
     `);
 
     if (shouldApplyTheme) {

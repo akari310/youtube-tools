@@ -29,7 +29,7 @@ export function loadSettingsToDOM() {
   }
 
   const menuData = settings.menu_akari ||
-    settings.menu_developermdcm || { bg: '#252525', color: '#ffffff', accent: '#ff0000' };
+    settings.menu_developermdcm || { bg: '#0f1721', color: '#eef6fb', accent: '#22d3ee' };
 
   const setVal = (id, val) => {
     const el = $id(id);
@@ -40,14 +40,14 @@ export function loadSettingsToDOM() {
     if (el) el.checked = val;
   };
 
-  setVal('bg-color-picker', settings.bgColorPicker || '#000000');
-  setVal('progressbar-color-picker', settings.progressbarColorPicker || '#ff0000');
+  setVal('bg-color-picker', settings.bgColorPicker || '#0b1016');
+  setVal('progressbar-color-picker', settings.progressbarColorPicker || '#22d3ee');
   setVal('primary-color-picker', settings.primaryColorPicker || '#ffffff');
-  setVal('secondary-color-picker', settings.secondaryColorPicker || '#ffffff');
-  setVal('header-color-picker', settings.headerColorPicker || '#000');
-  setVal('icons-color-picker', settings.iconsColorPicker || '#ffffff');
-  setVal('menu-color-picker', settings.menuColorPicker || '#000');
-  setVal('line-color-picker', settings.lineColorPicker || '#ff0000');
+  setVal('secondary-color-picker', settings.secondaryColorPicker || '#a7b4c2');
+  setVal('header-color-picker', settings.headerColorPicker || '#0f1721');
+  setVal('icons-color-picker', settings.iconsColorPicker || '#22d3ee');
+  setVal('menu-color-picker', settings.menuColorPicker || '#0f1721');
+  setVal('line-color-picker', settings.lineColorPicker || '#22d3ee');
   setVal('time-color-picker', settings.timeColorPicker || '#ffffff');
 
   setChk('dislikes-toggle', settings.dislikes || false);
@@ -70,6 +70,14 @@ export function loadSettingsToDOM() {
   setChk('reverse-mode-toggle', settings.reverseMode || false);
   setChk('wave-visualizer-toggle', settings.waveVisualizer || false);
   setVal('select-wave-visualizer-select', settings.waveVisualizerSelected || 'dinamica');
+  setVal('wave-fps-select', settings.waveVisualizerFps || '30');
+  setVal('wave-intensity-slider', settings.waveVisualizerIntensity || '100');
+  setVal('ytm-wave-color-picker', settings.ytmWaveColor || '#22d3ee');
+  setVal('ytm-wave-height-slider', settings.ytmWaveHeight || '36');
+  setVal('ytm-wave-placement-select', settings.ytmWavePlacement || 'edge');
+  setVal('ytm-player-opacity-slider', settings.ytmPlayerBarOpacity || '72');
+  setVal('ytm-panel-opacity-slider', settings.ytmPanelOpacity || '66');
+  setVal('ytm-panel-blur-slider', settings.ytmPanelBlur || '22');
   setChk('hide-comments-toggle', settings.hideComments || false);
   setChk('hide-sidebar-toggle', settings.hideSidebar || false);
   setChk('autoplay-toggle', settings.disableAutoplay || false);
@@ -79,6 +87,7 @@ export function loadSettingsToDOM() {
   if ($id('side-panel-style-select'))
     $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
   setVal('player-size-slider', settings.playerSize || 100);
+  setVal('menu-font-size-slider', settings.menuFontSize || '13');
   setVal('select-video-qualitys-select', settings.selectVideoQuality || 'user');
   setVal('select-languages-comments-select', settings.languagesComments || 'en');
 
@@ -104,6 +113,23 @@ export function loadSettingsToDOM() {
 
   const sizeLabel = $id('player-size-value');
   if (sizeLabel) sizeLabel.textContent = $id('player-size-slider')?.value || '100';
+
+  const waveIntensityLabel = $id('wave-intensity-value');
+  if (waveIntensityLabel)
+    waveIntensityLabel.textContent = $id('wave-intensity-slider')?.value || '100';
+  const waveHeightLabel = $id('ytm-wave-height-value');
+  if (waveHeightLabel) waveHeightLabel.textContent = $id('ytm-wave-height-slider')?.value || '36';
+  const playerOpacityLabel = $id('ytm-player-opacity-value');
+  if (playerOpacityLabel)
+    playerOpacityLabel.textContent = $id('ytm-player-opacity-slider')?.value || '72';
+  const panelOpacityLabel = $id('ytm-panel-opacity-value');
+  if (panelOpacityLabel)
+    panelOpacityLabel.textContent = $id('ytm-panel-opacity-slider')?.value || '66';
+  const panelBlurLabel = $id('ytm-panel-blur-value');
+  if (panelBlurLabel) panelBlurLabel.textContent = $id('ytm-panel-blur-slider')?.value || '22';
+  const menuFontSizeLabel = $id('menu-font-size-value');
+  if (menuFontSizeLabel)
+    menuFontSizeLabel.textContent = $id('menu-font-size-slider')?.value || '13';
 
   // Restore background image preview
   const preview = $id('background-image-preview');

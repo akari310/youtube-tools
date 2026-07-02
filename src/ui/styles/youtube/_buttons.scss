@@ -69,7 +69,10 @@ button.botones_div:hover {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease !important;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease !important;
   backdrop-filter: none !important;
 }
 
@@ -90,10 +93,14 @@ button.botones_div:hover {
 
 /* Download Container Styles */
 .download-container {
+  --download-accent: #22d3ee;
+  --download-accent-alt: #34d399;
+  --download-accent-soft: rgba(34, 211, 238, 0.12);
+  --download-accent-strong: rgba(34, 211, 238, 0.28);
   width: 90% !important;
   max-width: 450px !important;
-  padding: 16px 14px 14px !important;
-  border-radius: 14px !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
   margin: 8px auto !important;
   display: flex !important;
   flex-direction: column !important;
@@ -101,8 +108,13 @@ button.botones_div:hover {
   position: relative;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  background:
+    radial-gradient(circle at 14% 0%, var(--download-accent-soft), transparent 38%),
+    rgba(11, 16, 24, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
 }
 
@@ -110,59 +122,107 @@ button.botones_div:hover {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 60%);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, var(--download-accent) 0 3px, transparent 3px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 34%);
   pointer-events: none;
 }
 
 .download-container.video {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.92), rgba(127, 29, 29, 0.96));
+  --download-accent: #fb7185;
+  --download-accent-alt: #22d3ee;
+  --download-accent-soft: rgba(251, 113, 133, 0.13);
+  --download-accent-strong: rgba(251, 113, 133, 0.3);
   color: white;
 }
 
 .download-container.audio {
-  background: linear-gradient(135deg, rgba(22, 163, 74, 0.92), rgba(20, 83, 45, 0.96));
+  --download-accent: #34d399;
+  --download-accent-alt: #22d3ee;
+  --download-accent-soft: rgba(52, 211, 153, 0.13);
+  --download-accent-strong: rgba(52, 211, 153, 0.3);
   color: white;
 }
 
 .download-info {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 10px;
   margin-bottom: 10px;
-  padding-left: 28px;
+  padding-left: 0;
+  padding-right: 34px;
   position: relative;
   z-index: 1;
+  min-width: 0;
+}
+
+.download-kind {
+  flex: 0 0 auto;
+  min-width: 42px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--download-accent-soft);
+  border: 1px solid var(--download-accent-strong);
+  color: #f8fafc;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  text-align: center;
+}
+
+.download-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
 }
 
 .download-text {
   font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.3px;
+  font-size: 14px;
+  letter-spacing: 0;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.download-provider {
+  font-size: 11px;
+  opacity: 0.64;
+  line-height: 1.2;
 }
 
 .download-quality {
-  font-size: 12px;
-  opacity: 0.85;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 2px 8px;
-  border-radius: 8px;
+  flex: 0 1 auto;
+  max-width: 40%;
+  font-size: 11px;
+  opacity: 0.78;
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 4px 7px;
+  border-radius: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .progress-container {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 4px 0 2px;
+  margin: 4px 0 0;
   position: relative;
   z-index: 1;
 }
 
 .progress-bar {
   flex: 1;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.15);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 99px;
   overflow: hidden;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -170,12 +230,12 @@ button.botones_div:hover {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 1));
+  background: linear-gradient(90deg, var(--download-accent), var(--download-accent-alt));
   border-radius: 99px;
   width: 0%;
   transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px var(--download-accent-strong);
 }
 
 /* Indeterminate pulse when at 0% — shows activity */
@@ -221,14 +281,28 @@ button.botones_div:hover {
 }
 
 .download-container .download-status-text {
+  display: none;
   font-size: 12px;
-  opacity: 0.8;
+  opacity: 0.82;
   font-weight: 500;
-  text-align: center;
-  margin-top: 4px;
+  text-align: left;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
   transition: opacity 0.3s ease;
   position: relative;
   z-index: 1;
+}
+
+.download-container.is-downloading .download-status-text,
+.download-container.completed .download-status-text,
+.download-container.error .download-status-text {
+  display: block;
 }
 
 .download-container .download-status-text.status-dot::before {
@@ -237,23 +311,29 @@ button.botones_div:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--download-accent);
   margin-right: 6px;
   animation: status-dot-blink 1.2s ease-in-out infinite;
   vertical-align: middle;
 }
 
 @keyframes status-dot-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .progress-text {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   min-width: 36px;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .download-footer {
@@ -268,13 +348,25 @@ button.botones_div:hover {
 }
 
 .download-container.completed {
-  background: linear-gradient(135deg, rgba(22, 163, 74, 0.95), rgba(20, 83, 45, 0.98)) !important;
-  border-color: rgba(34, 197, 94, 0.3) !important;
-  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.15) !important;
+  --download-accent: #22c55e;
+  --download-accent-soft: rgba(34, 197, 94, 0.13);
+  --download-accent-strong: rgba(34, 197, 94, 0.32);
+  background: rgba(22, 28, 25, 0.94) !important;
+  border-color: rgba(34, 197, 94, 0.2) !important;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 .download-container.completed .download-text {
   font-weight: 800;
+  color: #dcfce7;
+}
+
+.download-container.completed .download-status-text {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.16);
+  color: rgba(220, 252, 231, 0.9);
 }
 
 .download-container.completed .progress-fill::after {
@@ -309,11 +401,11 @@ button.botones_div:hover {
 .progress-retry-btn {
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 50%;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.15);
   color: white;
   cursor: pointer;
@@ -327,19 +419,20 @@ button.botones_div:hover {
 }
 
 .progress-retry-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.24);
   transform: scale(1.15) rotate(180deg);
 }
 
 .download-again-btn {
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 50%;
-  background: rgba(34, 197, 94, 0.4);
+  border-radius: 8px;
+  background: var(--download-accent-soft);
+  border: 1px solid var(--download-accent-strong);
   color: white;
   cursor: pointer;
   display: flex;
@@ -352,7 +445,7 @@ button.botones_div:hover {
 }
 
 .download-again-btn:hover {
-  background: rgba(34, 197, 94, 0.6);
+  background: var(--download-accent-strong);
   transform: scale(1.15);
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
 }
@@ -364,23 +457,24 @@ button.botones_div:hover {
 .download-actions {
   display: flex;
   gap: 8px;
-  margin: 6px 0 4px;
+  margin: 4px 0 0;
   position: relative;
   z-index: 1;
 }
 
 .download-btn {
   flex: 1;
-  padding: 8px 16px;
+  min-height: 36px;
+  padding: 8px 14px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
-  font-weight: 600;
+  font-weight: 750;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   color: white;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   position: relative;
   overflow: hidden;
 }
@@ -399,13 +493,13 @@ button.botones_div:hover {
 }
 
 .download-btn.video-btn {
-  background: linear-gradient(135deg, #ff2a5f, #dc2626);
-  box-shadow: 0 2px 12px rgba(220, 38, 38, 0.35);
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  box-shadow: 0 2px 10px rgba(220, 38, 38, 0.26);
 }
 
 .download-btn.audio-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.35);
+  background: linear-gradient(135deg, #20c997, #0f8f6e);
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.24);
 }
 
 .download-btn:hover {
@@ -424,7 +518,7 @@ button.botones_div:hover {
 }
 
 .download-info {
-  padding-left: 28px !important;
+  padding-left: 0 !important;
 }
 
 .download-btn:disabled {
@@ -436,6 +530,7 @@ button.botones_div:hover {
 
 .retry-btn {
   flex: 1;
+  min-height: 34px;
   padding: 8px 16px;
   border: none;
   border-radius: 9999px;
@@ -445,8 +540,8 @@ button.botones_div:hover {
   transition: all 0.25s ease;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   box-shadow: 0 2px 10px rgba(217, 119, 6, 0.3);
 }
 
@@ -465,7 +560,7 @@ button.botones_div:hover {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  padding-bottom: 30px;
+  padding-bottom: 16px;
   max-width: 800px;
   margin: auto;
 }
@@ -486,17 +581,18 @@ button.botones_div:hover {
 .selectcalidades,
 .botoncalidades,
 .selectcalidadesaudio {
-  width: 50%;
-  height: 27.8px;
-  background-color: #fff;
-  color: #000;
-  font-size: 25px;
+  width: min(82%, 400px);
+  min-height: 36px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6f7f9;
   text-align: center;
-  border: 1px solid black;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  border: none;
-  font-size: 20px;
-  margin: 2px 2px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 6px 2px 8px;
+  padding: 0 34px 0 14px;
+  outline: none;
 }
 
 .botoncalidades {

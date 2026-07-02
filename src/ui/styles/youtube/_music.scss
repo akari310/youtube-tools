@@ -24,29 +24,41 @@ ytmusic-player-page #side-panel {
 .ytm-side-panel-divider {
   width: 92%;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(148, 163, 184, 0.16);
   margin: 4px 0;
 }
 
 /* Blur Mode (Standard with subtle blur) */
 body.ytm-style-blur #ytm-side-panel-wrapper,
 body.ytm-style-blur ytmusic-player-page #side-panel ytmusic-tab-renderer {
-  background: rgba(20, 20, 20, 0.6) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      color-mix(in srgb, var(--yt-tools-wave-color, #22d3ee) 18%, transparent),
+      transparent 34%
+    ),
+    rgba(10, 15, 23, var(--yt-tools-ytm-panel-alpha, 0.66)) !important;
+  backdrop-filter: blur(var(--yt-tools-ytm-panel-blur, 22px)) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(var(--yt-tools-ytm-panel-blur, 22px)) saturate(135%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34) !important;
   border-radius: 16px !important;
 }
 
 /* Liquid Mode (Fixed Apple Style) */
 body.ytm-style-liquid #ytm-side-panel-wrapper,
 body.ytm-style-liquid ytmusic-player-page #side-panel ytmusic-tab-renderer {
-  background: rgba(25, 25, 25, 0.45) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.25) !important;
+  background:
+    radial-gradient(
+      circle at 18% 0%,
+      color-mix(in srgb, var(--yt-tools-wave-color, #22d3ee) 16%, transparent),
+      transparent 36%
+    ),
+    rgba(9, 14, 22, var(--yt-tools-ytm-panel-alpha, 0.52)) !important;
+  backdrop-filter: blur(var(--yt-tools-ytm-panel-blur, 24px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--yt-tools-ytm-panel-blur, 24px)) saturate(180%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow:
     0 8px 32px 0 rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
@@ -148,7 +160,7 @@ ytmusic-app .containerButtons {
 }
 
 ytmusic-app .botones_div {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
   border: none !important;
   color: var(--yt-spec-text-secondary, #aaa) !important;
   border-radius: 50% !important;
@@ -167,28 +179,28 @@ ytmusic-app .botones_div svg {
 }
 
 ytmusic-app .botones_div:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: color-mix(in srgb, var(--yt-tools-wave-color, #22d3ee) 18%, transparent) !important;
   color: var(--yt-spec-text-primary, #fff) !important;
   transform: scale(1.05);
 }
 
 ytmusic-player-page #side-panel select,
 ytmusic-player-page #side-panel select option {
-  background: #282828 !important;
+  background: #0f1721 !important;
   color: #fff !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 ytmusic-app .selectcalidades,
 ytmusic-app .selectcalidadesaudio {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(10, 15, 23, 0.74) !important;
   color: #fff !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 9999px !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  border-radius: 12px !important;
   padding: 0 32px 0 16px !important;
   font-size: 13px !important;
   font-weight: 500 !important;
-  width: 100% !important;
+  width: min(82%, 400px) !important;
   cursor: pointer !important;
   outline: none !important;
   height: 36px !important;
@@ -201,20 +213,22 @@ ytmusic-app .selectcalidadesaudio {
   background-repeat: no-repeat !important;
   background-position: right 14px center !important;
   background-size: 12px !important;
-  transition: border-color 0.2s ease, background 0.2s ease !important;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease !important;
 }
 
 ytmusic-app .selectcalidades:hover,
 ytmusic-app .selectcalidadesaudio:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(15, 23, 33, 0.92) !important;
+  border-color: color-mix(in srgb, var(--yt-tools-wave-color, #22d3ee) 44%, transparent) !important;
 }
 
 ytmusic-app .download-container {
-  width: 100% !important;
-  border-radius: 16px !important;
-  padding: 20px 16px 16px !important;
-  margin-bottom: 8px !important;
+  width: calc(100% - 20px) !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  margin: 0 10px 8px !important;
   position: relative !important;
   overflow: hidden;
 }
@@ -225,13 +239,13 @@ ytmusic-app .content_collapsible_colors {
 
 .ytm-side-panel-divider {
   margin: 0 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   height: 0;
   width: 100%;
 }
 
 ytmusic-app .containerall {
-  padding-bottom: 10px !important;
+  padding-bottom: 8px !important;
 }
 
 ytmusic-app #toggle-button {
@@ -251,7 +265,7 @@ ytmusic-app #icon-menu-settings {
 
 ytmusic-app #icon-menu-settings:hover {
   transform: rotate(90deg);
-  color: #ff4444;
+  color: var(--yt-tools-wave-color, #22d3ee);
 }
 
 /* === YouTube Music Glass-morphism UI === */
@@ -327,11 +341,17 @@ ytmusic-fullbleed-thumbnail-renderer[is-background],
 
 /* Player Bar Glass */
 ytmusic-player-bar {
-  background-color: rgba(10, 10, 12, 0.45) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 33, calc(var(--yt-tools-ytm-player-alpha, 0.72) - 0.14)),
+    rgba(7, 11, 18, var(--yt-tools-ytm-player-alpha, 0.72))
+  ) !important;
   backdrop-filter: blur(20px) saturate(1.2) !important;
   -webkit-backdrop-filter: blur(20px) saturate(1.2) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.2) !important;
+  border-top: 1px solid color-mix(in srgb, var(--yt-tools-wave-color, #22d3ee) 28%, transparent) !important;
+  box-shadow:
+    0 -8px 25px rgba(0, 0, 0, 0.2),
+    0 -1px 18px color-mix(in srgb, var(--yt-tools-wave-color, #22d3ee) 14%, transparent) !important;
 }
 
 /* Fix: Hide orphaned play button icons that spam when restoring player from miniplayer */
@@ -345,7 +365,8 @@ ytmusic-player-page {
 }
 
 /* Ensure play icons are only visible in their intended containers */
-ytmusic-player-page .yt-icon-shape.ytSpecIconShapeHost:not([slot]):not([class*="thumbnail"]):not([class*="play"]) {
+ytmusic-player-page
+  .yt-icon-shape.ytSpecIconShapeHost:not([slot]):not([class*='thumbnail']):not([class*='play']) {
   display: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -361,7 +382,8 @@ ytmusic-app > .yt-icon-shape,
 /* Fix: Hide stuck thumbnail overlays (play buttons and dark gradients on video cards) 
    These get stuck visible when restoring player from miniplayer. 
    Only show them when the parent is hovered OR if the item is currently playing/paused. */
-ytmusic-two-row-item-renderer:not(:hover) ytmusic-item-thumbnail-overlay-renderer[play-button-state="default"] {
+ytmusic-two-row-item-renderer:not(:hover)
+  ytmusic-item-thumbnail-overlay-renderer[play-button-state='default'] {
   opacity: 0 !important;
   visibility: hidden !important;
 }

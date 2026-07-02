@@ -9,26 +9,26 @@ export function buildMenuSettingsTab() {
               <div
                 class="color-box"
                 data-type="bg"
-                data-value="#252525"
-                style="background-color: #252525;"
+                data-value="#0f1721"
+                style="background-color: #0f1721;"
               ></div>
               <div
                 class="color-box"
                 data-type="bg"
-                data-value="#1e1e1e"
-                style="background-color: #1e1e1e;"
+                data-value="#111827"
+                style="background-color: #111827;"
               ></div>
               <div
                 class="color-box"
                 data-type="bg"
-                data-value="#3a3a3a"
-                style="background-color: #3a3a3a;"
+                data-value="#172033"
+                style="background-color: #172033;"
               ></div>
               <div
                 class="color-box"
                 data-type="bg"
-                data-value="#4a4a4a"
-                style="background-color: #4a4a4a;"
+                data-value="#1f2937"
+                style="background-color: #1f2937;"
               ></div>
               <div
                 class="color-box"
@@ -45,14 +45,14 @@ export function buildMenuSettingsTab() {
               <div
                 class="color-box"
                 data-type="bg"
-                data-value="#2d2d2d"
-                style="background-color: #2d2d2d;"
+                data-value="#102a43"
+                style="background-color: #102a43;"
               ></div>
               <div
                 class="color-box"
                 data-type="bg"
-                data-value="#444"
-                style="background-color: #444;"
+                data-value="#2d2438"
+                style="background-color: #2d2438;"
               ></div>
             </div>
           </div>
@@ -62,26 +62,26 @@ export function buildMenuSettingsTab() {
               <div
                 class="color-box"
                 data-type="accent"
-                data-value="#ff0000"
-                style="background-color: #ff0000;"
+                data-value="#22d3ee"
+                style="background-color: #22d3ee;"
               ></div>
               <div
                 class="color-box"
                 data-type="accent"
-                data-value="#000000"
-                style="background-color: #000000;"
+                data-value="#34d399"
+                style="background-color: #34d399;"
               ></div>
               <div
                 class="color-box"
                 data-type="accent"
-                data-value="#009c37"
-                style="background-color: #009c37;"
+                data-value="#fb7185"
+                style="background-color: #fb7185;"
               ></div>
               <div
                 class="color-box"
                 data-type="accent"
-                data-value="#0c02a0"
-                style="background-color: #0c02a0;"
+                data-value="#a78bfa"
+                style="background-color: #a78bfa;"
               ></div>
             </div>
           </div>
@@ -91,50 +91,50 @@ export function buildMenuSettingsTab() {
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#ffffff"
-                style="background-color: #ffffff;"
+                data-value="#eef6fb"
+                style="background-color: #eef6fb;"
               ></div>
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#cccccc"
-                style="background-color: #cccccc;"
+                data-value="#d7e3ea"
+                style="background-color: #d7e3ea;"
               ></div>
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#b3b3b3"
-                style="background-color: #b3b3b3;"
+                data-value="#a7b4c2"
+                style="background-color: #a7b4c2;"
               ></div>
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#00ffff"
-                style="background-color: #00ffff;"
+                data-value="#cffafe"
+                style="background-color: #cffafe;"
               ></div>
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#00ff00"
-                style="background-color: #00ff00;"
+                data-value="#d1fae5"
+                style="background-color: #d1fae5;"
               ></div>
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#ffff00"
-                style="background-color: #ffff00;"
+                data-value="#fde68a"
+                style="background-color: #fde68a;"
               ></div>
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#ffcc00"
-                style="background-color: #ffcc00;"
+                data-value="#fed7aa"
+                style="background-color: #fed7aa;"
               ></div>
               <div
                 class="color-box"
                 data-type="color"
-                data-value="#ff66cc"
-                style="background-color: #ff66cc;"
+                data-value="#fbcfe8"
+                style="background-color: #fbcfe8;"
               ></div>
             </div>
           </div>

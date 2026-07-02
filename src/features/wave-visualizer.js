@@ -28,7 +28,7 @@ const PD = pageDocument;
 const s = getState();
 
 /** Cached wave accent color — refreshed on theme change or init. */
-let cachedWaveAccent = '#06b6d4';
+let cachedWaveAccent = '#22d3ee';
 
 function getThemeCSS(varName, fallback = '') {
   try {
@@ -40,7 +40,7 @@ function getThemeCSS(varName, fallback = '') {
 }
 
 function refreshWaveThemeColor() {
-  cachedWaveAccent = getThemeCSS('--yt-tools-wave-color', '#06b6d4');
+  cachedWaveAccent = getThemeCSS('--yt-tools-wave-color', '#22d3ee');
 }
 
 function waveThemeColors() {
@@ -52,17 +52,49 @@ function waveThemeColors() {
 }
 /** After a failed tap into the video graph, avoid hammering setup on every DOM mutation (YouTube is noisy). */
 const WAVE_FAIL_RETRY_MS = 4000;
-const WAVE_MIN_HEIGHT = 84;
-const WAVE_SENSITIVITY = 2.15;
+const WAVE_MIN_HEIGHT = 58;
+const WAVE_YTM_HEIGHT = 36;
+const WAVE_YTM_CANVAS_Z_INDEX = 130;
+const WAVE_SENSITIVITY = 2.05;
+const WAVE_YTM_SENSITIVITY = 5.5;
 let videoObserver = null;
 let observerDebounce = null;
 let frequencyData = null;
+let lastYtmFrameAt = 0;
 /** Last settings object passed to `initWaveVisualizer` — used by `checkForVideo` / observer. */
 let waveSettingsSnapshot = null;
 /** Unlock gesture listeners — tracked for cleanup. */
 let waveUnlockHandlers = [];
 /** Pending retry timer (init fallback) — tracked for cleanup. */
 let waveRetryTimer = null;
+
+function getWaveFps() {
+  const fps = Number(waveSettingsSnapshot?.waveVisualizerFps) || 30;
+  return Math.max(24, Math.min(60, fps));
+}
+
+function getWaveIntensityScale() {
+  const pct = Number(waveSettingsSnapshot?.waveVisualizerIntensity) || 100;
+  return Math.max(0.4, Math.min(1.6, pct / 100));
+}
+
+function getYtmWaveHeight() {
+  const height = Number(waveSettingsSnapshot?.ytmWaveHeight) || WAVE_YTM_HEIGHT;
+  return Math.max(18, Math.min(64, height));
+}
+
+function getYtmWaveTopOffset(playerBarRect) {
+  const waveHeight = getYtmWaveHeight();
+  switch (waveSettingsSnapshot?.ytmWavePlacement) {
+    case 'inside':
+      return 4;
+    case 'bottom':
+      return Math.max(0, Math.floor((playerBarRect?.height || 90) - waveHeight - 4));
+    case 'edge':
+    default:
+      return Math.min(-8, Math.round(-waveHeight * 0.66));
+  }
+}
 
 function ensureWaveMutationObserver() {
   if (!waveSettingsSnapshot?.waveVisualizer || videoObserver) return;
@@ -176,22 +208,41 @@ function createWaveSource(audioCtx, video) {
 function updateCanvasSize() {
   if (s.canvas) {
     const dpr = Math.min(PW().devicePixelRatio || 1, 2);
-    const width = Math.max(1, Math.floor(PW().innerWidth));
-    const height = Math.max(
-      WAVE_MIN_HEIGHT,
-      Math.min(CANVAS_HEIGHT * 0.46, Math.floor(PW().innerHeight * 0.13))
-    );
-    
-    // Position above player bar in YTM to avoid being hidden
-    s.canvas.style.bottom = isYTMusic ? '72px' : '0';
-    // Increase z-index so it shows over other elements
-    s.canvas.style.zIndex = isYTMusic ? '100' : '1';
-    
+    const playerBar = isYTMusic ? getYtmPlayerBar() : null;
+    const playerBarRect = playerBar?.getBoundingClientRect?.();
+    const width = Math.max(1, Math.floor(playerBarRect?.width || PW().innerWidth));
+    const height = isYTMusic
+      ? getYtmWaveHeight()
+      : Math.max(
+          WAVE_MIN_HEIGHT,
+          Math.min(CANVAS_HEIGHT * 0.34, Math.floor(PW().innerHeight * 0.09))
+        );
+
+    if (isYTMusic && playerBarRect) {
+      s.canvas.style.top = `${Math.max(0, Math.round(playerBarRect.top + getYtmWaveTopOffset(playerBarRect)))}px`;
+      s.canvas.style.left = `${Math.max(0, Math.round(playerBarRect.left))}px`;
+      s.canvas.style.bottom = 'auto';
+    } else {
+      s.canvas.style.top = 'auto';
+      s.canvas.style.left = '0';
+      s.canvas.style.bottom = '0';
+    }
     s.canvas.style.width = `${width}px`;
     s.canvas.style.height = `${height}px`;
     s.canvas.width = Math.floor(width * dpr);
     s.canvas.height = Math.floor(height * dpr);
   }
+}
+
+function getYtmPlayerBar() {
+  const playerBar =
+    PD().querySelector('ytmusic-player-bar') ||
+    PD().querySelector('#player-bar') ||
+    PD().querySelector('ytmusic-app #player');
+  if (playerBar?.style?.position === 'relative') {
+    playerBar.style.removeProperty('position');
+  }
+  return playerBar;
 }
 
 function resetAudioState() {
@@ -231,6 +282,7 @@ export function cleanupWaveVisualizer(isUnload = false) {
   setCanvas(null);
   setCtx(null);
   frequencyData = null;
+  lastYtmFrameAt = 0;
 
   PD()
     .querySelectorAll('video')
@@ -256,6 +308,7 @@ export function cleanupWaveVisualizer(isUnload = false) {
 export function hideCanvas() {
   const canvas = PD().getElementById('wave-visualizer-canvas');
   if (canvas) canvas.style.opacity = '0';
+  lastYtmFrameAt = 0;
   if (s.animationId) {
     PW().cancelAnimationFrame(s.animationId);
     setAnimationId(null);
@@ -268,8 +321,8 @@ export function showCanvas() {
   }
   const canvas = PD().getElementById('wave-visualizer-canvas');
   if (canvas) {
-    canvas.style.bottom = '0';
-    canvas.style.opacity = '1';
+    updateCanvasSize();
+    canvas.style.opacity = isYTMusic ? '0.86' : '0.82';
   }
   if (s.isSetup && !s.animationId) {
     draw();
@@ -403,12 +456,15 @@ export function setupWaveForVideo(video) {
  */
 export function createVisualizerOverlay() {
   const existing = PD().querySelector('#wave-visualizer-canvas');
-  const zIndex = isYTMusic ? '100' : '1';
-  const bottom = isYTMusic ? '72px' : '0';
-  const canvasStyle =
-    `position:fixed;bottom:${bottom};left:0;width:100%;pointer-events:none;z-index:${zIndex};opacity:0;background:transparent;transition:opacity 0.35s ease;`;
+  if (isYTMusic) getYtmPlayerBar();
+  const canvasStyle = isYTMusic
+    ? `position:fixed;top:0;left:0;width:100%;height:${WAVE_YTM_HEIGHT}px;pointer-events:none;z-index:${WAVE_YTM_CANVAS_Z_INDEX};opacity:0;background:transparent;transition:opacity 0.35s ease;`
+    : 'position:fixed;bottom:0;left:0;width:100%;pointer-events:none;z-index:1;opacity:0;background:transparent;transition:opacity 0.35s ease;';
   if (existing) {
     existing.style.cssText = canvasStyle;
+    if (existing.parentNode !== PD().body) {
+      PD().body.appendChild(existing);
+    }
     setCanvas(existing);
     setCtx(existing.getContext('2d'));
     updateCanvasSize();
@@ -442,10 +498,11 @@ function prepareCanvasFrame() {
 }
 
 function drawAmbientFloor(w, h, colors) {
+  if (isYTMusic) return;
   const floor = s.ctx.createLinearGradient(0, h * 0.2, 0, h);
   floor.addColorStop(0, 'rgba(0,0,0,0)');
-  floor.addColorStop(0.6, colors.soft);
-  floor.addColorStop(1, 'rgba(0,0,0,0.34)');
+  floor.addColorStop(0.62, colors.soft);
+  floor.addColorStop(1, 'rgba(0,0,0,0.12)');
   s.ctx.fillStyle = floor;
   s.ctx.fillRect(0, 0, w, h);
 }
@@ -453,12 +510,81 @@ function drawAmbientFloor(w, h, colors) {
 function waveY(index, centerY, amplitudeRange) {
   const sample = Math.max(
     -1,
-    Math.min(1, ((s.smoothedData[index] - 128) / 128) * WAVE_SENSITIVITY)
+    Math.min(1, ((s.smoothedData[index] - 128) / 128) * WAVE_SENSITIVITY * getWaveIntensityScale())
   );
   return centerY + sample * amplitudeRange;
 }
 
-function draw() {
+function drawYtmPlayerBarWave(w, h, colors) {
+  const sliceWidth = w / s.bufferLength;
+  let energy = 0;
+  if (frequencyData?.length) {
+    const start = 4;
+    const end = Math.min(frequencyData.length, 160);
+    for (let i = start; i < end; i++) {
+      energy += frequencyData[i] / 255;
+    }
+    energy /= Math.max(1, end - start);
+  }
+
+  const centerY = h * 0.68;
+  const amplitudeRange = h * (0.1 + Math.min(0.18, energy * 0.55));
+  const gradient = s.ctx.createLinearGradient(0, 0, w, 0);
+  gradient.addColorStop(0, colors.accent + '11');
+  gradient.addColorStop(0.35, colors.accent + 'aa');
+  gradient.addColorStop(0.5, '#ffffffcc');
+  gradient.addColorStop(0.65, colors.accent + 'aa');
+  gradient.addColorStop(1, colors.accent + '11');
+
+  const glow = s.ctx.createLinearGradient(0, 0, 0, h);
+  glow.addColorStop(0, 'rgba(0,0,0,0)');
+  glow.addColorStop(0.58, colors.soft);
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  s.ctx.fillStyle = glow;
+  s.ctx.fillRect(0, 0, w, h);
+
+  s.ctx.lineCap = 'round';
+  s.ctx.lineJoin = 'round';
+  s.ctx.shadowBlur = 10;
+  s.ctx.shadowColor = colors.glow;
+  s.ctx.lineWidth = 2.4;
+  s.ctx.strokeStyle = gradient;
+  s.ctx.beginPath();
+
+  const points = [];
+  let x = 0;
+  for (let i = 0; i < s.bufferLength; i++) {
+    const sample = Math.max(
+      -1,
+      Math.min(
+        1,
+        ((s.smoothedData[i] - 128) / 128) * WAVE_YTM_SENSITIVITY * getWaveIntensityScale()
+      )
+    );
+    const y = centerY + sample * amplitudeRange;
+    points.push([x, y]);
+    if (i === 0) s.ctx.moveTo(x, y);
+    else s.ctx.lineTo(x, y);
+    x += sliceWidth;
+  }
+
+  s.ctx.stroke();
+
+  s.ctx.shadowBlur = 0;
+  s.ctx.globalAlpha = 0.28;
+  s.ctx.lineWidth = 1;
+  s.ctx.strokeStyle = colors.accent;
+  s.ctx.beginPath();
+  points.forEach(([px, py], index) => {
+    const y = Math.min(h - 2, py + 5);
+    if (index === 0) s.ctx.moveTo(px, y);
+    else s.ctx.lineTo(px, y);
+  });
+  s.ctx.stroke();
+  s.ctx.globalAlpha = 1;
+}
+
+function draw(frameTime = 0) {
   if (!s.isSetup || !s.analyser || !s.ctx || !s.canvas) {
     setAnimationId(null);
     return;
@@ -467,6 +593,16 @@ function draw() {
   if (PD().visibilityState !== 'visible' || parseFloat(s.canvas.style.opacity) <= 0) {
     setAnimationId(null);
     return;
+  }
+
+  if (isYTMusic) {
+    const now = frameTime || PW().performance?.now?.() || Date.now();
+    const frameInterval = 1000 / getWaveFps();
+    if (lastYtmFrameAt && now - lastYtmFrameAt < frameInterval) {
+      setAnimationId(PW().requestAnimationFrame(draw));
+      return;
+    }
+    lastYtmFrameAt = now;
   }
 
   s.analyser.getByteTimeDomainData(s.dataArray);
@@ -481,8 +617,14 @@ function draw() {
   const style = s.waveStyle || 'dinamica';
   const colors = waveThemeColors();
   const { accent, glow } = colors;
-  const centerY = h * 0.48;
-  const amplitudeRange = h * 0.46;
+  const centerY = isYTMusic ? h * 0.58 : h * 0.34;
+  const amplitudeRange = isYTMusic ? h * 0.5 : h * 0.42;
+
+  if (isYTMusic) {
+    drawYtmPlayerBarWave(w, h, colors);
+    setAnimationId(PW().requestAnimationFrame(draw));
+    return;
+  }
 
   drawAmbientFloor(w, h, colors);
   s.ctx.lineCap = 'round';
@@ -514,7 +656,10 @@ function draw() {
         const barWidth = Math.max(2, w / bars - gap);
         for (let i = 0; i < bars; i++) {
           const bucket = Math.floor((i / bars) * frequencyData.length * 0.72);
-          const value = Math.min(1, ((frequencyData[bucket] || 0) / 255) * WAVE_SENSITIVITY);
+          const value = Math.min(
+            1,
+            ((frequencyData[bucket] || 0) / 255) * WAVE_SENSITIVITY * getWaveIntensityScale()
+          );
           const barHeight = Math.max(3, value * h * 0.58);
           const gradient = s.ctx.createLinearGradient(
             0,
@@ -553,7 +698,10 @@ function draw() {
       if (!frequencyData) break;
       for (let i = 0; i < 110; i++) {
         const bucket = Math.floor((i / 110) * frequencyData.length * 0.75);
-        const value = Math.min(1, ((frequencyData[bucket] || 0) / 255) * WAVE_SENSITIVITY);
+        const value = Math.min(
+          1,
+          ((frequencyData[bucket] || 0) / 255) * WAVE_SENSITIVITY * getWaveIntensityScale()
+        );
         const dotX = (i / 109) * w;
         const dotY = centerY - value * h * 0.38;
         const radius = 1.2 + value * 3.2;
@@ -579,8 +727,8 @@ function draw() {
     case 'dinamica': {
       const gradient = s.ctx.createLinearGradient(0, 0, w, 0);
       gradient.addColorStop(0, accent + '44');
-      gradient.addColorStop(0.35, accent);
-      gradient.addColorStop(0.65, '#ffffffcc');
+      gradient.addColorStop(0.35, accent + 'dd');
+      gradient.addColorStop(0.65, '#ffffff99');
       gradient.addColorStop(1, accent + '55');
       s.ctx.lineWidth = 3.2;
       s.ctx.strokeStyle = gradient;
@@ -594,15 +742,17 @@ function draw() {
       }
       s.ctx.stroke();
 
-      const fill = s.ctx.createLinearGradient(0, centerY - amplitudeRange, 0, h);
-      fill.addColorStop(0, accent + '22');
-      fill.addColorStop(0.55, accent + '10');
-      fill.addColorStop(1, 'rgba(0,0,0,0)');
-      s.ctx.lineTo(w, h);
-      s.ctx.lineTo(0, h);
-      s.ctx.closePath();
-      s.ctx.fillStyle = fill;
-      s.ctx.fill();
+      if (!isYTMusic) {
+        const fill = s.ctx.createLinearGradient(0, centerY - amplitudeRange, 0, h);
+        fill.addColorStop(0, accent + '10');
+        fill.addColorStop(0.55, accent + '06');
+        fill.addColorStop(1, 'rgba(0,0,0,0)');
+        s.ctx.lineTo(w, h);
+        s.ctx.lineTo(0, h);
+        s.ctx.closePath();
+        s.ctx.fillStyle = fill;
+        s.ctx.fill();
+      }
       break;
     }
     case 'montana':

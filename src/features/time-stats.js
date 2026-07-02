@@ -199,7 +199,17 @@ function exportStats() {
 
 let _prevHash = '';
 
+function isStatsPanelVisible() {
+  const statsTab = $id('stats');
+  if (!statsTab?.classList?.contains('active')) return false;
+  const panel = $id('yt-enhancement-panel');
+  if (!panel) return false;
+  return panel.style.display !== 'none' && window.getComputedStyle(panel).display !== 'none';
+}
+
 export function updateUI() {
+  if (!isStatsPanelVisible()) return;
+
   const today = getTodayStats();
   const week = getWeekData();
   const longest = getLongestVideo();
@@ -389,7 +399,7 @@ export function initTimeStats() {
         __lastSave = now;
         saveStats();
       }
-      updateUI();
+      if (isStatsPanelVisible()) updateUI();
     }, 1000);
 
     window.addEventListener('pagehide', saveStats, { capture: true });
@@ -408,5 +418,5 @@ export function initTimeStats() {
     exportBtn.addEventListener('click', exportStats);
   });
 
-  updateUI();
+  if (isStatsPanelVisible()) updateUI();
 }
