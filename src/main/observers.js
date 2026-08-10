@@ -219,6 +219,7 @@
         if ($id('side-panel-style-select')) $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
         if ($id('custom-timeline-color-toggle')) $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
         if ($id('subtitles-toggle')) $id('subtitles-toggle').checked = settings.disableSubtitles || false;
+        if ($id('annotations-toggle')) $id('annotations-toggle').checked = settings.disableAnnotations || false;
         $id('player-size-slider').value = settings.playerSize || 100;
         $id('select-video-qualitys-select').value = settings.selectVideoQuality || 'user';
         $id('select-languages-comments-select').value = settings.languagesComments || 'en';

@@ -6123,14 +6123,39 @@
     <div id="general" class="tab-content active">
 
       <div class="options-mdcm">
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
+        <label>
           <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="hide-comments-toggle"> Hide Comments
+            <input type="checkbox" class="checkbox-mdcm" id="themes-toggle"> Active Themes
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="audio-only-toggle"> Audio-only mode
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="audio-only-tab-toggle"> Audio-only this tab
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="hide-sidebar-toggle"> Hide Sidebar
+            <input type="checkbox" class="checkbox-mdcm" id="bookmarks-toggle"> Bookmarks (timestamps)
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="cinematic-lighting-toggle"> ${isYTMusic ? 'Ambient Mode' : 'Cinematic Mode'}
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="continue-watching-toggle"> Continue watching
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="annotations-toggle"> Disable Annotations
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
@@ -6145,7 +6170,17 @@
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" checked id="dislikes-toggle"> Show Dislikes
+            <input type="checkbox" class="checkbox-mdcm" id="avatars-toggle"> Download avatars
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="hide-comments-toggle"> Hide Comments
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="hide-sidebar-toggle"> Hide Sidebar
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
@@ -6153,64 +6188,14 @@
             <input type="checkbox" class="checkbox-mdcm" id="like-dislike-bar-toggle"> Like vs Dislike bar
           </div>
         </label>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="bookmarks-toggle"> Bookmarks (timestamps)
-          </div>
-        </label>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="continue-watching-toggle"> Continue watching
-          </div>
-        </label>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="shorts-channel-name-toggle"> Shorts: show channel name
-          </div>
-        </label>
         <label>
           <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" checked id="nonstop-playback-toggle"> Nonstop playback
           </div>
         </label>
-        <label>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="audio-only-toggle"> Audio-only mode
-          </div>
-        </label>
-        <label>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="audio-only-tab-toggle"> Audio-only this tab
-          </div>
-        </label>
-        <label>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="themes-toggle"> Active Themes
-          </div>
-        </label>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="translation-toggle"> Translate comments
-          </div>
-        </label>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="avatars-toggle"> Download avatars
-          </div>
-        </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" id="reverse-mode-toggle"> Reverse mode
-          </div>
-        </label>
-        <label>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="cinematic-lighting-toggle"> ${isYTMusic ? 'Ambient Mode' : 'Cinematic Mode'}
-          </div>
-        </label>
-        <label>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" checked id="wave-visualizer-toggle"> Wave visualizer Beta
           </div>
         </label>
         <label ${!isYTMusic ? 'style="display:none"' : ''}>
@@ -6220,7 +6205,27 @@
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="shorts-channel-name-toggle"> Shorts: show channel name
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" checked id="dislikes-toggle"> Show Dislikes
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Sync Ambient Mode YT
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="translation-toggle"> Translate comments
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" checked id="wave-visualizer-toggle"> Wave visualizer Beta
           </div>
         </label>
         <div class="quality-selector-mdcm" style="grid-column: span 2;">
@@ -6728,6 +6733,7 @@
         if ($id('side-panel-style-select')) $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
         if ($id('custom-timeline-color-toggle')) $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
         if ($id('subtitles-toggle')) $id('subtitles-toggle').checked = settings.disableSubtitles || false;
+        if ($id('annotations-toggle')) $id('annotations-toggle').checked = settings.disableAnnotations || false;
         $id('player-size-slider').value = settings.playerSize || 100;
         $id('select-video-qualitys-select').value = settings.selectVideoQuality || 'user';
         $id('select-languages-comments-select').value = settings.languagesComments || 'en';
@@ -7372,6 +7378,7 @@
             sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'blur',
             customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
             disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
+            disableAnnotations: $id('annotations-toggle') ? $id('annotations-toggle').checked : false,
             // fontSize: $id('font-size-slider').value,
             playerSize: $id('player-size-slider').value,
             selectVideoQuality: $id('select-video-qualitys-select').value,
@@ -7426,6 +7433,20 @@
             if (typeof videoDislike === 'function') videoDislike();
             if (typeof shortDislike === 'function') shortDislike();
             showDislikes = !!settings.dislikes;
+            
+            // Disable Annotations (YT only)
+            const annotationsStyleId = 'yt-tools-disable-annotations';
+            let annotationsStyleEl = $id(annotationsStyleId);
+            if (settings.disableAnnotations) {
+                if (!annotationsStyleEl) {
+                    annotationsStyleEl = document.createElement('style');
+                    annotationsStyleEl.id = annotationsStyleId;
+                    document.head.appendChild(annotationsStyleEl);
+                }
+                annotationsStyleEl.textContent = '.video-annotations, .ytp-ce-element, .ytp-cards-button, .ytp-cards-teaser { display: none !important; }';
+            } else if (annotationsStyleEl) {
+                annotationsStyleEl.remove();
+            }
         }
 
         // Active inactive Themes

@@ -37,6 +37,7 @@
             sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'blur',
             customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
             disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
+            disableAnnotations: $id('annotations-toggle') ? $id('annotations-toggle').checked : false,
             // fontSize: $id('font-size-slider').value,
             playerSize: $id('player-size-slider').value,
             selectVideoQuality: $id('select-video-qualitys-select').value,
@@ -91,6 +92,20 @@
             if (typeof videoDislike === 'function') videoDislike();
             if (typeof shortDislike === 'function') shortDislike();
             showDislikes = !!settings.dislikes;
+            
+            // Disable Annotations (YT only)
+            const annotationsStyleId = 'yt-tools-disable-annotations';
+            let annotationsStyleEl = $id(annotationsStyleId);
+            if (settings.disableAnnotations) {
+                if (!annotationsStyleEl) {
+                    annotationsStyleEl = document.createElement('style');
+                    annotationsStyleEl.id = annotationsStyleId;
+                    document.head.appendChild(annotationsStyleEl);
+                }
+                annotationsStyleEl.textContent = '.video-annotations, .ytp-ce-element, .ytp-cards-button, .ytp-cards-teaser { display: none !important; }';
+            } else if (annotationsStyleEl) {
+                annotationsStyleEl.remove();
+            }
         }
 
         // Active inactive Themes
