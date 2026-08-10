@@ -8856,7 +8856,7 @@
 
         function cleanup(fullCleanup = false) {
             if (fullCleanup && animationId) {
-                cancelAnimationFrame(animationId);
+                clearTimeout(animationId);
                 animationId = null;
             }
             if (currentVideo) {
@@ -8959,7 +8959,7 @@
             }
 
             analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 2048;
+            analyser.fftSize = 512;
             analyser.smoothingTimeConstant = 0.85;
             bufferLength = analyser.fftSize;
             dataArray = new Uint8Array(bufferLength);
@@ -9003,7 +9003,7 @@
                 animationId = null;
                 return;
             }
-            animationId = requestAnimationFrame(draw);
+            animationId = setTimeout(draw, 33); // Throttle to ~30fps to save CPU
 
 
             analyser.getByteTimeDomainData(dataArray);
@@ -9090,12 +9090,16 @@
                     break;
                 }
                 case 'dinamica': {
-                    let gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-                    gradient.addColorStop(0, 'red');
-                    gradient.addColorStop(0.5, 'purple');
-                    gradient.addColorStop(1, 'blue');
+                    if (!window.__ytToolsCachedGradient || window.__ytToolsCachedGradientWidth !== canvas.width) {
+                        let gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                        gradient.addColorStop(0, 'red');
+                        gradient.addColorStop(0.5, 'purple');
+                        gradient.addColorStop(1, 'blue');
+                        window.__ytToolsCachedGradient = gradient;
+                        window.__ytToolsCachedGradientWidth = canvas.width;
+                    }
                     ctx.lineWidth = 3;
-                    ctx.strokeStyle = gradient;
+                    ctx.strokeStyle = window.__ytToolsCachedGradient;
                     ctx.beginPath();
                     let x = 0;
                     const stepDin = Math.max(1, Math.floor(bufferLength / 256));
@@ -9360,7 +9364,7 @@
                 // Soft cleanup: hide canvas + stop animation, but keep AudioContext alive
                 // (createMediaElementSource can only bind once per video element)
                 if (animationId) {
-                    cancelAnimationFrame(animationId);
+                    clearTimeout(animationId);
                     animationId = null;
                 }
                 hideCanvas();
