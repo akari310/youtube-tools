@@ -530,6 +530,11 @@
         if (canvas) {
             canvas.style.opacity = '1';
             if (controlPanel) controlPanel.style.opacity = '1';
+            
+            // Restart drawing loop if it stopped
+            if (!animationId && typeof draw === 'function') {
+                draw();
+            }
         }
     }
 
