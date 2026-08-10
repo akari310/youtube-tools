@@ -7444,8 +7444,17 @@
                     document.head.appendChild(annotationsStyleEl);
                 }
                 annotationsStyleEl.textContent = '.video-annotations, .ytp-ce-element, .ytp-cards-button, .ytp-cards-teaser { display: none !important; }';
-            } else if (annotationsStyleEl) {
-                annotationsStyleEl.remove();
+                
+                // Force native YouTube toggle to OFF state in Settings Menu
+                try {
+                    localStorage.setItem('yt-player-annotations-state', JSON.stringify({data: false, creation: Date.now()}));
+                } catch(e) {}
+            } else {
+                if (annotationsStyleEl) annotationsStyleEl.remove();
+                // Optionally restore to ON
+                // try {
+                //     localStorage.setItem('yt-player-annotations-state', JSON.stringify({data: true, creation: Date.now()}));
+                // } catch(e) {}
             }
         }
 
