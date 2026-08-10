@@ -7444,37 +7444,39 @@
                     document.head.appendChild(annotationsStyleEl);
                 }
                 annotationsStyleEl.textContent = '.video-annotations, .ytp-ce-element, .ytp-cards-button, .ytp-cards-teaser { display: none !important; }';
-                // Enforce native YouTube toggle via click (like Subtitles)
-                const enforceAnnotations = () => {
-                    const menuItems = document.querySelectorAll('.ytp-menuitem[role="menuitemcheckbox"]');
-                    for (const item of menuItems) {
-                        const path = item.querySelector('svg path');
-                        if (path && path.getAttribute('d').startsWith('M9.65 6.00L9.5')) {
-                            const isCurrentlyOn = item.getAttribute('aria-checked') === 'true';
-                            if (settings.disableAnnotations && isCurrentlyOn) {
-                                item.click();
-                            } else if (!settings.disableAnnotations && !isCurrentlyOn) {
-                                item.click();
-                            }
-                            break;
-                        }
-                    }
-                };
-                
-                enforceAnnotations();
-                
-                if (!window.__ytToolsAnnotationsEnforcer) {
-                    window.__ytToolsAnnotationsEnforcer = true;
-                    document.addEventListener('click', (e) => {
-                        if (e.target.closest('.ytp-settings-button')) {
-                            // Wait for menu to render in DOM
-                            setTimeout(enforceAnnotations, 50);
-                            setTimeout(enforceAnnotations, 150);
-                        }
-                    });
-                }
             } else {
                 if (annotationsStyleEl) annotationsStyleEl.remove();
+            }
+
+            // Enforce native YouTube toggle via click (like Subtitles)
+            const enforceAnnotations = () => {
+                const currentSettings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+                const menuItems = document.querySelectorAll('.ytp-menuitem[role="menuitemcheckbox"]');
+                for (const item of menuItems) {
+                    const path = item.querySelector('svg path');
+                    if (path && path.getAttribute('d').startsWith('M9.65 6.00L9.5')) {
+                        const isCurrentlyOn = item.getAttribute('aria-checked') === 'true';
+                        if (currentSettings.disableAnnotations && isCurrentlyOn) {
+                            item.click();
+                        } else if (!currentSettings.disableAnnotations && !isCurrentlyOn) {
+                            item.click();
+                        }
+                        break;
+                    }
+                }
+            };
+            
+            enforceAnnotations();
+            
+            if (!window.__ytToolsAnnotationsEnforcer) {
+                window.__ytToolsAnnotationsEnforcer = true;
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.ytp-settings-button')) {
+                        // Wait for menu to render in DOM
+                        setTimeout(enforceAnnotations, 50);
+                        setTimeout(enforceAnnotations, 150);
+                    }
+                });
             }
         }
 
