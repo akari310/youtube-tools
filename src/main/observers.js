@@ -149,6 +149,7 @@
             hideComments: $id('hide-comments-toggle').checked,
             hideSidebar: $id('hide-sidebar-toggle').checked,
             disableAutoplay: $id('autoplay-toggle').checked,
+            disableAnnotations: $id('annotations-toggle') ? $id('annotations-toggle').checked : false,
             cinematicLighting: $id('cinematic-lighting-toggle').checked,
             syncCinematic: $id('sync-cinematic-toggle') ? $id('sync-cinematic-toggle').checked : false, // NUEVO SETTING
             sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'normal',
