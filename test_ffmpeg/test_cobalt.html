@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html><body>
+<script>
+async function test() {
+    try {
+        const res = await fetch('https://api.cobalt.tools/api/json', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                url: 'https://music.youtube.com/watch?v=epX5lbu1Q_E',
+                aFormat: 'm4a',
+                isAudioOnly: true
+            })
+        });
+        const data = await res.json();
+        console.log(data);
+    } catch (e) {
+        console.log(e);
+    }
+}
+test();
+</script>
+</body></html>

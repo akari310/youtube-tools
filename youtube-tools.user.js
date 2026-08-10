@@ -5170,8 +5170,8 @@
             if (controlPanel) controlPanel.style.opacity = '1';
             
             // Restart drawing loop if it stopped
-            if (!animationId && typeof draw === 'function') {
-                draw();
+            if (!animationId && window.__ytToolsDraw) {
+                window.__ytToolsDraw();
             }
         }
     }
@@ -7124,7 +7124,7 @@
         },
 
         _startTracker() {
-            if (this._trackerId) cancelAnimationFrame(this._trackerId);
+            if (this._trackerId) clearTimeout(this._trackerId);
 
             const self = this;
             function track() {
@@ -7150,10 +7150,10 @@
                     self.dividerEl.classList.add('active');
                 }
 
-                self._trackerId = requestAnimationFrame(track);
+                self._trackerId = setTimeout(track, 250);
             }
 
-            this._trackerId = requestAnimationFrame(track);
+            this._trackerId = setTimeout(track, 250);
         },
 
         // Legacy aliases for compatibility
@@ -8998,6 +8998,7 @@
         }
 
         function draw() {
+            window.__ytToolsDraw = draw;
             if (parseFloat(canvas.style.opacity) <= 0) {
                 animationId = null;
                 return;
