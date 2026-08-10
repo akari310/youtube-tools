@@ -532,8 +532,8 @@
             if (controlPanel) controlPanel.style.opacity = '1';
             
             // Restart drawing loop if it stopped
-            if (!animationId && typeof draw === 'function') {
-                draw();
+            if (!animationId && window.__ytToolsDraw) {
+                window.__ytToolsDraw();
             }
         }
     }

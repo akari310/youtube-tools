@@ -1663,13 +1663,9 @@
         }
 
         function draw() {
-            window.__ytToolsDraw = draw;
-            if (parseFloat(canvas.style.opacity) <= 0) {
-                animationId = null;
-                return;
-            }
             animationId = requestAnimationFrame(draw);
 
+            if (parseFloat(canvas.style.opacity) <= 0) return;
 
             analyser.getByteTimeDomainData(dataArray);
             for (let i = 0; i < bufferLength; i++) {
@@ -1686,12 +1682,11 @@
                     ctx.strokeStyle = 'lime';
                     ctx.beginPath();
                     let x = 0;
-                    const stepLin = Math.max(1, Math.floor(bufferLength / 256));
-                    for (let i = 0; i < bufferLength; i += stepLin) {
+                    for (let i = 0; i < bufferLength; i++) {
                         let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         if (i === 0) ctx.moveTo(x, amplitude);
                         else ctx.lineTo(x, amplitude);
-                        x += sliceWidth * stepLin;
+                        x += sliceWidth;
                     }
                     ctx.stroke();
                     break;
@@ -1711,15 +1706,14 @@
                     ctx.strokeStyle = 'yellow';
                     ctx.beginPath();
                     ctx.moveTo(0, Math.max(0, smoothedData[0] - 128) * scale);
-                    const stepCurv = Math.max(1, Math.floor(bufferLength / 128));
-                    for (let i = 0; i < bufferLength - stepCurv; i += stepCurv) {
+                    for (let i = 0; i < bufferLength - 1; i++) {
                         let x0 = i * sliceWidth;
-                        let x1 = (i + stepCurv) * sliceWidth;
+                        let x1 = (i + 1) * sliceWidth;
                         let y0 = Math.max(0, smoothedData[i] - 128) * scale;
-                        let y1 = Math.max(0, smoothedData[i + stepCurv] - 128) * scale;
-                        let cp1x = x0 + (x1 - x0) / 3;
+                        let y1 = Math.max(0, smoothedData[i + 1] - 128) * scale;
+                        let cp1x = x0 + sliceWidth / 3;
                         let cp1y = y0;
-                        let cp2x = x1 - (x1 - x0) / 3;
+                        let cp2x = x1 - sliceWidth / 3;
                         let cp2y = y1;
                         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
                     }
@@ -1742,11 +1736,10 @@
                     ctx.beginPath();
                     let x = 0;
                     ctx.moveTo(0, 0);
-                    const stepSol = Math.max(1, Math.floor(bufferLength / 256));
-                    for (let i = 0; i < bufferLength; i += stepSol) {
+                    for (let i = 0; i < bufferLength; i++) {
                         let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         ctx.lineTo(x, amplitude);
-                        x += sliceWidth * stepSol;
+                        x += sliceWidth;
                     }
                     ctx.lineTo(canvas.width, 0);
                     ctx.closePath();
@@ -1763,12 +1756,11 @@
                     ctx.strokeStyle = gradient;
                     ctx.beginPath();
                     let x = 0;
-                    const stepDin = Math.max(1, Math.floor(bufferLength / 256));
-                    for (let i = 0; i < bufferLength; i += stepDin) {
+                    for (let i = 0; i < bufferLength; i++) {
                         let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         if (i === 0) ctx.moveTo(x, amplitude);
                         else ctx.lineTo(x, amplitude);
-                        x += sliceWidth * stepDin;
+                        x += sliceWidth;
                     }
                     ctx.stroke();
                     break;
@@ -1777,11 +1769,10 @@
                     ctx.beginPath();
                     let x = 0;
                     ctx.moveTo(0, 0);
-                    const stepMon = Math.max(1, Math.floor(bufferLength / 256));
-                    for (let i = 0; i < bufferLength; i += stepMon) {
+                    for (let i = 0; i < bufferLength; i++) {
                         let amp = (smoothedData[i] - 128) * scale * 0.8;
                         ctx.lineTo(x, amp);
-                        x += sliceWidth * stepMon;
+                        x += sliceWidth;
                     }
                     ctx.lineTo(canvas.width, 0);
                     ctx.closePath();
