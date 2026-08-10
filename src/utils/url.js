@@ -1507,8 +1507,8 @@
 
         function updateCanvasSize() {
             if (canvas) {
-                canvas.width = window.innerWidth;
-                canvas.height = canvasHeight;
+                canvas.width = Math.floor(window.innerWidth / 4);
+                canvas.height = Math.floor(canvasHeight / 4);
             }
         }
 
@@ -1573,17 +1573,21 @@
             const parent = document.body;
             canvas = document.createElement('canvas');
             canvas.id = 'wave-visualizer-canvas';
-            canvas.width = window.innerWidth;
-            canvas.height = canvasHeight;
+            canvas.width = Math.floor(window.innerWidth / 4);
+            canvas.height = Math.floor(canvasHeight / 4);
             canvas.style.position = 'fixed';
             canvas.style.left = '0';
             canvas.style.top = '0';
             canvas.style.width = '100%';
+            canvas.style.height = '25vh';
             canvas.style.pointerEvents = 'none';
             canvas.style.backgroundColor = 'transparent';
+            canvas.style.isolation = 'isolate';
             canvas.style.zIndex = '10000';
             canvas.style.opacity = '0';
             canvas.style.transition = 'opacity 0.3s';
+            canvas.style.transform = 'translateZ(0)';
+            canvas.style.willChange = 'transform, opacity';
 
             parent.appendChild(canvas);
             ctx = canvas.getContext('2d');
@@ -1624,7 +1628,7 @@
             }
 
             analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 512;
+            analyser.fftSize = 256;
             analyser.smoothingTimeConstant = 0.85;
             bufferLength = analyser.fftSize;
             dataArray = new Uint8Array(bufferLength);
@@ -1662,14 +1666,19 @@
             isSetup = true;
         }
 
-        function draw() {
+        let lastDrawTime = 0;
+        function draw(timestamp) {
+            if (!timestamp) timestamp = performance.now();
             window.__ytToolsDraw = draw;
             if (parseFloat(canvas.style.opacity) <= 0) {
                 animationId = null;
                 return;
             }
-            animationId = setTimeout(draw, 33); // Throttle to ~30fps to save CPU
-
+            animationId = requestAnimationFrame(draw);
+            
+            // Throttle to ~20fps but KEEP it synced with vsync!
+            if (timestamp - lastDrawTime < 50) return;
+            lastDrawTime = timestamp;
 
             analyser.getByteTimeDomainData(dataArray);
             for (let i = 0; i < bufferLength; i++) {
@@ -1686,9 +1695,9 @@
                     ctx.strokeStyle = 'lime';
                     ctx.beginPath();
                     let x = 0;
-                    const stepLin = Math.max(1, Math.floor(bufferLength / 256));
+                    const stepLin = Math.max(1, Math.floor(bufferLength / 128));
                     for (let i = 0; i < bufferLength; i += stepLin) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
                         if (i === 0) ctx.moveTo(x, amplitude);
                         else ctx.lineTo(x, amplitude);
                         x += sliceWidth * stepLin;
@@ -1698,11 +1707,11 @@
                 }
                 case 'barras': {
                     let x = 0;
-                    for (let i = 0; i < bufferLength; i += 5) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
+                    for (let i = 0; i < bufferLength; i += 8) {
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
                         ctx.fillStyle = 'cyan';
-                        ctx.fillRect(x, 0, sliceWidth * 4, amplitude);
-                        x += sliceWidth * 5;
+                        ctx.fillRect(x, 0, sliceWidth * 6, amplitude);
+                        x += sliceWidth * 8;
                     }
                     break;
                 }
@@ -1710,13 +1719,13 @@
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = 'yellow';
                     ctx.beginPath();
-                    ctx.moveTo(0, Math.max(0, smoothedData[0] - 128) * scale);
-                    const stepCurv = Math.max(1, Math.floor(bufferLength / 128));
+                    ctx.moveTo(0, Math.max(0, smoothedData[0] - 128) * (scale / 4));
+                    const stepCurv = Math.max(1, Math.floor(bufferLength / 64));
                     for (let i = 0; i < bufferLength - stepCurv; i += stepCurv) {
                         let x0 = i * sliceWidth;
                         let x1 = (i + stepCurv) * sliceWidth;
-                        let y0 = Math.max(0, smoothedData[i] - 128) * scale;
-                        let y1 = Math.max(0, smoothedData[i + stepCurv] - 128) * scale;
+                        let y0 = Math.max(0, smoothedData[i] - 128) * (scale / 4);
+                        let y1 = Math.max(0, smoothedData[i + stepCurv] - 128) * (scale / 4);
                         let cp1x = x0 + (x1 - x0) / 3;
                         let cp1y = y0;
                         let cp2x = x1 - (x1 - x0) / 3;
@@ -1729,12 +1738,12 @@
                 case 'picos': {
                     ctx.fillStyle = 'magenta';
                     let x = 0;
-                    for (let i = 0; i < bufferLength; i += 5) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
+                    for (let i = 0; i < bufferLength; i += 8) {
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
                         ctx.beginPath();
-                        ctx.arc(x, amplitude, 2, 0, Math.PI * 2);
+                        ctx.arc(x, amplitude, 3, 0, Math.PI * 2);
                         ctx.fill();
-                        x += sliceWidth * 5;
+                        x += sliceWidth * 8;
                     }
                     break;
                 }
@@ -1742,9 +1751,9 @@
                     ctx.beginPath();
                     let x = 0;
                     ctx.moveTo(0, 0);
-                    const stepSol = Math.max(1, Math.floor(bufferLength / 256));
+                    const stepSol = Math.max(1, Math.floor(bufferLength / 128));
                     for (let i = 0; i < bufferLength; i += stepSol) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
                         ctx.lineTo(x, amplitude);
                         x += sliceWidth * stepSol;
                     }
@@ -1767,9 +1776,9 @@
                     ctx.strokeStyle = window.__ytToolsCachedGradient;
                     ctx.beginPath();
                     let x = 0;
-                    const stepDin = Math.max(1, Math.floor(bufferLength / 256));
+                    const stepDin = Math.max(1, Math.floor(bufferLength / 128));
                     for (let i = 0; i < bufferLength; i += stepDin) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
                         if (i === 0) ctx.moveTo(x, amplitude);
                         else ctx.lineTo(x, amplitude);
                         x += sliceWidth * stepDin;
@@ -1781,9 +1790,9 @@
                     ctx.beginPath();
                     let x = 0;
                     ctx.moveTo(0, 0);
-                    const stepMon = Math.max(1, Math.floor(bufferLength / 256));
+                    const stepMon = Math.max(1, Math.floor(bufferLength / 128));
                     for (let i = 0; i < bufferLength; i += stepMon) {
-                        let amp = (smoothedData[i] - 128) * scale * 0.8;
+                        let amp = (smoothedData[i] - 128) * (scale / 4) * 0.8;
                         ctx.lineTo(x, amp);
                         x += sliceWidth * stepMon;
                     }
