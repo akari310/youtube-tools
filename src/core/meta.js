@@ -30,6 +30,7 @@
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
 // @match        *://*.music.youtube.com/*
+// @exclude      *://*.youtube.com/embed/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @grant        GM_info
 // @grant        GM_addStyle
