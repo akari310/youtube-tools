@@ -26,3 +26,10 @@ README(clone).md
 backup.js
 youtube-tools-clone.user.js
 scripts/build_clone.*
+
+# Temp fix/patch scripts
+fix*.js
+patch_*.js
+old_downloader.js
+read_step.js
+refactor_fallback.js
