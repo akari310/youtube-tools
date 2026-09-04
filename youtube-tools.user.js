@@ -254,8 +254,6 @@
         };
     })();
 
-})();
-
     // Create a Trusted Types policy
     let policy = null;
     try {
