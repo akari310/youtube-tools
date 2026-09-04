@@ -13,9 +13,9 @@
     let dataArray = null;
     let smoothedData = [];
     let isSetup = false;
-    const smoothingFactor = 0.05;
-    const canvasHeight = 240;
-    const scale = canvasHeight / 90;
+    const smoothingFactor = 0.12;
+    const canvasHeight = 480;
+    const scale = canvasHeight / 120;
 
     const PROCESSED_FLAG = 'wave_visualizer_processed';
 

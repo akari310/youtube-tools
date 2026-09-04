@@ -120,9 +120,9 @@
     let dataArray = null;
     let smoothedData = [];
     let isSetup = false;
-    const smoothingFactor = 0.05;
-    const canvasHeight = 240;
-    const scale = canvasHeight / 90;
+    const smoothingFactor = 0.12;
+    const canvasHeight = 480;
+    const scale = canvasHeight / 120;
 
     const PROCESSED_FLAG = 'wave_visualizer_processed';
 
@@ -8896,8 +8896,8 @@
 
         function updateCanvasSize() {
             if (canvas) {
-                canvas.width = Math.floor(window.innerWidth / 4);
-                canvas.height = Math.floor(canvasHeight / 4);
+                canvas.width = Math.floor(window.innerWidth / 2);
+                canvas.height = Math.floor(canvasHeight / 2);
             }
         }
 
@@ -8962,8 +8962,8 @@
             const parent = document.body;
             canvas = document.createElement('canvas');
             canvas.id = 'wave-visualizer-canvas';
-            canvas.width = Math.floor(window.innerWidth / 4);
-            canvas.height = Math.floor(canvasHeight / 4);
+            canvas.width = Math.floor(window.innerWidth / 2);
+            canvas.height = Math.floor(canvasHeight / 2);
             canvas.style.position = 'fixed';
             canvas.style.left = '0';
             canvas.style.top = '0';
@@ -9017,8 +9017,8 @@
             }
 
             analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 256;
-            analyser.smoothingTimeConstant = 0.85;
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.7;
             bufferLength = analyser.fftSize;
             dataArray = new Uint8Array(bufferLength);
             smoothedData = new Array(bufferLength).fill(128);
@@ -9065,8 +9065,8 @@
             }
             animationId = requestAnimationFrame(draw);
             
-            // Throttle to ~20fps but KEEP it synced with vsync!
-            if (timestamp - lastDrawTime < 50) return;
+            // Throttle to ~30fps but KEEP it synced with vsync!
+            if (timestamp - lastDrawTime < 33) return;
             lastDrawTime = timestamp;
 
             analyser.getByteTimeDomainData(dataArray);
