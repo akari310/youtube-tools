@@ -26,7 +26,7 @@
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
 // @version      0.0.7.0
 // @author       Akari, DeveloperMDCM
-// @contributor  nvbangg, WesselKroos (youtube-ambilight), papponcgjfojgemddooebbgniglhkajkj (ambient-light-for-youtube)
+// @contributor  nvbangg, WesselKroos (youtube-ambilight / ambient-light-for-youtube)
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
 // @match        *://*.music.youtube.com/*

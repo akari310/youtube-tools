@@ -1,7 +1,6 @@
 // Simplified WebGL Ambilight for YouTube and YouTube Music
-// Inspired by and credits to:
-// - WesselKroos (https://github.com/WesselKroos/youtube-ambilight)
-// - Ambient light for YouTube (https://chromewebstore.google.com/detail/ambient-light-for-youtube/paponcgjfojgemddooebbgniglhkajkj)
+// Inspired by and credits to WesselKroos:
+// https://github.com/WesselKroos/youtube-ambilight (Ambient light for YouTube)
 
 class YTAmbilightWebGL {
     constructor() {
