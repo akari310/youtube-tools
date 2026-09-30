@@ -1,13 +1,8 @@
     function setupHeaderObserver() {
-        if (headerObserver) return;
-        const target = $e('#masthead-container') || $e('ytd-masthead') || document.body;
-        headerObserver = new MutationObserver(() => {
-            const icon = $id('icon-menu-settings');
-            if (!icon || !document.body.contains(icon)) {
-                addIcon();
-            }
-        });
-        headerObserver.observe(target, { childList: true, subtree: true });
+        if (window.__ytToolsHeaderPoll) return;
+        window.__ytToolsHeaderPoll = setInterval(() => {
+            addIcon();
+        }, 1500);
     }
 
     function addIcon() {
@@ -80,6 +75,68 @@
     // Add change listener to the entire panel to save/apply settings immediately
     panel.addEventListener('change', (e) => {
         if (e.target.classList.contains('checkbox-mdcm') || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') {
+            
+            // Xóa event cascade, thay bằng xử lý xung đột trực tiếp trên thuộc tính .checked
+            let settingsChanged = false;
+            
+            const cinematicToggle = document.getElementById('cinematic-lighting-toggle');
+            const syncToggle = document.getElementById('sync-cinematic-toggle');
+            const audioOnlyToggle = document.getElementById('audio-only-toggle');
+            const audioOnlyTabToggle = document.getElementById('audio-only-tab-toggle');
+            const themesToggle = document.getElementById('themes-toggle');
+
+            // 1. Bật Cinematic hoặc Ambilight -> Tắt Audio Only & Tắt tính năng còn lại
+            if ((e.target.id === 'cinematic-lighting-toggle' || e.target.id === 'sync-cinematic-toggle') && e.target.checked) {
+                
+                // Đảm bảo chỉ 1 trong 2 được bật
+                if (e.target.id === 'cinematic-lighting-toggle' && syncToggle && syncToggle.checked) {
+                    syncToggle.checked = false;
+                    settingsChanged = true;
+                }
+                if (e.target.id === 'sync-cinematic-toggle' && cinematicToggle && cinematicToggle.checked) {
+                    cinematicToggle.checked = false;
+                    settingsChanged = true;
+                }
+
+                if (audioOnlyToggle && audioOnlyToggle.checked) {
+                    audioOnlyToggle.checked = false;
+                    settingsChanged = true;
+                }
+                if (audioOnlyTabToggle && audioOnlyTabToggle.checked) {
+                    audioOnlyTabToggle.checked = false;
+                    sessionStorage.removeItem('ytToolsAudioOnlyTabOverrideMDCM');
+                    settingsChanged = true;
+                }
+                if (themesToggle && themesToggle.checked) {
+                    themesToggle.checked = false;
+                    settingsChanged = true;
+                }
+            }
+            
+            // 2. Bật Audio Only (global hoặc tab) -> Tắt Cinematic và Ambilight
+            if ((e.target.id === 'audio-only-toggle' || e.target.id === 'audio-only-tab-toggle') && e.target.checked) {
+                if (cinematicToggle && cinematicToggle.checked) {
+                    cinematicToggle.checked = false;
+                    settingsChanged = true;
+                }
+                if (syncToggle && syncToggle.checked) {
+                    syncToggle.checked = false;
+                    settingsChanged = true;
+                }
+            }
+
+            // 3. Bật Theme -> Tắt Cinematic và Ambilight
+            if (e.target.id === 'themes-toggle' && e.target.checked) {
+                if (cinematicToggle && cinematicToggle.checked) {
+                    cinematicToggle.checked = false;
+                    settingsChanged = true;
+                }
+                if (syncToggle && syncToggle.checked) {
+                    syncToggle.checked = false;
+                    settingsChanged = true;
+                }
+            }
+
             saveSettings();
             if (typeof applySettings === 'function') {
                 applySettings();
@@ -159,6 +216,15 @@
             playerSize: $id('player-size-slider').value,
             selectVideoQuality: $id('select-video-qualitys-select').value,
             languagesComments: $id('select-languages-comments-select').value,
+            ambiBlur: $id('ambi-blur-slider') ? $id('ambi-blur-slider').value : 40,
+            ambiSpread: $id('ambi-spread-slider') ? $id('ambi-spread-slider').value : 0,
+            ambiEdgeFade: $id('ambi-edge-fade-slider') ? $id('ambi-edge-fade-slider').value : 0,
+            ambiCropY: $id('ambi-crop-y-slider') ? $id('ambi-crop-y-slider').value : 0,
+            ambiCropX: $id('ambi-crop-x-slider') ? $id('ambi-crop-x-slider').value : 0,
+            ambiBrightness: $id('ambi-brightness-slider') ? $id('ambi-brightness-slider').value : 100,
+            ambiContrast: $id('ambi-contrast-slider') ? $id('ambi-contrast-slider').value : 100,
+            ambiSaturation: $id('ambi-saturation-slider') ? $id('ambi-saturation-slider').value : 100,
+            ambiOpacity: $id('ambi-opacity-slider') ? $id('ambi-opacity-slider').value : 80,
             // menuBgColor: $id('menu-bg-color-picker').value,
             // menuTextColor: $id('menu-text-color-picker').value,
             menu_akari: {
@@ -170,10 +236,21 @@
         };
 
         GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+
+        if (typeof isYTMusic !== 'undefined' && isYTMusic) {
+            const ytSettings = JSON.parse(GM_getValue('ytSettingsMDCM', '{}'));
+            ytSettings.ambiBlur = settings.ambiBlur;
+            ytSettings.ambiSpread = settings.ambiSpread;
+            ytSettings.ambiEdgeFade = settings.ambiEdgeFade;
+            ytSettings.ambiCropY = settings.ambiCropY;
+            ytSettings.ambiCropX = settings.ambiCropX;
+            ytSettings.ambiBrightness = settings.ambiBrightness;
+            ytSettings.ambiContrast = settings.ambiContrast;
+            ytSettings.ambiSaturation = settings.ambiSaturation;
+            ytSettings.ambiOpacity = settings.ambiOpacity;
+            GM_setValue('ytSettingsMDCM', JSON.stringify(ytSettings));
+        }
     }
-
-
-
     // Function to load settings
     function loadSettings() {
         const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
@@ -224,6 +301,17 @@
         $id('player-size-slider').value = settings.playerSize || 100;
         $id('select-video-qualitys-select').value = settings.selectVideoQuality || 'user';
         $id('select-languages-comments-select').value = settings.languagesComments || 'en';
+        const ytSettings = (typeof isYTMusic !== 'undefined' && isYTMusic) ? JSON.parse(GM_getValue('ytSettingsMDCM', '{}')) : settings;
+
+        if ($id('ambi-blur-slider')) $id('ambi-blur-slider').value = ytSettings.ambiBlur ?? 40;
+        if ($id('ambi-spread-slider')) $id('ambi-spread-slider').value = ytSettings.ambiSpread ?? 0;
+        if ($id('ambi-brightness-slider')) $id('ambi-brightness-slider').value = ytSettings.ambiBrightness ?? 100;
+        if ($id('ambi-contrast-slider')) $id('ambi-contrast-slider').value = ytSettings.ambiContrast ?? 100;
+        if ($id('ambi-saturation-slider')) $id('ambi-saturation-slider').value = ytSettings.ambiSaturation ?? 100;
+        if ($id('ambi-opacity-slider')) $id('ambi-opacity-slider').value = ytSettings.ambiOpacity ?? 80;
+        if ($id('ambi-edge-fade-slider')) $id('ambi-edge-fade-slider').value = ytSettings.ambiEdgeFade ?? 0;
+        if ($id('ambi-crop-y-slider')) $id('ambi-crop-y-slider').value = ytSettings.ambiCropY ?? 0;
+        if ($id('ambi-crop-x-slider')) $id('ambi-crop-x-slider').value = ytSettings.ambiCropX ?? 0;
 
         selectedBgColor = menuData.bg;
         selectedTextColor = menuData.color;
@@ -274,17 +362,6 @@
                     return;
                 }
 
-                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-                if (!settings.syncCinematic) {
-                    // apply cinematic toggle
-                    const cinematicToggle = $id('cinematic-lighting-toggle');
-                    if (cinematicToggle && cinematicDiv) {
-                        cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
-                    }
-                    resolve(false);
-                    return;
-                }
-
                 const startTime = video.currentTime;
                 const checkPlayback = () => {
                     if (video.currentTime >= startTime + 1) {
@@ -294,6 +371,11 @@
                         if (cinematicToggle && cinematicToggle.checked !== isActive) {
                             cinematicToggle.checked = isActive;
                             saveSettings();
+                        }
+                        
+                        // Explicitly apply state
+                        if (cinematicDiv) {
+                            cinematicDiv.style.display = isActive ? 'block' : 'none';
                         }
 
                         resolve(isActive);
@@ -342,14 +424,67 @@
 
 
     function updateSliderValues() {
-        $id('player-size-value').textContent = $id('player-size-slider').value;
-
+        if ($id('player-size-value')) $id('player-size-value').textContent = $id('player-size-slider').value;
+        if ($id('ambi-blur-val')) $id('ambi-blur-val').textContent = $id('ambi-blur-slider').value;
+        if ($id('ambi-spread-val')) $id('ambi-spread-val').textContent = $id('ambi-spread-slider').value;
+        if ($id('ambi-edge-fade-val')) $id('ambi-edge-fade-val').textContent = $id('ambi-edge-fade-slider').value;
+        if ($id('ambi-crop-y-val')) $id('ambi-crop-y-val').textContent = $id('ambi-crop-y-slider').value;
+        if ($id('ambi-crop-x-val')) $id('ambi-crop-x-val').textContent = $id('ambi-crop-x-slider').value;
+        if ($id('ambi-brightness-val')) $id('ambi-brightness-val').textContent = $id('ambi-brightness-slider').value;
+        if ($id('ambi-contrast-val')) $id('ambi-contrast-val').textContent = $id('ambi-contrast-slider').value;
+        if ($id('ambi-saturation-val')) $id('ambi-saturation-val').textContent = $id('ambi-saturation-slider').value;
+        if ($id('ambi-opacity-val')) $id('ambi-opacity-val').textContent = $id('ambi-opacity-slider').value;
     }
 
-    $id('reset-player-size').addEventListener('click', () => {
-        $id('player-size-slider').value = 100;
-        updateSliderValues();
-        applySettings();
+    if ($id('reset-player-size')) {
+        $id('reset-player-size').addEventListener('click', () => {
+            $id('player-size-slider').value = 100;
+            updateSliderValues();
+            applySettings();
+        });
+    }
+
+    if ($id('reset-ambi-settings')) {
+        $id('reset-ambi-settings').addEventListener('click', () => {
+            if ($id('ambi-blur-slider')) $id('ambi-blur-slider').value = 10;
+            if ($id('ambi-spread-slider')) $id('ambi-spread-slider').value = 40;
+            if ($id('ambi-edge-fade-slider')) $id('ambi-edge-fade-slider').value = 3;
+            if ($id('ambi-crop-y-slider')) $id('ambi-crop-y-slider').value = 0;
+            if ($id('ambi-crop-x-slider')) $id('ambi-crop-x-slider').value = 0;
+            if ($id('ambi-brightness-slider')) $id('ambi-brightness-slider').value = 111;
+            if ($id('ambi-contrast-slider')) $id('ambi-contrast-slider').value = 100;
+            if ($id('ambi-saturation-slider')) $id('ambi-saturation-slider').value = 100;
+            if ($id('ambi-opacity-slider')) $id('ambi-opacity-slider').value = 90;
+            
+            updateSliderValues();
+            saveSettings();
+            applySettings();
+        });
+    }
+
+    // Attach listeners for all sliders
+    const sliders = [
+        'player-size-slider',
+        'ambi-blur-slider',
+        'ambi-spread-slider',
+        'ambi-edge-fade-slider',
+        'ambi-crop-y-slider',
+        'ambi-crop-x-slider',
+        'ambi-brightness-slider',
+        'ambi-contrast-slider',
+        'ambi-saturation-slider',
+        'ambi-opacity-slider'
+    ];
+    sliders.forEach(id => {
+        const slider = $id(id);
+        if (slider) {
+            slider.addEventListener('input', () => {
+                updateSliderValues();
+                // Save settings to GM_setValue first so applySettings/WebGL can read them
+                saveSettings();
+                applySettings();
+            });
+        }
     });
 
     // Initialize header buttons once
@@ -723,4 +858,6 @@
     }
 
     // Cinematic Lighting Control Functions
-
+
+
+

@@ -226,6 +226,10 @@
         <i class="fa-regular fa-newspaper"></i>
         Header
       </button>
+      <button class="tab-mdcm" data-tab="ambilight">
+        <i class="fa-solid fa-lightbulb"></i>
+        Ambilight Pro
+      </button>
     </div>
 
 
@@ -254,7 +258,7 @@
         </label>
         <label>
           <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="cinematic-lighting-toggle"> ${isYTMusic ? 'Ambient Mode' : 'Cinematic Mode'}
+            <input type="checkbox" class="checkbox-mdcm" id="cinematic-lighting-toggle"> Cinematic Mode
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
@@ -322,9 +326,9 @@
             <input type="checkbox" class="checkbox-mdcm" checked id="dislikes-toggle"> Show Dislikes
           </div>
         </label>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
+        <label>
           <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Sync Ambient Mode YT
+            <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Ambilight
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
@@ -339,7 +343,7 @@
         </label>
         <div class="quality-selector-mdcm" style="grid-column: span 2;">
           <div class="select-wrapper-mdcm">
-            <label>Side/Playlist Panel Style:
+            <label>Glassmorphism UI Style:
               <select class="tab-button-active" id="side-panel-style-select">
                 <option value="blur">Blur</option>
                 <option value="liquid">Liquid Glass</option>
@@ -525,6 +529,60 @@
       </div>
     </div>
 
+    <div id="ambilight" class="tab-content">
+      <div class="options-mdcm">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0;">
+          <h4 style="margin: 0;">Ambilight Pro Settings</h4>
+          <button id="reset-ambi-settings" class="btn-mdcm" style="padding: 4px 10px; font-size: 12px; background: var(--bg-hover, #333); color: var(--text-primary, #fff); border: none; border-radius: 4px; cursor: pointer;">Reset</button>
+        </div>
+        
+        <div class="slider-container-mdcm">
+          <label>Blur: <span id="ambi-blur-val">10</span>px</label>
+          <input type="range" id="ambi-blur-slider" class="slider-mdcm" min="0" max="300" value="10">
+        </div>
+        
+        <div class="slider-container-mdcm">
+          <label>Spread: <span id="ambi-spread-val">40</span>%</label>
+          <input type="range" id="ambi-spread-slider" class="slider-mdcm" min="0" max="200" value="40">
+        </div>
+
+        <div class="slider-container-mdcm">
+          <label>Edge Fade (Viền mờ): <span id="ambi-edge-fade-val">3</span>%</label>
+          <input type="range" id="ambi-edge-fade-slider" class="slider-mdcm" min="0" max="50" value="3">
+        </div>
+
+        <div class="slider-container-mdcm">
+          <label>Crop Y (Cắt viền đen): <span id="ambi-crop-y-val">0</span>%</label>
+          <input type="range" id="ambi-crop-y-slider" class="slider-mdcm" min="0" max="30" value="0">
+        </div>
+
+        <div class="slider-container-mdcm">
+          <label>Crop X (Cắt viền ngang): <span id="ambi-crop-x-val">0</span>%</label>
+          <input type="range" id="ambi-crop-x-slider" class="slider-mdcm" min="0" max="30" value="0">
+        </div>
+        
+        <div class="slider-container-mdcm">
+          <label>Brightness: <span id="ambi-brightness-val">111</span>%</label>
+          <input type="range" id="ambi-brightness-slider" class="slider-mdcm" min="10" max="300" value="111">
+        </div>
+        
+        <div class="slider-container-mdcm">
+          <label>Contrast: <span id="ambi-contrast-val">100</span>%</label>
+          <input type="range" id="ambi-contrast-slider" class="slider-mdcm" min="10" max="300" value="100">
+        </div>
+        
+        <div class="slider-container-mdcm">
+          <label>Saturation: <span id="ambi-saturation-val">100</span>%</label>
+          <input type="range" id="ambi-saturation-slider" class="slider-mdcm" min="0" max="300" value="100">
+        </div>
+
+        <div class="slider-container-mdcm">
+          <label>Opacity: <span id="ambi-opacity-val">90</span>%</label>
+          <input type="range" id="ambi-opacity-slider" class="slider-mdcm" min="0" max="100" value="90">
+        </div>
+      </div>
+    </div>
+
     <div id="headers" class="tab-content">
       <div class="options-mdcm">
         <label>Available in next update</label>
@@ -620,4 +678,4 @@
     $ap(panel);
 
 
-    let headerObserver = null;
+    let headerObserver = null;

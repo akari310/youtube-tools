@@ -42,6 +42,13 @@
             playerSize: $id('player-size-slider').value,
             selectVideoQuality: $id('select-video-qualitys-select').value,
             languagesComments: $id('select-languages-comments-select').value,
+
+            ambiBlur: $id('ambi-blur-slider') ? $id('ambi-blur-slider').value : 40,
+            ambiSpread: $id('ambi-spread-slider') ? $id('ambi-spread-slider').value : 0,
+            ambiBrightness: $id('ambi-brightness-slider') ? $id('ambi-brightness-slider').value : 100,
+            ambiContrast: $id('ambi-contrast-slider') ? $id('ambi-contrast-slider').value : 100,
+            ambiSaturation: $id('ambi-saturation-slider') ? $id('ambi-saturation-slider').value : 100,
+            ambiOpacity: $id('ambi-opacity-slider') ? $id('ambi-opacity-slider').value : 80,
             // menuBgColor: $id('menu-bg-color-picker').value,
             // menuTextColor: $id('menu-text-color-picker').value,
             menu_developermdcm: {
@@ -181,32 +188,23 @@
                 }
             }
         }
-        // Apply cinematic/ambient lighting setting
-        if (isYTMusic) {
-            // YTM: custom ambient mode
-            if (settings.cinematicLighting && isWatchPage()) {
-                setTimeout(() => {
-                    ytmAmbientMode.setup();
-                }, 800);
-            } else {
-                ytmAmbientMode.cleanup();
-            }
-        } else if (isWatchPage()) {
+        // Apply Ambilight Pro setting
+        if (settings.syncCinematic && isWatchPage()) {
             setTimeout(() => {
-                const isCurrentlyActive = isCinematicActive();
-                if (settings.syncCinematic) {
-                    if (settings.cinematicLighting && !isCurrentlyActive) {
-                        toggleCinematicLighting();
-                    } else if (!settings.cinematicLighting && isCurrentlyActive) {
-                        toggleCinematicLighting();
-                    }
-                } else {
-                    const cinematicDiv = $id('cinematics');
-                    if (cinematicDiv) {
-                        cinematicDiv.style.display = settings.cinematicLighting ? 'block' : 'none';
-                    }
+                const video = document.querySelector('video');
+                if (window.ytmAmbilightWebGL && video) {
+                    window.ytmAmbilightWebGL.setup(video);
                 }
-            }, 1000);
+            }, 800);
+        } else {
+            if (window.ytmAmbilightWebGL) {
+                window.ytmAmbilightWebGL.cleanup();
+            }
+        }
+        
+        // Update Ambilight Styles instantly if active
+        if (window.ytmAmbilightWebGL && window.ytmAmbilightWebGL.isActive) {
+            window.ytmAmbilightWebGL.updateCanvasStyles();
         }
 
         // Adjust font size
@@ -2113,6 +2111,10 @@
     if (checkAudioOnlyToggle) {
         checkAudioOnlyToggle.addEventListener('change', () => {
             const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+            
+            // Clear any tab-specific overrides so the tab reflects the new global state
+            sessionStorage.removeItem('ytToolsAudioOnlyTabOverrideMDCM');
+            
             syncAudioOnlyTabCheckbox({
                 ...settings,
                 audioOnly: checkAudioOnlyToggle.checked
@@ -2128,18 +2130,11 @@
         });
     }
 
-    // Themes toggle event listener (auto-disable ambient in YTM if themes are turned on)
+    // Themes toggle event listener
     const checkThemesToggle = $id('themes-toggle');
     if (checkThemesToggle) {
         checkThemesToggle.addEventListener('change', () => {
-            if (isYTMusic && checkThemesToggle.checked) {
-                const cinematicToggle = $id('cinematic-lighting-toggle');
-                if (cinematicToggle && cinematicToggle.checked) {
-                    cinematicToggle.checked = false;
-                    try { saveSettings(); } catch (e) { }
-                    scheduleApplySettings();
-                }
-            }
+            // Conflict handling is centralized in observers.js panel listener
         });
     }
 
@@ -2148,66 +2143,58 @@
     if (checkCinematicLighting) {
         checkCinematicLighting.addEventListener('change', () => {
             const cinematicToggle = $e('#cinematic-lighting-toggle');
-            const syncToggle = $e('#sync-cinematic-toggle');
             const cinematicDiv = $id('cinematics');
 
             if (cinematicToggle.checked) {
-                Notify('success', isYTMusic ? 'Ambient mode enabled' : 'Cinematic mode enabled');
+                Notify('success', 'Cinematic Mode enabled');
             } else {
-                Notify('success', isYTMusic ? 'Ambient mode disabled' : 'Cinematic mode disabled');
+                Notify('success', 'Cinematic Mode disabled');
             }
+            
+            // Xung đột themes đã được xử lý ở observers.js
 
             if (isYTMusic) {
-                // YTM: use custom ambient mode
-                if (cinematicToggle.checked) {
-                    // Auto-disable theme when ambient is ON (they conflict)
-                    const themesToggle = $id('themes-toggle');
-                    if (themesToggle && themesToggle.checked) {
-                        themesToggle.checked = false;
-                        try { saveSettings(); } catch (e) { }
-                        scheduleApplySettings();
-                    }
-                    ytmAmbientMode.show();
-                } else {
-                    ytmAmbientMode.destroy();
-                }
+                // YTM: Cinematic Mode is a separate visual effect.
+                // WebGL Ambilight is controlled by sync-cinematic-toggle, not this toggle.
             } else {
-                // YT: use cinematic lighting
-                if (syncToggle.checked) {
+                // YT: Native YouTube cinematic logic (completely separated from WebGL Ambilight)
+                if (cinematicToggle.checked) {
                     setTimeout(() => {
-                        toggleCinematicLighting();
+                        if (typeof isCinematicActive === 'function') {
+                            if (!isCinematicActive()) {
+                                if (typeof toggleCinematicLighting === 'function') toggleCinematicLighting();
+                            }
+                        } else if (cinematicDiv) {
+                            cinematicDiv.style.display = 'block';
+                        }
                     }, 300);
                 } else {
-                    if (cinematicDiv) {
-                        cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
-                    }
+                    setTimeout(() => {
+                        if (typeof isCinematicActive === 'function') {
+                            if (isCinematicActive()) {
+                                if (typeof toggleCinematicLighting === 'function') toggleCinematicLighting();
+                            }
+                        } else if (cinematicDiv) {
+                            cinematicDiv.style.display = 'none';
+                        }
+                    }, 300);
                 }
             }
         });
     }
 
-    // Sync cinematic toggle event listener
+    // Sync cinematic toggle event listener (WebGL Ambilight)
     const checkSyncCinematic = $id('sync-cinematic-toggle');
     if (checkSyncCinematic) {
         checkSyncCinematic.addEventListener('change', () => {
             const syncToggle = $e('#sync-cinematic-toggle');
-            const cinematicToggle = $e('#cinematic-lighting-toggle');
-            const cinematicDiv = $id('cinematics');
 
             if (syncToggle.checked) {
-                Notify('success', 'Sync with YouTube enabled');
-                // Si se activa la sincronización y el modo cinematic está activado, sincronizar con YouTube
-                if (cinematicToggle.checked) {
-                    setTimeout(() => {
-                        toggleCinematicLighting();
-                    }, 500);
-                }
+                Notify('success', 'Ambilight enabled (WebGL Effect)');
+                if (window.ytmAmbilightWebGL) window.ytmAmbilightWebGL.setup(document.querySelector('video'));
             } else {
-                Notify('success', 'Sync with YouTube disabled');
-                // Si se desactiva la sincronización, aplicar inmediatamente el estado del toggle
-                if (cinematicDiv) {
-                    cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
-                }
+                Notify('success', 'Ambilight disabled');
+                if (window.ytmAmbilightWebGL) window.ytmAmbilightWebGL.cleanup();
             }
         });
     }
@@ -2782,4 +2769,4 @@
         }
     }
 
-    // Nuclear fix for persistent black cinematic blocks in Shorts
+    // Nuclear fix for persistent black cinematic blocks in Shorts

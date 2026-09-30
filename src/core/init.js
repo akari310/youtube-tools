@@ -3,7 +3,7 @@
     'use strict';
     let validoUrl = document.location.href;
     const isYTMusic = location.hostname === 'music.youtube.com';
-    const SETTINGS_KEY = isYTMusic ? 'ytmSettingsMDCM' : 'ytSettingsMDCM';
+    const SETTINGS_KEY = 'ytSettingsMDCM'; // Unified settings for both YTB and YTM
     const $e = (el) => document.querySelector(el); // any element
     const $id = (el) => document.getElementById(el); // element by id
     const $m = (el) => document.querySelectorAll(el); // multiple all elements

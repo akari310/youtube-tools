@@ -96,6 +96,8 @@ Crafted with passion by:
 - [**Akari**](https://github.com/akari310) — Optimization & Development
 - [**DeveloperMDCM**](https://github.com/DeveloperMDCM) — Original Project Creator
 - [**nvbangg**](https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic) — Source for Audio-only & Nonstop features
+- [**WesselKroos**](https://github.com/WesselKroos/youtube-ambilight) — Source for WebGL Ambilight feature
+- [**Ambient light for YouTube**](https://chromewebstore.google.com/detail/ambient-light-for-youtube/paponcgjfojgemddooebbgniglhkajkj) — Inspiration for Ambilight feature
 
 ## 📄 License
 This project is licensed under the [GNU General Public License v3.0](LICENSE).

@@ -136,6 +136,7 @@
             background-color: var(--yt-enhance-menu-bg, #252525);
             z-index: 10;
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             -ms-overflow-style: none;
             padding-bottom: 8px;
@@ -170,11 +171,10 @@
             color: var(--text-custom-secondary);
             border-radius: 6px;
             transition: all 0.3s;
-            flex: 1;
+            flex: 1 1 auto; /* auto to allow natural shrinking/growing when wrapped */
             display: flex;
             align-items: center;
             gap: 6px;
-            flex-shrink: 0;
             justify-content: center;
             white-space: nowrap;
         }
@@ -207,6 +207,12 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 8px;
+        }
+        
+        .options-mdcm h4 {
+            grid-column: 1 / -1; /* Make title span full width of the grid */
+            margin-top: 0;
+            margin-bottom: 10px;
         }
 
         .options-settings-mdcm {
@@ -1635,24 +1641,28 @@
 
     /* YouTube watch playlist panel: reuse the same 3 style choices as YTM. */
     body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
-      background: rgba(20, 20, 20, 0.62) !important;
+      background: rgba(255, 255, 255, 0.08) !important;
       backdrop-filter: blur(20px) saturate(140%) !important;
       -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.38) !important;
       border-radius: 16px !important;
       overflow: hidden !important;
+      --yt-lightsource-section2-color: transparent !important;
+      --yt-lightsource-section4-color: transparent !important;
     }
 
     body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
-      background: rgba(25, 25, 25, 0.45) !important;
-      backdrop-filter: blur(24px) saturate(180%) !important;
-      -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
+      backdrop-filter: blur(40px) saturate(180%) brightness(1.1) !important;
+      -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.1) !important;
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
       border-top-color: rgba(255, 255, 255, 0.25) !important;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
       border-radius: 16px !important;
       overflow: hidden !important;
+      --yt-lightsource-section2-color: transparent !important;
+      --yt-lightsource-section4-color: transparent !important;
     }
 
     body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
@@ -1661,6 +1671,52 @@
       -webkit-backdrop-filter: none !important;
       border: none !important;
       box-shadow: none !important;
+    }
+
+    /* YouTube Search Bar Glassmorphism */
+    body.ytm-style-blur ytd-searchbox#search form#search-form,
+    body.ytm-style-blur yt-searchbox .ytSearchboxComponentInputContainer,
+    body.ytm-style-blur #voice-search-button button {
+      background: rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(20px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 40px !important;
+      overflow: hidden !important;
+    }
+    body.ytm-style-liquid ytd-searchbox#search form#search-form,
+    body.ytm-style-liquid yt-searchbox .ytSearchboxComponentInputContainer,
+    body.ytm-style-liquid #voice-search-button button {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
+      backdrop-filter: blur(40px) saturate(180%) brightness(1.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-top-color: rgba(255, 255, 255, 0.25) !important;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+      border-radius: 40px !important;
+      overflow: hidden !important;
+    }
+    body.ytm-style-transparent ytd-searchbox#search form#search-form,
+    body.ytm-style-transparent yt-searchbox .ytSearchboxComponentInputContainer,
+    body.ytm-style-transparent #voice-search-button button {
+      background: transparent !important;
+      backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 40px !important;
+    }
+    /* Hide native backgrounds so the form's glass effect shows through */
+    body[class*="ytm-style-"] ytd-searchbox#search #container.ytd-searchbox,
+    body[class*="ytm-style-"] ytd-searchbox#search #search-icon-legacy.ytd-searchbox,
+    body[class*="ytm-style-"] yt-searchbox .ytSearchboxComponentInputBox,
+    body[class*="ytm-style-"] yt-searchbox .ytSearchboxComponentSearchButton,
+    body[class*="ytm-style-"] yt-searchbox button.ytdTextInputAssistantButton {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    body[class*="ytm-style-"] ytd-searchbox,
+    body[class*="ytm-style-"] yt-searchbox {
+      --ytd-searchbox-background: transparent !important;
+      --ytd-searchbox-legacy-button-color: transparent !important;
+      --ytd-searchbox-legacy-button-border-color: transparent !important;
     }
 
     body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
