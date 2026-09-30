@@ -243,6 +243,11 @@
         </label>
         <label>
           <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Ambilight
+          </div>
+        </label>
+        <label>
+          <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" id="audio-only-toggle"> Audio-only mode
           </div>
         </label>
@@ -324,11 +329,6 @@
         <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" checked id="dislikes-toggle"> Show Dislikes
-          </div>
-        </label>
-        <label>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Ambilight
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
