@@ -7427,6 +7427,16 @@ class YTAmbilightWebGL {
         if (this.canvas) {
             this.canvas.style.display = 'none';
         }
+
+        // Clean up masks
+        const targets = [];
+        if (this.video) targets.push(this.video);
+        const ytmImg = document.querySelector('#song-image img#img') || document.querySelector('ytmusic-player-page img');
+        if (ytmImg) targets.push(ytmImg);
+        targets.forEach(target => {
+            target.style.maskImage = 'none';
+            target.style.webkitMaskImage = 'none';
+        });
     }
 
     cleanup() {
