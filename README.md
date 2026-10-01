@@ -11,8 +11,8 @@ A powerful, modular, and glassmorphic userscript designed to elevate your **YouT
 ## 📸 Previews
 
 <div align="center">
-  <img src="assets/yt_preview.png" alt="YouTube Preview" width="45%">
-  <img src="assets/ytm_preview.png" alt="YouTube Music Preview" width="45%">
+  <img src="assets/yt_preview.png?v=2" alt="YouTube Preview" width="45%">
+  <img src="assets/ytm_preview.png?v=2" alt="YouTube Music Preview" width="45%">
   <p><i>Modern Glassmorphic UI & Advanced Features for YouTube & YT Music</i></p>
 </div>
 
