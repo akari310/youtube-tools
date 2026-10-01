@@ -77,8 +77,7 @@
         if (e.target.classList.contains('checkbox-mdcm') || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') {
             
             // Xóa event cascade, thay bằng xử lý xung đột trực tiếp trên thuộc tính .checked
-            let settingsChanged = false;
-            
+            // Xóa event cascade, thay bằng xử lý xung đột trực tiếp trên thuộc tính .checked
             const cinematicToggle = document.getElementById('cinematic-lighting-toggle');
             const syncToggle = document.getElementById('sync-cinematic-toggle');
             const audioOnlyToggle = document.getElementById('audio-only-toggle');
@@ -91,25 +90,20 @@
                 // Đảm bảo chỉ 1 trong 2 được bật
                 if (e.target.id === 'cinematic-lighting-toggle' && syncToggle && syncToggle.checked) {
                     syncToggle.checked = false;
-                    settingsChanged = true;
                 }
                 if (e.target.id === 'sync-cinematic-toggle' && cinematicToggle && cinematicToggle.checked) {
                     cinematicToggle.checked = false;
-                    settingsChanged = true;
                 }
 
                 if (audioOnlyToggle && audioOnlyToggle.checked) {
                     audioOnlyToggle.checked = false;
-                    settingsChanged = true;
                 }
                 if (audioOnlyTabToggle && audioOnlyTabToggle.checked) {
                     audioOnlyTabToggle.checked = false;
                     sessionStorage.removeItem('ytToolsAudioOnlyTabOverrideMDCM');
-                    settingsChanged = true;
                 }
                 if (themesToggle && themesToggle.checked) {
                     themesToggle.checked = false;
-                    settingsChanged = true;
                 }
             }
             
@@ -117,11 +111,9 @@
             if ((e.target.id === 'audio-only-toggle' || e.target.id === 'audio-only-tab-toggle') && e.target.checked) {
                 if (cinematicToggle && cinematicToggle.checked) {
                     cinematicToggle.checked = false;
-                    settingsChanged = true;
                 }
                 if (syncToggle && syncToggle.checked) {
                     syncToggle.checked = false;
-                    settingsChanged = true;
                 }
             }
 
@@ -129,11 +121,9 @@
             if (e.target.id === 'themes-toggle' && e.target.checked) {
                 if (cinematicToggle && cinematicToggle.checked) {
                     cinematicToggle.checked = false;
-                    settingsChanged = true;
                 }
                 if (syncToggle && syncToggle.checked) {
                     syncToggle.checked = false;
-                    settingsChanged = true;
                 }
             }
 
