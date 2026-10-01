@@ -425,20 +425,26 @@ class YTAmbilightWebGL {
         this.canvas.style.filter = `blur(${blur}px) saturate(150%)`;
         this.canvas.style.transform = `translateZ(0)`;
 
-        // Apply Edge Fade to the video element
-        if (this.video) {
+        const targets = [];
+        if (this.video) targets.push(this.video);
+        
+        // Add YTM image element to targets for edge fade on audio-only tracks
+        const ytmImg = document.querySelector('#song-image img#img') || document.querySelector('ytmusic-player-page img');
+        if (ytmImg) targets.push(ytmImg);
+
+        targets.forEach(target => {
             if (edgeFade > 0) {
                 const f = edgeFade; // 0 to 50
                 const mask = `linear-gradient(to right, transparent 0%, black ${f}%, black ${100 - f}%, transparent 100%), linear-gradient(to bottom, transparent 0%, black ${f}%, black ${100 - f}%, transparent 100%)`;
-                this.video.style.maskImage = mask;
-                this.video.style.webkitMaskImage = mask;
-                this.video.style.maskComposite = 'intersect';
-                this.video.style.webkitMaskComposite = 'source-in';
+                target.style.maskImage = mask;
+                target.style.webkitMaskImage = mask;
+                target.style.maskComposite = 'intersect';
+                target.style.webkitMaskComposite = 'source-in';
             } else {
-                this.video.style.maskImage = 'none';
-                this.video.style.webkitMaskImage = 'none';
+                target.style.maskImage = 'none';
+                target.style.webkitMaskImage = 'none';
             }
-        }
+        });
     }
 
     uploadAndDraw(textureSource, isImage = false, rectElement = null) {
