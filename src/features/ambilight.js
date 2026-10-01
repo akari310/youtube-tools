@@ -405,7 +405,7 @@ class YTAmbilightWebGL {
         
         // Changed default blur to 0 so the user can see the sharp rays by default
         let blur = 0;
-        let spread = 1.0;
+
         let opacity = 0.8;
         let edgeFade = 0;
         
@@ -415,7 +415,7 @@ class YTAmbilightWebGL {
                 this.cachedSettings = settings; // Cache for shader loop
                 
                 if (settings.ambiBlur !== undefined) blur = settings.ambiBlur;
-                if (settings.ambiSpread !== undefined) spread = 1.0 + (settings.ambiSpread / 100);
+
                 if (settings.ambiOpacity !== undefined) opacity = settings.ambiOpacity / 100;
                 if (settings.ambiEdgeFade !== undefined) edgeFade = settings.ambiEdgeFade;
             }

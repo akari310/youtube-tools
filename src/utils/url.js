@@ -1549,6 +1549,8 @@
             return null;
         }
 
+        let audioCtx, analyser, bufferLength, dataArray, smoothedData, canvas, ctx, controlPanel, source, waveStyle;
+
         function updateCanvasSize() {
             if (canvas) {
                 canvas.width = Math.floor(window.innerWidth / 2);

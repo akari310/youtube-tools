@@ -1969,7 +1969,7 @@ async function videoDislike() {
 
 // dislikes shorts + views button (viewCount from Return YouTube Dislike API)
 async function shortDislike() {
-    validoUrl = document.location.href;
+    let validoUrl = document.location.href;
     const validoVentanaShort = $m(
         "#button-bar > reel-action-bar-view-model > dislike-button-view-model > toggle-button-view-model > button-view-model > label > div > span"
     );

@@ -2225,7 +2225,7 @@ async function videoDislike() {
 
 // dislikes shorts + views button (viewCount from Return YouTube Dislike API)
 async function shortDislike() {
-    validoUrl = document.location.href;
+    let validoUrl = document.location.href;
     const validoVentanaShort = $m(
         "#button-bar > reel-action-bar-view-model > dislike-button-view-model > toggle-button-view-model > button-view-model > label > div > span"
     );
@@ -7159,7 +7159,7 @@ class YTAmbilightWebGL {
         
         // Changed default blur to 0 so the user can see the sharp rays by default
         let blur = 0;
-        let spread = 1.0;
+
         let opacity = 0.8;
         let edgeFade = 0;
         
@@ -7169,7 +7169,7 @@ class YTAmbilightWebGL {
                 this.cachedSettings = settings; // Cache for shader loop
                 
                 if (settings.ambiBlur !== undefined) blur = settings.ambiBlur;
-                if (settings.ambiSpread !== undefined) spread = 1.0 + (settings.ambiSpread / 100);
+
                 if (settings.ambiOpacity !== undefined) opacity = settings.ambiOpacity / 100;
                 if (settings.ambiEdgeFade !== undefined) edgeFade = settings.ambiEdgeFade;
             }
@@ -9954,6 +9954,8 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             }
             return null;
         }
+
+        let audioCtx, analyser, bufferLength, dataArray, smoothedData, canvas, ctx, controlPanel, source, waveStyle;
 
         function updateCanvasSize() {
             if (canvas) {
