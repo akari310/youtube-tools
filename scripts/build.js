@@ -21,6 +21,7 @@ async function build() {
         'ui/buttons.js',
         'utils/downloader.js',
         'features/cinema.js',
+        'features/ambilight.js',
         'main/observers.js',
         'main/manager.js',
         'utils/url.js',
