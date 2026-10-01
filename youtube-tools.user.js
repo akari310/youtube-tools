@@ -8421,6 +8421,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     }
 
     // Function to apply settings
+let audioCtx, analyser, bufferLength, dataArray, smoothedData, canvas, ctx, controlPanel, source, waveStyle;
     function applySettings() {
         const formulariodescarga = $e('.formulariodescarga');
         const formulariodescargaaudio = $e('.formulariodescargaaudio');
@@ -9983,7 +9984,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             return null;
         }
 
-        let audioCtx, analyser, bufferLength, dataArray, smoothedData, canvas, ctx, controlPanel, source, waveStyle;
+        
 
         function updateCanvasSize() {
             if (canvas) {

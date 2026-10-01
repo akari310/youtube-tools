@@ -1,3 +1,4 @@
+let audioCtx, analyser, bufferLength, dataArray, smoothedData, canvas, ctx, controlPanel, source, waveStyle;
     function applySettings() {
         const formulariodescarga = $e('.formulariodescarga');
         const formulariodescargaaudio = $e('.formulariodescargaaudio');
@@ -1516,7 +1517,7 @@
             return null;
         }
 
-        let audioCtx, analyser, bufferLength, dataArray, smoothedData, canvas, ctx, controlPanel, source, waveStyle;
+        
 
         function updateCanvasSize() {
             if (canvas) {
