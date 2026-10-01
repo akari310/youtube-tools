@@ -7452,6 +7452,8 @@ class YTAmbilightWebGL {
         if (overflowFix) {
             overflowFix.remove();
         }
+        const ytmTransparentFix = document.getElementById("ambilight-ytm-transparent-fix");
+        if (ytmTransparentFix) ytmTransparentFix.remove();
         if (this.gl) {
             this.gl.deleteTexture(this.texture);
             this.gl.deleteBuffer(this.positionBuffer);
