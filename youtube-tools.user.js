@@ -11229,4 +11229,3 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     }
 
 })();
-

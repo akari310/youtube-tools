@@ -42,7 +42,7 @@ async function build() {
         totalFiles += 1;
     }
 
-    await fs.writeFile(outputFile, combinedContent, 'utf8');
+    await fs.writeFile(outputFile, combinedContent.trimEnd() + '\n', 'utf8');
     console.log(`Successfully built ${outputFile} from ${totalFiles} files.`);
 
 }
