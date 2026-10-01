@@ -9,6 +9,11 @@
               --text-custom-secondary: #9e9e9e !important;
               --accent-custom: #ff4444 !important;
           }
+        .ambi-disabled-mdcm {
+            opacity: 0.4 !important;
+            pointer-events: none !important;
+            filter: grayscale(100%);
+        }
         #panel-overlay {
             display: none;
             position: fixed;

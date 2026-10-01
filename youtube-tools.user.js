@@ -2606,6 +2606,11 @@ window.addEventListener('yt-navigate-finish', () => {
               --text-custom-secondary: #9e9e9e !important;
               --accent-custom: #ff4444 !important;
           }
+        .ambi-disabled-mdcm {
+            opacity: 0.4 !important;
+            pointer-events: none !important;
+            filter: grayscale(100%);
+        }
         #panel-overlay {
             display: none;
             position: fixed;
@@ -8486,6 +8491,17 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
         // Initialize header buttons
         initializeHeaderButtons();
+
+        // Toggle disabled state of Ambilight Settings
+        const ambiContainer = document.querySelector('#ambilight .options-mdcm');
+        if (ambiContainer) {
+            const isAmbiEnabled = settings.cinematicLighting || settings.syncCinematic;
+            if (isAmbiEnabled) {
+                ambiContainer.classList.remove('ambi-disabled-mdcm');
+            } else {
+                ambiContainer.classList.add('ambi-disabled-mdcm');
+            }
+        }
 
 
 

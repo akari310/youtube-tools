@@ -73,6 +73,17 @@
         // Initialize header buttons
         initializeHeaderButtons();
 
+        // Toggle disabled state of Ambilight Settings
+        const ambiContainer = document.querySelector('#ambilight .options-mdcm');
+        if (ambiContainer) {
+            const isAmbiEnabled = settings.cinematicLighting || settings.syncCinematic;
+            if (isAmbiEnabled) {
+                ambiContainer.classList.remove('ambi-disabled-mdcm');
+            } else {
+                ambiContainer.classList.add('ambi-disabled-mdcm');
+            }
+        }
+
 
 
         // Hide comments (YT only)
