@@ -24,9 +24,9 @@
 // @description:ko 고품질 비디오/오디오 다운로드, 싫어요 표시, YouTube 및 YouTube Music을 위한 더 많은 VIP 기능.
 // @description:it Scarica video/audio di alta qualità, ripristina i dislike e altre funzioni VIP per YouTube e YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.7.0
+// @version      0.0.6.0
 // @author       Akari, DeveloperMDCM
-// @contributor  nvbangg, WesselKroos (youtube-ambilight / ambient-light-for-youtube)
+// @contributor  nvbangg
 // @match        *://www.youtube.com/*
 // @match        *://music.youtube.com/*
 // @match        *://*.music.youtube.com/*
@@ -39,14 +39,7 @@
 // @grant        unsafeWindow
 // @run-at       document-end
 // @grant        GM_registerMenuCommand
-// @grant        GM_xmlhttpRequest
-// @grant        GM_download
-// @connect      p.savenow.to
-// @connect      p.lbserver.xyz
-// @connect      dubs.io
-// @connect      *
 // @require      https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js
-// @require      https://cdn.jsdelivr.net/npm/browser-id3-writer@4.4.0/dist/browser-id3-writer.min.js
 // @compatible   chrome
 // @compatible   firefox
 // @compatible   opera
@@ -62,7 +55,7 @@
     'use strict';
     let validoUrl = document.location.href;
     const isYTMusic = location.hostname === 'music.youtube.com';
-    const SETTINGS_KEY = 'ytSettingsMDCM'; // Unified settings for both YTB and YTM
+    const SETTINGS_KEY = isYTMusic ? 'ytmSettingsMDCM' : 'ytSettingsMDCM';
     const $e = (el) => document.querySelector(el); // any element
     const $id = (el) => document.getElementById(el); // element by id
     const $m = (el) => document.querySelectorAll(el); // multiple all elements
@@ -75,7 +68,7 @@
     let selectedTextColor = "#ffffff"; // Text color menu default
     let selectedBgAccentColor = "#ff0000"; // Accent color menu default
     const urlSharedCode = "https://greasyfork.org/scripts/576162-youtube-ultimate-tools";
-    const API_URL_AUDIO_VIDEO = "https://p.savenow.to/ajax/download.php?copyright=0&allow_extended_duration=1&"; // API URL AUDIO VIDEO
+    const API_URL_AUDIO_VIDEO = "https://p.savenow.to/ajax/download.php?copyright=0&allow_extended_duration=1&" // API URL AUDIO VIDEO
     const API_KEY_DEVELOPERMDCM = 'dfcb6d76f2f6a9894gjkege8a4ab232222'; // API KEY FOR DOWNLOAD AUDIO VIDEO
     // Download API fallbacks (region/session issues)
     const DOWNLOAD_API_FALLBACK_BASES = [
@@ -120,9 +113,9 @@
     let dataArray = null;
     let smoothedData = [];
     let isSetup = false;
-    const smoothingFactor = 0.12;
-    const canvasHeight = 480;
-    const scale = canvasHeight / 120;
+    const smoothingFactor = 0.05;
+    const canvasHeight = 240;
+    const scale = canvasHeight / 90;
 
     const PROCESSED_FLAG = 'wave_visualizer_processed';
 
@@ -254,2037 +247,1942 @@
         };
     })();
 
-// Create a Trusted Types policy
-let policy = null;
-try {
-    const tt = (typeof unsafeWindow !== 'undefined' ? unsafeWindow.trustedTypes : window.trustedTypes);
-    if (tt) {
-        try {
-            policy = tt.createPolicy('yt-tools-mdcm', {
-                createHTML: (s) => s
-            });
-        } catch (e) {
-            policy = tt.defaultPolicy || null;
-        }
-    }
-} catch (e) {
-    policy = null;
-}
 
-function safeHTML(str) {
-    if (policy && typeof policy.createHTML === 'function') return policy.createHTML(str);
-    return str;
-}
-// ------------------------------
-// Feature helpers: videoId / channelId / storage
-
-// ------------------------------
-const STORAGE_KEYS_MDCM = {
-    BOOKMARKS: 'ytBookmarksMDCM',
-    CONTINUE_WATCHING: 'ytContinueWatchingMDCM',
-    SHORTS_CHANNEL_CACHE: 'ytShortsChannelCacheMDCM',
-    LIKES_DISLIKES_CACHE: 'ytLikesDislikesCacheMDCM',
-    VERSION_CHECK_LAST: 'ytVersionCheckLastMDCM',
-};
-
-const UPDATE_META_URL = 'https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.meta.js';
-const VERSION_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // once per day
-
-const SHORTS_CHANNEL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const LIKES_DISLIKES_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const PERSISTED_CACHE_MAX_ENTRIES = 500;
-
-function getShortsChannelFromPersistedCache(videoId) {
+    // Create a Trusted Types policy
+    let policy = null;
     try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.SHORTS_CHANNEL_CACHE, {});
-        const entry = map?.[videoId];
-        if (!entry || typeof entry.channelName !== 'string') return null;
-        const age = Date.now() - (Number(entry.ts) || 0);
-        if (age > SHORTS_CHANNEL_TTL_MS) return null;
-        return entry.channelName;
-    } catch (e) {
-        return null;
-    }
-}
-
-function setShortsChannelToPersistedCache(videoId, channelName) {
-    if (!videoId || typeof channelName !== 'string') return;
-    try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.SHORTS_CHANNEL_CACHE, {});
-        map[videoId] = {
-            channelName,
-            ts: Date.now()
-        };
-        const entries = Object.entries(map).sort((a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0));
-        const pruned = Object.fromEntries(entries.slice(0, PERSISTED_CACHE_MAX_ENTRIES));
-        writeJsonGM(STORAGE_KEYS_MDCM.SHORTS_CHANNEL_CACHE, pruned);
-    } catch (e) { }
-}
-
-function getLikesDislikesFromPersistedCache(videoId) {
-    try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
-        const entry = map?.[videoId];
-        if (!entry) return null;
-        const age = Date.now() - (Number(entry.ts) || 0);
-        if (age > LIKES_DISLIKES_TTL_MS) return null;
-        const dislikes = Number(entry.dislikes);
-        const likes = Number(entry.likes);
-        const viewCount = Number(entry.viewCount);
-        const rating = Number(entry.rating);
-        return {
-            likes: Number.isFinite(likes) ? likes : null,
-            dislikes: Number.isFinite(dislikes) ? dislikes : null,
-            viewCount: Number.isFinite(viewCount) ? viewCount : null,
-            rating: Number.isFinite(rating) && rating >= 0 && rating <= 5 ? rating : null,
-        };
-    } catch (e) {
-        return null;
-    }
-}
-
-function setLikesDislikesToPersistedCache(videoId, likes, dislikes, viewCount, rating) {
-    if (!videoId) return;
-    try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
-        map[videoId] = {
-            likes: likes ?? null,
-            dislikes: dislikes ?? null,
-            viewCount: viewCount ?? null,
-            rating: rating ?? null,
-            ts: Date.now()
-        };
-        const entries = Object.entries(map).sort((a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0));
-        const pruned = Object.fromEntries(entries.slice(0, Math.min(PERSISTED_CACHE_MAX_ENTRIES, 300)));
-        writeJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, pruned);
-    } catch (e) { }
-}
-
-function getCurrentVideoId() {
-    try {
-        if (location.pathname.startsWith('/shorts/')) {
-            const parts = location.pathname.split('/').filter(Boolean);
-            return parts[1] || null;
-        }
-        if (location.href.includes('youtube.com/watch')) {
-            return paramsVideoURL();
-        }
-        return null;
-    } catch (e) {
-        return null;
-    }
-}
-
-
-function readJsonGM(key, fallback) {
-    try {
-        const raw = GM_getValue(key, '');
-        if (!raw) return fallback;
-        return JSON.parse(raw);
-    } catch (e) {
-        return fallback;
-    }
-}
-
-function writeJsonGM(key, value) {
-    try {
-        GM_setValue(key, JSON.stringify(value));
-    } catch (e) {
-        console.error('writeJsonGM error:', e);
-    }
-}
-
-const AUDIO_ONLY_TAB_OVERRIDE_KEY = 'ytToolsAudioOnlyTabOverrideMDCM';
-
-// Feature source/inspiration:
-// Nonstop & Audio Only for YouTube & YouTube Music
-// Author: nvbangg / Nguyen Van Bang
-// Repo: https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic
-// Greasy Fork: https://greasyfork.org/scripts/546130
-// Source license: GPL-3.0. This userscript implements an independent adaptation of the behavior.
-function applyNonstopPlayback(enabled) {
-    const rt = __ytToolsRuntime.nonstopPlayback;
-    if (enabled && rt.enabled) return;
-    if (!enabled && !rt.enabled) return;
-
-    if (enabled) {
-        rt.enabled = true;
-        rt.hiddenDescriptor = Object.getOwnPropertyDescriptor(document, 'hidden') || null;
-        rt.visibilityStateDescriptor = Object.getOwnPropertyDescriptor(document, 'visibilityState') || null;
-        try {
-            Object.defineProperties(document, {
-                hidden: { configurable: true, get: () => false },
-                visibilityState: { configurable: true, get: () => 'visible' },
-            });
-        } catch (e) {
-            console.warn('[YT Tools] Could not override visibility state:', e);
-        }
-
-        rt.blockVisibilityEvent = (event) => {
-            event.stopImmediatePropagation();
-        };
-        document.addEventListener('visibilitychange', rt.blockVisibilityEvent, true);
-        window.addEventListener('visibilitychange', rt.blockVisibilityEvent, true);
-
-        const refreshActivity = () => {
+        const tt = (typeof unsafeWindow !== 'undefined' ? unsafeWindow.trustedTypes : window.trustedTypes);
+        if (tt) {
             try {
-                const pageWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
-                if ('_lact' in pageWindow) pageWindow._lact = Date.now();
-            } catch (e) { }
-        };
-        refreshActivity();
-        rt.keepAliveTimer = setInterval(refreshActivity, 60000);
-        return;
+                policy = tt.createPolicy('yt-tools-mdcm', {
+                    createHTML: (s) => s
+                });
+            } catch (e) {
+                policy = tt.defaultPolicy || null;
+            }
+        }
+    } catch (e) {
+        policy = null;
     }
 
-    rt.enabled = false;
-    if (rt.blockVisibilityEvent) {
-        document.removeEventListener('visibilitychange', rt.blockVisibilityEvent, true);
-        window.removeEventListener('visibilitychange', rt.blockVisibilityEvent, true);
-        rt.blockVisibilityEvent = null;
+    function safeHTML(str) {
+        if (policy && typeof policy.createHTML === 'function') return policy.createHTML(str);
+        return str;
     }
-    if (rt.keepAliveTimer) {
-        clearInterval(rt.keepAliveTimer);
-        rt.keepAliveTimer = null;
+    // ------------------------------
+    // Feature helpers: videoId / channelId / storage
+
+    // ------------------------------
+    const STORAGE_KEYS_MDCM = {
+        BOOKMARKS: 'ytBookmarksMDCM',
+        CONTINUE_WATCHING: 'ytContinueWatchingMDCM',
+        SHORTS_CHANNEL_CACHE: 'ytShortsChannelCacheMDCM',
+        LIKES_DISLIKES_CACHE: 'ytLikesDislikesCacheMDCM',
+        VERSION_CHECK_LAST: 'ytVersionCheckLastMDCM',
+    };
+
+    const UPDATE_META_URL = 'https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.meta.js';
+    const VERSION_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // once per day
+
+    const SHORTS_CHANNEL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const LIKES_DISLIKES_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const PERSISTED_CACHE_MAX_ENTRIES = 500;
+
+    function getShortsChannelFromPersistedCache(videoId) {
+        try {
+            const map = readJsonGM(STORAGE_KEYS_MDCM.SHORTS_CHANNEL_CACHE, {});
+            const entry = map?.[videoId];
+            if (!entry || typeof entry.channelName !== 'string') return null;
+            const age = Date.now() - (Number(entry.ts) || 0);
+            if (age > SHORTS_CHANNEL_TTL_MS) return null;
+            return entry.channelName;
+        } catch (e) {
+            return null;
+        }
     }
-    try {
-        if (rt.hiddenDescriptor) Object.defineProperty(document, 'hidden', rt.hiddenDescriptor);
-        else delete document.hidden;
-        if (rt.visibilityStateDescriptor) Object.defineProperty(document, 'visibilityState', rt.visibilityStateDescriptor);
-        else delete document.visibilityState;
-    } catch (e) { }
-    rt.hiddenDescriptor = null;
-    rt.visibilityStateDescriptor = null;
-}
 
-function getAudioOnlyTabOverride() {
-    const value = sessionStorage.getItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return null;
-}
-
-function setAudioOnlyTabOverride(enabled, defaultEnabled) {
-    if (!!enabled === !!defaultEnabled) {
-        sessionStorage.removeItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
-        return;
+    function setShortsChannelToPersistedCache(videoId, channelName) {
+        if (!videoId || typeof channelName !== 'string') return;
+        try {
+            const map = readJsonGM(STORAGE_KEYS_MDCM.SHORTS_CHANNEL_CACHE, {});
+            map[videoId] = {
+                channelName,
+                ts: Date.now()
+            };
+            const entries = Object.entries(map).sort((a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0));
+            const pruned = Object.fromEntries(entries.slice(0, PERSISTED_CACHE_MAX_ENTRIES));
+            writeJsonGM(STORAGE_KEYS_MDCM.SHORTS_CHANNEL_CACHE, pruned);
+        } catch (e) { }
     }
-    sessionStorage.setItem(AUDIO_ONLY_TAB_OVERRIDE_KEY, enabled ? 'true' : 'false');
-}
 
-function getEffectiveAudioOnly(settings) {
-    const override = getAudioOnlyTabOverride();
-    return override === null ? !!settings?.audioOnly : override;
-}
+    function getLikesDislikesFromPersistedCache(videoId) {
+        try {
+            const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
+            const entry = map?.[videoId];
+            if (!entry) return null;
+            const age = Date.now() - (Number(entry.ts) || 0);
+            if (age > LIKES_DISLIKES_TTL_MS) return null;
+            const dislikes = Number(entry.dislikes);
+            const likes = Number(entry.likes);
+            const viewCount = Number(entry.viewCount);
+            const rating = Number(entry.rating);
+            return {
+                likes: Number.isFinite(likes) ? likes : null,
+                dislikes: Number.isFinite(dislikes) ? dislikes : null,
+                viewCount: Number.isFinite(viewCount) ? viewCount : null,
+                rating: Number.isFinite(rating) && rating >= 0 && rating <= 5 ? rating : null,
+            };
+        } catch (e) {
+            return null;
+        }
+    }
 
-function syncAudioOnlyTabCheckbox(settings) {
-    const tabToggle = $id('audio-only-tab-toggle');
-    if (!tabToggle) return;
+    function setLikesDislikesToPersistedCache(videoId, likes, dislikes, viewCount, rating) {
+        if (!videoId) return;
+        try {
+            const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
+            map[videoId] = {
+                likes: likes ?? null,
+                dislikes: dislikes ?? null,
+                viewCount: viewCount ?? null,
+                rating: rating ?? null,
+                ts: Date.now()
+            };
+            const entries = Object.entries(map).sort((a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0));
+            const pruned = Object.fromEntries(entries.slice(0, Math.min(PERSISTED_CACHE_MAX_ENTRIES, 300)));
+            writeJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, pruned);
+        } catch (e) { }
+    }
 
-    const isGlobalOn = !!settings?.audioOnly;
-    if (isGlobalOn) {
-        tabToggle.checked = true;
-        tabToggle.disabled = true;
-        if (tabToggle.parentElement) tabToggle.parentElement.style.opacity = '0.5';
-        tabToggle.title = 'Global Audio-only mode is ON';
-    } else {
+    function getCurrentVideoId() {
+        try {
+            if (location.pathname.startsWith('/shorts/')) {
+                const parts = location.pathname.split('/').filter(Boolean);
+                return parts[1] || null;
+            }
+            if (location.href.includes('youtube.com/watch')) {
+                return paramsVideoURL();
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+
+    function readJsonGM(key, fallback) {
+        try {
+            const raw = GM_getValue(key, '');
+            if (!raw) return fallback;
+            return JSON.parse(raw);
+        } catch (e) {
+            return fallback;
+        }
+    }
+
+    function writeJsonGM(key, value) {
+        try {
+            GM_setValue(key, JSON.stringify(value));
+        } catch (e) {
+            console.error('writeJsonGM error:', e);
+        }
+    }
+
+    const AUDIO_ONLY_TAB_OVERRIDE_KEY = 'ytToolsAudioOnlyTabOverrideMDCM';
+
+    // Feature source/inspiration:
+    // Nonstop & Audio Only for YouTube & YouTube Music
+    // Author: nvbangg / Nguyen Van Bang
+    // Repo: https://github.com/nvbangg/Nonstop_Audio_Only_for_Youtube_YTMusic
+    // Greasy Fork: https://greasyfork.org/scripts/546130
+    // Source license: GPL-3.0. This userscript implements an independent adaptation of the behavior.
+    function applyNonstopPlayback(enabled) {
+        const rt = __ytToolsRuntime.nonstopPlayback;
+        if (enabled && rt.enabled) return;
+        if (!enabled && !rt.enabled) return;
+
+        if (enabled) {
+            rt.enabled = true;
+            rt.hiddenDescriptor = Object.getOwnPropertyDescriptor(document, 'hidden') || null;
+            rt.visibilityStateDescriptor = Object.getOwnPropertyDescriptor(document, 'visibilityState') || null;
+            try {
+                Object.defineProperties(document, {
+                    hidden: { configurable: true, get: () => false },
+                    visibilityState: { configurable: true, get: () => 'visible' },
+                });
+            } catch (e) {
+                console.warn('[YT Tools] Could not override visibility state:', e);
+            }
+
+            rt.blockVisibilityEvent = (event) => {
+                event.stopImmediatePropagation();
+            };
+            document.addEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+            window.addEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+
+            const refreshActivity = () => {
+                try {
+                    const pageWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+                    if ('_lact' in pageWindow) pageWindow._lact = Date.now();
+                } catch (e) { }
+            };
+            refreshActivity();
+            rt.keepAliveTimer = setInterval(refreshActivity, 60000);
+            return;
+        }
+
+        rt.enabled = false;
+        if (rt.blockVisibilityEvent) {
+            document.removeEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+            window.removeEventListener('visibilitychange', rt.blockVisibilityEvent, true);
+            rt.blockVisibilityEvent = null;
+        }
+        if (rt.keepAliveTimer) {
+            clearInterval(rt.keepAliveTimer);
+            rt.keepAliveTimer = null;
+        }
+        try {
+            if (rt.hiddenDescriptor) Object.defineProperty(document, 'hidden', rt.hiddenDescriptor);
+            else delete document.hidden;
+            if (rt.visibilityStateDescriptor) Object.defineProperty(document, 'visibilityState', rt.visibilityStateDescriptor);
+            else delete document.visibilityState;
+        } catch (e) { }
+        rt.hiddenDescriptor = null;
+        rt.visibilityStateDescriptor = null;
+    }
+
+    function getAudioOnlyTabOverride() {
+        const value = sessionStorage.getItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return null;
+    }
+
+    function setAudioOnlyTabOverride(enabled, defaultEnabled) {
+        if (!!enabled === !!defaultEnabled) {
+            sessionStorage.removeItem(AUDIO_ONLY_TAB_OVERRIDE_KEY);
+            return;
+        }
+        sessionStorage.setItem(AUDIO_ONLY_TAB_OVERRIDE_KEY, enabled ? 'true' : 'false');
+    }
+
+    function getEffectiveAudioOnly(settings) {
+        const override = getAudioOnlyTabOverride();
+        return override === null ? !!settings?.audioOnly : override;
+    }
+
+    function syncAudioOnlyTabCheckbox(settings) {
+        const tabToggle = $id('audio-only-tab-toggle');
+        if (!tabToggle) return;
         tabToggle.checked = getEffectiveAudioOnly(settings);
-        tabToggle.disabled = false;
-        if (tabToggle.parentElement) tabToggle.parentElement.style.opacity = '1';
         tabToggle.title = getAudioOnlyTabOverride() === null ?
             'Following the global Audio-only mode setting' :
             'Audio-only override is active for this browser tab';
     }
-}
 
-function getActiveAudioOnlyVideo() {
-    if (typeof isYTMusic !== 'undefined' && isYTMusic) {
-        return document.querySelector('#song-video video') || document.querySelector('video') || null;
-    }
-    const videos = Array.from(document.querySelectorAll('video'));
-    return videos.find((video) => {
-        const rect = video.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0;
-    }) || videos[0] || null;
-}
-
-async function getAudioOnlyThumbnailUrl() {
-    if (typeof isYTMusic !== 'undefined' && isYTMusic) {
-        const thumbImg = document.querySelector('#song-image img#img') || document.querySelector('ytmusic-player-page img');
-        if (thumbImg && thumbImg.src && thumbImg.src.startsWith('http')) return thumbImg.src;
+    function getActiveAudioOnlyVideo() {
+        const videos = Array.from(document.querySelectorAll('video'));
+        if (isYTMusic) return videos[0] || null;
+        return videos.find((video) => {
+            const rect = video.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+        }) || videos[0] || null;
     }
 
-    try {
-        const moviePlayer = document.getElementById('movie_player');
-        if (moviePlayer && typeof moviePlayer.getVideoData === 'function') {
-            const data = moviePlayer.getVideoData();
-            if (data?.video_id) return `https://i.ytimg.com/vi/${data.video_id}/hqdefault.jpg`;
-        }
-    } catch (e) { }
+    async function getAudioOnlyThumbnailUrl() {
+        try {
+            const moviePlayer = document.getElementById('movie_player');
+            if (moviePlayer && typeof moviePlayer.getVideoData === 'function') {
+                const data = moviePlayer.getVideoData();
+                if (data?.video_id) return `https://i.ytimg.com/vi/${data.video_id}/hqdefault.jpg`;
+            }
+        } catch (e) { }
 
-    const videoId = getCurrentVideoId() || paramsVideoURL();
-    if (!videoId) return '';
-    return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-}
+        const videoId = getCurrentVideoId() || paramsVideoURL();
+        if (!videoId) return '';
+        const host = isYTMusic ? 'i1.ytimg.com' : 'img.youtube.com';
+        return `https://${host}/vi/${videoId}/hqdefault.jpg`;
+    }
 
-async function applyAudioOnlyMode(enabled) {
-    const rt = __ytToolsRuntime.audioOnly;
-    rt.enabled = !!enabled;
-    document.body.classList.toggle('yt-tools-audio-only-active', rt.enabled);
-
-    try {
-        const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-        let changed = false;
+    async function applyAudioOnlyMode(enabled) {
+        const rt = __ytToolsRuntime.audioOnly;
+        rt.enabled = !!enabled;
+        document.body.classList.toggle('yt-tools-audio-only-active', rt.enabled);
 
         if (rt.enabled) {
-            // SAVE PREVIOUS STATES
-            rt.prevCinematic = settings.cinematicLighting || false;
-            rt.prevSync = settings.syncCinematic || false;
-
-            // TURN OFF CINEMATIC
-            const cinToggle = document.getElementById('cinematic-lighting-toggle');
-            if (cinToggle) {
+            try {
+                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+                let changed = false;
+                
                 if (settings.cinematicLighting) {
                     settings.cinematicLighting = false;
                     changed = true;
-                    cinToggle.checked = false;
+                    const toggle = document.getElementById('cinematic-lighting-toggle');
+                    if (toggle) toggle.checked = false;
+                    if (typeof toggleCinematicLighting === 'function') {
+                        toggleCinematicLighting(false);
+                    }
                 }
-            }
-
-            // TURN OFF AMBILIGHT (sync-cinematic-toggle)
-            const syncToggle = document.getElementById('sync-cinematic-toggle');
-            if (syncToggle) {
-                if (settings.syncCinematic) {
-                    settings.syncCinematic = false;
+                
+                if (settings.ambiEnabled !== false) {
+                    settings.ambiEnabled = false;
                     changed = true;
-                    syncToggle.checked = false;
+                    const toggle = document.getElementById('ambiEnabled');
+                    if (toggle) toggle.checked = false;
                 }
-            }
-
-            // Programmatically cleanup Ambilight + Cinematic since we bypass events
-            if (window.ytmAmbilightWebGL) {
-                window.ytmAmbilightWebGL.cleanup();
-            }
-            const cinematicDiv = document.getElementById('cinematics');
-            if (cinematicDiv) cinematicDiv.style.display = 'none';
-
-        } else {
-            // RESTORE PREVIOUS STATES IF THEY WERE ON
-            const cinToggle = document.getElementById('cinematic-lighting-toggle');
-            if (cinToggle) {
-                if (rt.prevCinematic) {
-                    settings.cinematicLighting = true;
-                    changed = true;
-                    cinToggle.checked = true;
+                
+                if (changed) {
+                    GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
                 }
+            } catch (e) { console.error('Error disabling ambient/cinematic modes:', e); }
+        }
+
+        document.querySelectorAll('.yt-tools-audio-only-video').forEach((el) => el.classList.remove('yt-tools-audio-only-video'));
+        document.querySelectorAll('.yt-tools-audio-only-player').forEach((el) => el.classList.remove('yt-tools-audio-only-player'));
+
+        if (!rt.enabled) {
+            rt.lastArtUrl = '';
+            setAudioOnlyBackground('');
+            if (rt.refreshTimer) {
+                clearInterval(rt.refreshTimer);
+                rt.refreshTimer = null;
             }
-            const syncToggle = document.getElementById('sync-cinematic-toggle');
-            if (syncToggle) {
-                if (rt.prevSync) {
-                    settings.syncCinematic = true;
-                    changed = true;
-                    syncToggle.checked = true;
-                    // Re-setup Ambilight WebGL after restoring
-                    setTimeout(() => {
-                        if (window.ytmAmbilightWebGL) {
-                            window.ytmAmbilightWebGL.setup(document.querySelector('video'));
-                        }
-                    }, 300);
-                }
-            }
-            rt.prevCinematic = false;
-            rt.prevSync = false;
+            return;
         }
 
-        if (changed) {
-            GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+        const video = getActiveAudioOnlyVideo();
+        const player = video?.parentNode?.parentNode || video?.parentElement || null;
+        if (video) video.classList.add('yt-tools-audio-only-video');
+        if (player) player.classList.add('yt-tools-audio-only-player');
+
+        const artUrl = await getAudioOnlyThumbnailUrl();
+        if (artUrl && artUrl !== rt.lastArtUrl) {
+            rt.lastArtUrl = artUrl;
+            setAudioOnlyBackground(artUrl);
         }
-    } catch (e) { console.error('Error managing ambient/cinematic modes:', e); }
 
-    document.querySelectorAll('.yt-tools-audio-only-video').forEach((el) => el.classList.remove('yt-tools-audio-only-video'));
-    document.querySelectorAll('.yt-tools-audio-only-player').forEach((el) => el.classList.remove('yt-tools-audio-only-player'));
-
-    if (!rt.enabled) {
-        rt.lastArtUrl = '';
-        setAudioOnlyBackground('');
-        if (rt.refreshTimer) {
-            clearInterval(rt.refreshTimer);
-            rt.refreshTimer = null;
-        }
-        return;
-    }
-
-    const video = getActiveAudioOnlyVideo();
-    let player = video?.closest('.html5-video-player') || null;
-    
-    if (video) video.classList.add('yt-tools-audio-only-video');
-    if (player) {
-        player.classList.add('yt-tools-audio-only-player');
-        if (typeof isYTMusic !== 'undefined' && isYTMusic) {
-            const container = video?.parentElement;
-            if (container) container.classList.add('yt-tools-audio-only-player');
+        if (!rt.refreshTimer) {
+            rt.refreshTimer = setInterval(() => {
+                if (document.visibilityState !== 'visible') return;
+                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+                applyAudioOnlyMode(getEffectiveAudioOnly(settings));
+            }, 3000);
         }
     }
 
-    const artUrl = await getAudioOnlyThumbnailUrl();
-    if (artUrl && artUrl !== rt.lastArtUrl) {
-        rt.lastArtUrl = artUrl;
-        setAudioOnlyBackground(artUrl);
+    function setAudioOnlyBackground(url) {
+        let style = $id('yt-tools-audio-only-style');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'yt-tools-audio-only-style';
+            document.documentElement.appendChild(style);
+        }
+        style.textContent = url ? `.yt-tools-audio-only-player{background-image:url("${url}")!important;}` : '';
     }
 
-    if (!rt.refreshTimer) {
-        rt.refreshTimer = setInterval(() => {
-            if (document.visibilityState !== 'visible') return;
-            const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-            applyAudioOnlyMode(getEffectiveAudioOnly(settings));
-        }, 3000);
+    function isVersionNewer(latestStr, currentStr) {
+        if (!latestStr || !currentStr) return false;
+        const parse = (s) => String(s).trim().split('.').map((n) => parseInt(n, 10) || 0);
+        const a = parse(latestStr);
+        const b = parse(currentStr);
+        const len = Math.max(a.length, b.length);
+        for (let i = 0; i < len; i++) {
+            const x = a[i] || 0;
+            const y = b[i] || 0;
+            if (x > y) return true;
+            if (x < y) return false;
+        }
+        return false;
     }
-}
 
-function setAudioOnlyBackground(url) {
-    let style = $id('yt-tools-audio-only-style');
-    if (!style) {
-        style = document.createElement('style');
-        style.id = 'yt-tools-audio-only-style';
-        document.documentElement.appendChild(style);
-    }
-    style.textContent = url ? `.yt-tools-audio-only-player{background-image:url("${url}")!important;}` : '';
-}
-
-function isVersionNewer(latestStr, currentStr) {
-    if (!latestStr || !currentStr) return false;
-    const parse = (s) => String(s).trim().split('.').map((n) => parseInt(n, 10) || 0);
-    const a = parse(latestStr);
-    const b = parse(currentStr);
-    const len = Math.max(a.length, b.length);
-    for (let i = 0; i < len; i++) {
-        const x = a[i] || 0;
-        const y = b[i] || 0;
-        if (x > y) return true;
-        if (x < y) return false;
-    }
-    return false;
-}
-
-async function checkNewVersion() {
-    try {
-        const last = GM_getValue(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, 0);
-        if (Date.now() - last < VERSION_CHECK_INTERVAL_MS) return;
-        GM_setValue(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, Date.now());
-
-        const res = await fetch(UPDATE_META_URL, {
-            cache: 'no-store'
-        });
-        if (!res.ok) return;
-        const text = await res.text();
-        const m = text.match(/@version\s+([\d.]+)/);
-        if (!m) return;
-        const latestVer = m[1].trim();
-        const currentVer = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) ?
-            String(GM_info.script.version).trim() :
-            '';
-        if (!currentVer || !isVersionNewer(latestVer, currentVer)) return;
-
-        const updateUrl = 'https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.user.js';
-        iziToast.show({
-            title: 'New Update',
-            message: 'A new version YoutubeTools is available.',
-            buttons: [
-                ['<button>View Now</button>', function (instance, toast) {
-                    window.open(updateUrl, '_blank');
-                    instance.hide({
-                        transitionOut: 'fadeOut'
-                    }, toast, 'button');
-                }, true] // true = focus
-            ]
-        });
-    } catch (e) {
-        // silent: network or parse error
-    }
-}
-
-function formatTimeShort(sec) {
-    const s = Math.max(0, Math.floor(Number(sec) || 0));
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const r = s % 60;
-    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
-}
-
-
-
-
-// ------------------------------
-// Feature: History / Continue watching (per video)
-
-// ------------------------------
-function getMainVideoEl() {
-    return (
-        document.querySelector('#movie_player video.video-stream.html5-main-video') ||
-        document.querySelector('ytd-player video.video-stream.html5-main-video') ||
-        document.querySelector('video.video-stream.html5-main-video') ||
-        document.querySelector('video')
-    );
-}
-
-function getCurrentVideoMeta() {
-    try {
-        // DOM first (updates earlier on SPA navigation)
-        const domTitle =
-            $e('ytd-watch-metadata h1 yt-formatted-string')?.textContent?.trim() ||
-            $e('h1.ytd-watch-metadata yt-formatted-string')?.textContent?.trim() ||
-            '';
-        const domAuthor =
-            $e('#owner ytd-channel-name a, ytd-video-owner-renderer ytd-channel-name a, #text-container.ytd-channel-name a')?.textContent?.trim() ||
-            $e('#owner a[href^="/@"], #owner a[href^="/channel/"]')?.textContent?.trim() ||
-            '';
-        const titleFromDom = (domTitle || document.title || '').replace(/\s*-\s*YouTube\s*$/i, '').trim();
-        const authorFromDom = (domAuthor || '').trim();
-
-        const w = (typeof unsafeWindow !== 'undefined' && unsafeWindow) ? unsafeWindow : window;
-        const pr = w?.ytInitialPlayerResponse || window.ytInitialPlayerResponse;
-        const vd = pr?.videoDetails || null;
-        const title = (titleFromDom || vd?.title || document.title || '').replace(/\s*-\s*YouTube\s*$/i, '').trim();
-        const author = (authorFromDom || vd?.author || '').trim();
-        const thumbs = vd?.thumbnail?.thumbnails;
-        const thumb = Array.isArray(thumbs) ? (thumbs[thumbs.length - 1]?.url || '') : '';
-        return {
-            title,
-            author,
-            thumb
-        };
-    } catch (e) {
-        return {
-            title: '',
-            author: '',
-            thumb: ''
-        };
-    }
-}
-
-function ensureContinueWatchingMapLoaded() {
-    const rt = __ytToolsRuntime.continueWatching;
-    if (!rt.map) rt.map = readJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, {});
-    if (typeof rt.map !== 'object' || !rt.map) rt.map = {};
-    return rt.map;
-}
-
-function pruneContinueWatchingMap(map, maxEntries = 200) {
-    try {
-        const entries = Object.entries(map || {}).filter(([, v]) => v && typeof v === 'object');
-        entries.sort((a, b) => (Number(b[1].updatedAt) || 0) - (Number(a[1].updatedAt) || 0));
-        const keep = entries.slice(0, maxEntries);
-        const next = {};
-        for (const [k, v] of keep) next[k] = v;
-        return next;
-    } catch (e) {
-        return map || {};
-    }
-}
-
-function scheduleContinueWatchingFlush() {
-    const rt = __ytToolsRuntime.continueWatching;
-    clearTimeout(rt.flushT);
-    rt.flushT = setTimeout(() => {
+    async function checkNewVersion() {
         try {
-            if (!rt.map) return;
-            rt.map = pruneContinueWatchingMap(rt.map, 200);
-            writeJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, rt.map);
-        } catch (e) { }
-    }, 800);
-}
+            const last = GM_getValue(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, 0);
+            if (Date.now() - last < VERSION_CHECK_INTERVAL_MS) return;
+            GM_setValue(STORAGE_KEYS_MDCM.VERSION_CHECK_LAST, Date.now());
 
-function clearContinueWatchingForVideo(videoId) {
-    if (!videoId) return;
-    const rt = __ytToolsRuntime.continueWatching;
-    const map = ensureContinueWatchingMapLoaded();
-    if (map && Object.prototype.hasOwnProperty.call(map, videoId)) {
-        delete map[videoId];
+            const res = await fetch(UPDATE_META_URL, {
+                cache: 'no-store'
+            });
+            if (!res.ok) return;
+            const text = await res.text();
+            const m = text.match(/@version\s+([\d.]+)/);
+            if (!m) return;
+            const latestVer = m[1].trim();
+            const currentVer = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) ?
+                String(GM_info.script.version).trim() :
+                '';
+            if (!currentVer || !isVersionNewer(latestVer, currentVer)) return;
+
+            const updateUrl = 'https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.user.js';
+            iziToast.show({
+                title: 'New Update',
+                message: 'A new version YoutubeTools is available.',
+                buttons: [
+                    ['<button>View Now</button>', function (instance, toast) {
+                        window.open(updateUrl, '_blank');
+                        instance.hide({
+                            transitionOut: 'fadeOut'
+                        }, toast, 'button');
+                    }, true] // true = focus
+                ]
+            });
+        } catch (e) {
+            // silent: network or parse error
+        }
+    }
+
+    function formatTimeShort(sec) {
+        const s = Math.max(0, Math.floor(Number(sec) || 0));
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const r = s % 60;
+        return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+    }
+
+
+
+
+    // ------------------------------
+    // Feature: History / Continue watching (per video)
+
+    // ------------------------------
+    function getMainVideoEl() {
+        return (
+            document.querySelector('#movie_player video.video-stream.html5-main-video') ||
+            document.querySelector('ytd-player video.video-stream.html5-main-video') ||
+            document.querySelector('video.video-stream.html5-main-video') ||
+            document.querySelector('video')
+        );
+    }
+
+    function getCurrentVideoMeta() {
+        try {
+            // DOM first (updates earlier on SPA navigation)
+            const domTitle =
+                $e('ytd-watch-metadata h1 yt-formatted-string')?.textContent?.trim() ||
+                $e('h1.ytd-watch-metadata yt-formatted-string')?.textContent?.trim() ||
+                '';
+            const domAuthor =
+                $e('#owner ytd-channel-name a, ytd-video-owner-renderer ytd-channel-name a, #text-container.ytd-channel-name a')?.textContent?.trim() ||
+                $e('#owner a[href^="/@"], #owner a[href^="/channel/"]')?.textContent?.trim() ||
+                '';
+            const titleFromDom = (domTitle || document.title || '').replace(/\s*-\s*YouTube\s*$/i, '').trim();
+            const authorFromDom = (domAuthor || '').trim();
+
+            const w = (typeof unsafeWindow !== 'undefined' && unsafeWindow) ? unsafeWindow : window;
+            const pr = w?.ytInitialPlayerResponse || window.ytInitialPlayerResponse;
+            const vd = pr?.videoDetails || null;
+            const title = (titleFromDom || vd?.title || document.title || '').replace(/\s*-\s*YouTube\s*$/i, '').trim();
+            const author = (authorFromDom || vd?.author || '').trim();
+            const thumbs = vd?.thumbnail?.thumbnails;
+            const thumb = Array.isArray(thumbs) ? (thumbs[thumbs.length - 1]?.url || '') : '';
+            return {
+                title,
+                author,
+                thumb
+            };
+        } catch (e) {
+            return {
+                title: '',
+                author: '',
+                thumb: ''
+            };
+        }
+    }
+
+    function ensureContinueWatchingMapLoaded() {
+        const rt = __ytToolsRuntime.continueWatching;
+        if (!rt.map) rt.map = readJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, {});
+        if (typeof rt.map !== 'object' || !rt.map) rt.map = {};
+        return rt.map;
+    }
+
+    function pruneContinueWatchingMap(map, maxEntries = 200) {
+        try {
+            const entries = Object.entries(map || {}).filter(([, v]) => v && typeof v === 'object');
+            entries.sort((a, b) => (Number(b[1].updatedAt) || 0) - (Number(a[1].updatedAt) || 0));
+            const keep = entries.slice(0, maxEntries);
+            const next = {};
+            for (const [k, v] of keep) next[k] = v;
+            return next;
+        } catch (e) {
+            return map || {};
+        }
+    }
+
+    function scheduleContinueWatchingFlush() {
+        const rt = __ytToolsRuntime.continueWatching;
+        clearTimeout(rt.flushT);
+        rt.flushT = setTimeout(() => {
+            try {
+                if (!rt.map) return;
+                rt.map = pruneContinueWatchingMap(rt.map, 200);
+                writeJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, rt.map);
+            } catch (e) { }
+        }, 800);
+    }
+
+    function clearContinueWatchingForVideo(videoId) {
+        if (!videoId) return;
+        const rt = __ytToolsRuntime.continueWatching;
+        const map = ensureContinueWatchingMapLoaded();
+        if (map && Object.prototype.hasOwnProperty.call(map, videoId)) {
+            delete map[videoId];
+            rt.map = map;
+            scheduleContinueWatchingFlush();
+        }
+    }
+
+    function setContinueWatchingForVideo(videoId, seconds, durationSec) {
+        if (!videoId) return;
+        const rt = __ytToolsRuntime.continueWatching;
+        const map = ensureContinueWatchingMapLoaded();
+        const t = Math.max(0, Math.floor(Number(seconds) || 0));
+        const d = Math.max(0, Math.floor(Number(durationSec) || 0));
+        const prev = map[videoId] && typeof map[videoId] === 'object' ? map[videoId] : {};
+        const meta = getCurrentVideoMeta();
+        map[videoId] = {
+            t,
+            d,
+            updatedAt: Date.now(),
+            title: meta.title || prev.title || '',
+            author: meta.author || prev.author || '',
+            thumb: meta.thumb || prev.thumb || '',
+        };
         rt.map = map;
         scheduleContinueWatchingFlush();
     }
-}
 
-function setContinueWatchingForVideo(videoId, seconds, durationSec) {
-    if (!videoId) return;
-    const rt = __ytToolsRuntime.continueWatching;
-    const map = ensureContinueWatchingMapLoaded();
-    const t = Math.max(0, Math.floor(Number(seconds) || 0));
-    const d = Math.max(0, Math.floor(Number(durationSec) || 0));
-    const prev = map[videoId] && typeof map[videoId] === 'object' ? map[videoId] : {};
-    const meta = getCurrentVideoMeta();
-    map[videoId] = {
-        t,
-        d,
-        updatedAt: Date.now(),
-        title: meta.title || prev.title || '',
-        author: meta.author || prev.author || '',
-        thumb: meta.thumb || prev.thumb || '',
-    };
-    rt.map = map;
-    scheduleContinueWatchingFlush();
-}
-
-function getContinueWatchingTime(videoId) {
-    if (!videoId) return null;
-    const map = ensureContinueWatchingMapLoaded();
-    const entry = map?.[videoId];
-    const t = Number(entry?.t);
-    return Number.isFinite(t) ? t : null;
-}
-
-function updateContinueWatchingButton() {
-    const rt = __ytToolsRuntime.continueWatching;
-    const enabled = !!rt.enabled;
-    if (!enabled || !isWatchPage()) return;
-
-    const videoId = getCurrentVideoId();
-    if (!videoId) return;
-
-    const v = getMainVideoEl();
-    const t = getContinueWatchingTime(videoId);
-    const dur = Number(v?.duration);
-    const hasDur = Number.isFinite(dur) && dur > 0;
-
-    if (!t || t < 5) return;
-
-    if (hasDur && t >= (dur - 5)) {
-        clearContinueWatchingForVideo(videoId);
-        return;
-    }
-}
-
-function updateContinueWatchingHistoryUi() {
-    const rt = __ytToolsRuntime.continueWatching;
-    const btn = $id('yt-cw-history-toggle');
-    const panel = $id('yt-continue-watching-panel');
-    if (!btn || !panel) return;
-
-    const enabled = !!rt.enabled;
-    if (!enabled || !isWatchPage()) {
-        btn.style.display = 'none';
-        panel.style.display = 'none';
-        return;
-    }
-
-    btn.style.display = 'inline-flex';
-    panel.style.display = rt.panelOpen ? 'block' : 'none';
-}
-
-function cssEscapeLite(s) {
-    const str = String(s || '');
-    if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(str);
-    // minimal escape for attribute selector
-    return str.replace(/["\\]/g, '\\$&');
-}
-
-function updateContinueWatchingPanelRow(videoId) {
-    try {
-        const rt = __ytToolsRuntime.continueWatching;
-        if (!rt.enabled || !rt.panelOpen || !isWatchPage()) return false;
-        const panel = $id('yt-continue-watching-panel');
-        if (!panel) return false;
-
-        const key = cssEscapeLite(videoId);
-        const row = panel.querySelector(`.yt-cw-item[data-video-id="${key}"]`);
-        if (!row) return false;
-
-        const entry = ensureContinueWatchingMapLoaded()?.[videoId];
+    function getContinueWatchingTime(videoId) {
+        if (!videoId) return null;
+        const map = ensureContinueWatchingMapLoaded();
+        const entry = map?.[videoId];
         const t = Number(entry?.t);
-        if (!Number.isFinite(t)) return false;
-
-        const meta = row.querySelector('.yt-cw-meta');
-        if (!meta) return false;
-        const author = String(entry?.author || '').trim();
-        meta.textContent = `${formatTimeShort(t)}${author ? ` • ${author}` : ''}`;
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
-function navigateToWatchSpa(videoId, seconds) {
-    const t = Number(seconds);
-    const url = `/watch?v=${encodeURIComponent(videoId)}${Number.isFinite(t) ? `&t=${Math.max(0, Math.floor(t))}s` : ''}`;
-    try {
-        const a = document.createElement('a');
-        a.href = url;
-        a.target = '_self';
-        a.rel = 'noopener';
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        return;
-    } catch (e) { }
-    location.href = url;
-}
-
-function renderContinueWatchingPanel() {
-    const panel = $id('yt-continue-watching-panel');
-    if (!panel) return;
-
-    const rt = __ytToolsRuntime.continueWatching;
-    if (!rt.enabled || !rt.panelOpen || !isWatchPage()) {
-        panel.style.display = 'none';
-        return;
+        return Number.isFinite(t) ? t : null;
     }
 
-    const map = pruneContinueWatchingMap(ensureContinueWatchingMapLoaded(), 200);
-    rt.map = map;
-    const currentVid = getCurrentVideoId();
+    function updateContinueWatchingButton() {
+        const rt = __ytToolsRuntime.continueWatching;
+        const enabled = !!rt.enabled;
+        if (!enabled || !isWatchPage()) return;
 
-    const entries = Object.entries(map)
-        .map(([videoId, v]) => ({
-            videoId,
-            ...v
-        }))
-        .filter((e) => e.videoId && Number.isFinite(Number(e.t)) && Number(e.t) >= 5)
-        .sort((a, b) => (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0))
-        .slice(0, 25);
+        const videoId = getCurrentVideoId();
+        if (!videoId) return;
 
-    panel.replaceChildren();
+        const v = getMainVideoEl();
+        const t = getContinueWatchingTime(videoId);
+        const dur = Number(v?.duration);
+        const hasDur = Number.isFinite(dur) && dur > 0;
 
-    const header = document.createElement('div');
-    header.className = 'yt-cw-header';
+        if (!t || t < 5) return;
 
-    const hTitle = document.createElement('div');
-    hTitle.className = 'yt-cw-header-title';
-    hTitle.textContent = 'Continue watching';
-
-    const clearAll = document.createElement('button');
-    clearAll.type = 'button';
-    clearAll.className = 'yt-cw-clear';
-    clearAll.textContent = 'Clear';
-    clearAll.dataset.cwAction = 'clearAll';
-
-    header.appendChild(hTitle);
-    header.appendChild(clearAll);
-    panel.appendChild(header);
-
-    if (!entries.length) {
-        const empty = document.createElement('div');
-        empty.className = 'yt-cw-empty';
-        empty.textContent = 'No history yet. Watch a bit, then reopen any video.';
-        panel.appendChild(empty);
-        return;
+        if (hasDur && t >= (dur - 5)) {
+            clearContinueWatchingForVideo(videoId);
+            return;
+        }
     }
 
-    for (const e of entries) {
-        const item = document.createElement('div');
-        item.className = 'yt-cw-item';
-        item.dataset.videoId = e.videoId;
+    function updateContinueWatchingHistoryUi() {
+        const rt = __ytToolsRuntime.continueWatching;
+        const btn = $id('yt-cw-history-toggle');
+        const panel = $id('yt-continue-watching-panel');
+        if (!btn || !panel) return;
 
-        const thumbWrap = document.createElement('div');
-        thumbWrap.className = 'yt-cw-thumb-wrap';
-        const img = document.createElement('img');
-        img.className = 'yt-cw-thumb';
-        img.loading = 'lazy';
-        img.decoding = 'async';
-        img.alt = '';
-        const thumbSrc = (e.thumb || '').trim() || `https://i.ytimg.com/vi/${encodeURIComponent(e.videoId)}/hqdefault.jpg`;
-        img.src = thumbSrc;
-        thumbWrap.appendChild(img);
-
-        const info = document.createElement('div');
-        info.className = 'yt-cw-info';
-
-        const title = document.createElement('div');
-        title.className = 'yt-cw-title';
-        const safeTitle = (e.title || '').trim();
-        title.textContent = safeTitle ? safeTitle : e.videoId;
-
-        const meta = document.createElement('div');
-        meta.className = 'yt-cw-meta';
-        const author = (e.author || '').trim();
-        meta.textContent = `${formatTimeShort(e.t)}${author ? ` • ${author}` : ''}`;
-
-        info.appendChild(title);
-        info.appendChild(meta);
-
-        const actions = document.createElement('div');
-        actions.className = 'yt-cw-actions';
-
-        const tSec = Math.max(0, Math.floor(Number(e.t) || 0));
-        let go = null;
-        if (currentVid && currentVid === e.videoId) {
-            const seek = document.createElement('button');
-            seek.type = 'button';
-            seek.className = 'yt-cw-go';
-            seek.textContent = 'Resume';
-            seek.dataset.cwAction = 'seek';
-            seek.dataset.t = String(tSec);
-            go = seek;
-        } else {
-            const a = document.createElement('a');
-            a.className = 'yt-simple-endpoint yt-cw-go';
-            a.textContent = 'Resume';
-            a.href = `/watch?v=${encodeURIComponent(e.videoId)}&t=${tSec}s`;
-            a.target = '_self';
-            a.rel = 'noopener';
-            go = a;
+        const enabled = !!rt.enabled;
+        if (!enabled || !isWatchPage()) {
+            btn.style.display = 'none';
+            panel.style.display = 'none';
+            return;
         }
 
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'yt-cw-del';
-        del.textContent = '✕';
-        del.title = 'Delete';
-        del.dataset.cwAction = 'del';
-        del.dataset.videoId = e.videoId;
-
-        actions.appendChild(go);
-        actions.appendChild(del);
-
-        item.appendChild(thumbWrap);
-        item.appendChild(info);
-        item.appendChild(actions);
-        panel.appendChild(item);
-    }
-}
-
-function setupContinueWatchingFeature(enabled) {
-    const rt = __ytToolsRuntime.continueWatching;
-    rt.enabled = !!enabled;
-
-    // Keep UI in sync across YouTube SPA navigations
-    if (!rt.navHandlerInitialized) {
-        rt.navHandlerInitialized = true;
-        const onNav = () => {
-            try {
-                const vid = getCurrentVideoId();
-                if (rt.lastKnownVideoId !== vid) {
-                    rt.lastKnownVideoId = vid;
-                    // reset throttles so new video can save properly
-                    rt.lastSaveAt = 0;
-                    rt.lastSavedTime = -1;
-                    rt.boundVideoId = vid;
-                    updateContinueWatchingButton();
-                    updateContinueWatchingHistoryUi();
-                    if (rt.panelOpen) renderContinueWatchingPanel();
-                } else {
-                    updateContinueWatchingButton();
-                    updateContinueWatchingHistoryUi();
-                    if (rt.panelOpen) renderContinueWatchingPanel();
-                }
-            } catch (e) { }
-        };
-        window.addEventListener('yt-navigate-finish', onNav, true);
-        window.addEventListener('popstate', onNav, true);
-        window.addEventListener('hashchange', onNav, true);
+        btn.style.display = 'inline-flex';
+        panel.style.display = rt.panelOpen ? 'block' : 'none';
     }
 
-    // Ensure click handler only once
-    if (!rt.clickHandlerInitialized) {
-        rt.clickHandlerInitialized = true;
-        document.addEventListener('click', (e) => {
-            const target = e.target;
-            if (!(target instanceof Element)) return;
-            const historyBtn = target.closest('#yt-cw-history-toggle');
-            const cwActionBtn = target.closest('[data-cw-action]');
-
-            if (historyBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                rt.panelOpen = !rt.panelOpen;
-                updateContinueWatchingHistoryUi();
-                if (rt.panelOpen) renderContinueWatchingPanel(); // render only when opened
-                return;
-            }
-
-            if (cwActionBtn) {
-                const action = cwActionBtn.getAttribute('data-cw-action');
-                if (!action) return;
-                e.preventDefault();
-                e.stopPropagation();
-                if (action === 'clearAll') {
-                    rt.map = {};
-                    writeJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, {});
-                    renderContinueWatchingPanel();
-                    updateContinueWatchingButton();
-                    try {
-                        Notify('success', 'History cleared');
-                    } catch (e2) { }
-                    return;
-                }
-                if (action === 'del') {
-                    const vid = cwActionBtn.getAttribute('data-video-id') || '';
-                    if (vid) clearContinueWatchingForVideo(vid);
-                    renderContinueWatchingPanel();
-                    updateContinueWatchingButton();
-                    return;
-                }
-                if (action === 'seek') {
-                    const t = Number(cwActionBtn.getAttribute('data-t'));
-                    const v = getMainVideoEl();
-                    if (!v || !Number.isFinite(t)) return;
-                    v.currentTime = Math.max(0, t);
-                    v.play?.().catch(() => { });
-                    try {
-                        Notify('success', `Resume: ${formatTimeShort(t)}`);
-                    } catch (e2) { }
-                    updateContinueWatchingButton();
-                    return;
-                }
-            }
-        }, true);
+    function cssEscapeLite(s) {
+        const str = String(s || '');
+        if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(str);
+        // minimal escape for attribute selector
+        return str.replace(/["\\]/g, '\\$&');
     }
 
-    // Save on tab close / navigation (once)
-    if (!rt.pagehideHandlerInitialized) {
-        rt.pagehideHandlerInitialized = true;
-        window.addEventListener('pagehide', () => {
-            try {
-                if (!rt.enabled) return;
-                if (!isWatchPage()) return;
-                const vid = getCurrentVideoId();
-                const v = getMainVideoEl();
-                if (!vid || !v) return;
-                const t = Number(v.currentTime);
-                const d = Number(v.duration);
-                if (Number.isFinite(t) && t >= 5) setContinueWatchingForVideo(vid, t, d);
-                // best-effort immediate flush
-                if (rt.flushT) {
-                    clearTimeout(rt.flushT);
-                    rt.flushT = null;
-                }
-                if (rt.map) writeJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, pruneContinueWatchingMap(rt.map, 200));
-            } catch (e) { }
-        }, {
-            capture: true
-        });
-    }
-
-    const historyBtn = $id('yt-cw-history-toggle');
-    const panel = $id('yt-continue-watching-panel');
-    if (historyBtn && !rt.enabled) historyBtn.style.display = 'none';
-    if (panel && !rt.enabled) panel.style.display = 'none';
-
-    // Not on watch page: detach video listeners and hide
-    if (!rt.enabled || !isWatchPage()) {
+    function updateContinueWatchingPanelRow(videoId) {
         try {
-            if (rt.boundVideo && rt.handlers) {
+            const rt = __ytToolsRuntime.continueWatching;
+            if (!rt.enabled || !rt.panelOpen || !isWatchPage()) return false;
+            const panel = $id('yt-continue-watching-panel');
+            if (!panel) return false;
+
+            const key = cssEscapeLite(videoId);
+            const row = panel.querySelector(`.yt-cw-item[data-video-id="${key}"]`);
+            if (!row) return false;
+
+            const entry = ensureContinueWatchingMapLoaded()?.[videoId];
+            const t = Number(entry?.t);
+            if (!Number.isFinite(t)) return false;
+
+            const meta = row.querySelector('.yt-cw-meta');
+            if (!meta) return false;
+            const author = String(entry?.author || '').trim();
+            meta.textContent = `${formatTimeShort(t)}${author ? ` • ${author}` : ''}`;
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function navigateToWatchSpa(videoId, seconds) {
+        const t = Number(seconds);
+        const url = `/watch?v=${encodeURIComponent(videoId)}${Number.isFinite(t) ? `&t=${Math.max(0, Math.floor(t))}s` : ''}`;
+        try {
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_self';
+            a.rel = 'noopener';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            return;
+        } catch (e) { }
+        location.href = url;
+    }
+
+    function renderContinueWatchingPanel() {
+        const panel = $id('yt-continue-watching-panel');
+        if (!panel) return;
+
+        const rt = __ytToolsRuntime.continueWatching;
+        if (!rt.enabled || !rt.panelOpen || !isWatchPage()) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        const map = pruneContinueWatchingMap(ensureContinueWatchingMapLoaded(), 200);
+        rt.map = map;
+        const currentVid = getCurrentVideoId();
+
+        const entries = Object.entries(map)
+            .map(([videoId, v]) => ({
+                videoId,
+                ...v
+            }))
+            .filter((e) => e.videoId && Number.isFinite(Number(e.t)) && Number(e.t) >= 5)
+            .sort((a, b) => (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0))
+            .slice(0, 25);
+
+        panel.replaceChildren();
+
+        const header = document.createElement('div');
+        header.className = 'yt-cw-header';
+
+        const hTitle = document.createElement('div');
+        hTitle.className = 'yt-cw-header-title';
+        hTitle.textContent = 'Continue watching';
+
+        const clearAll = document.createElement('button');
+        clearAll.type = 'button';
+        clearAll.className = 'yt-cw-clear';
+        clearAll.textContent = 'Clear';
+        clearAll.dataset.cwAction = 'clearAll';
+
+        header.appendChild(hTitle);
+        header.appendChild(clearAll);
+        panel.appendChild(header);
+
+        if (!entries.length) {
+            const empty = document.createElement('div');
+            empty.className = 'yt-cw-empty';
+            empty.textContent = 'No history yet. Watch a bit, then reopen any video.';
+            panel.appendChild(empty);
+            return;
+        }
+
+        for (const e of entries) {
+            const item = document.createElement('div');
+            item.className = 'yt-cw-item';
+            item.dataset.videoId = e.videoId;
+
+            const thumbWrap = document.createElement('div');
+            thumbWrap.className = 'yt-cw-thumb-wrap';
+            const img = document.createElement('img');
+            img.className = 'yt-cw-thumb';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.alt = '';
+            const thumbSrc = (e.thumb || '').trim() || `https://i.ytimg.com/vi/${encodeURIComponent(e.videoId)}/hqdefault.jpg`;
+            img.src = thumbSrc;
+            thumbWrap.appendChild(img);
+
+            const info = document.createElement('div');
+            info.className = 'yt-cw-info';
+
+            const title = document.createElement('div');
+            title.className = 'yt-cw-title';
+            const safeTitle = (e.title || '').trim();
+            title.textContent = safeTitle ? safeTitle : e.videoId;
+
+            const meta = document.createElement('div');
+            meta.className = 'yt-cw-meta';
+            const author = (e.author || '').trim();
+            meta.textContent = `${formatTimeShort(e.t)}${author ? ` • ${author}` : ''}`;
+
+            info.appendChild(title);
+            info.appendChild(meta);
+
+            const actions = document.createElement('div');
+            actions.className = 'yt-cw-actions';
+
+            const tSec = Math.max(0, Math.floor(Number(e.t) || 0));
+            let go = null;
+            if (currentVid && currentVid === e.videoId) {
+                const seek = document.createElement('button');
+                seek.type = 'button';
+                seek.className = 'yt-cw-go';
+                seek.textContent = 'Resume';
+                seek.dataset.cwAction = 'seek';
+                seek.dataset.t = String(tSec);
+                go = seek;
+            } else {
+                const a = document.createElement('a');
+                a.className = 'yt-simple-endpoint yt-cw-go';
+                a.textContent = 'Resume';
+                a.href = `/watch?v=${encodeURIComponent(e.videoId)}&t=${tSec}s`;
+                a.target = '_self';
+                a.rel = 'noopener';
+                go = a;
+            }
+
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'yt-cw-del';
+            del.textContent = '✕';
+            del.title = 'Delete';
+            del.dataset.cwAction = 'del';
+            del.dataset.videoId = e.videoId;
+
+            actions.appendChild(go);
+            actions.appendChild(del);
+
+            item.appendChild(thumbWrap);
+            item.appendChild(info);
+            item.appendChild(actions);
+            panel.appendChild(item);
+        }
+    }
+
+    function setupContinueWatchingFeature(enabled) {
+        const rt = __ytToolsRuntime.continueWatching;
+        rt.enabled = !!enabled;
+
+        // Keep UI in sync across YouTube SPA navigations
+        if (!rt.navHandlerInitialized) {
+            rt.navHandlerInitialized = true;
+            const onNav = () => {
+                try {
+                    const vid = getCurrentVideoId();
+                    if (rt.lastKnownVideoId !== vid) {
+                        rt.lastKnownVideoId = vid;
+                        // reset throttles so new video can save properly
+                        rt.lastSaveAt = 0;
+                        rt.lastSavedTime = -1;
+                        rt.boundVideoId = vid;
+                        updateContinueWatchingButton();
+                        updateContinueWatchingHistoryUi();
+                        if (rt.panelOpen) renderContinueWatchingPanel();
+                    } else {
+                        updateContinueWatchingButton();
+                        updateContinueWatchingHistoryUi();
+                        if (rt.panelOpen) renderContinueWatchingPanel();
+                    }
+                } catch (e) { }
+            };
+            window.addEventListener('yt-navigate-finish', onNav, true);
+            window.addEventListener('popstate', onNav, true);
+            window.addEventListener('hashchange', onNav, true);
+        }
+
+        // Ensure click handler only once
+        if (!rt.clickHandlerInitialized) {
+            rt.clickHandlerInitialized = true;
+            document.addEventListener('click', (e) => {
+                const target = e.target;
+                if (!(target instanceof Element)) return;
+                const historyBtn = target.closest('#yt-cw-history-toggle');
+                const cwActionBtn = target.closest('[data-cw-action]');
+
+                if (historyBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    rt.panelOpen = !rt.panelOpen;
+                    updateContinueWatchingHistoryUi();
+                    if (rt.panelOpen) renderContinueWatchingPanel(); // render only when opened
+                    return;
+                }
+
+                if (cwActionBtn) {
+                    const action = cwActionBtn.getAttribute('data-cw-action');
+                    if (!action) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (action === 'clearAll') {
+                        rt.map = {};
+                        writeJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, {});
+                        renderContinueWatchingPanel();
+                        updateContinueWatchingButton();
+                        try {
+                            Notify('success', 'History cleared');
+                        } catch (e2) { }
+                        return;
+                    }
+                    if (action === 'del') {
+                        const vid = cwActionBtn.getAttribute('data-video-id') || '';
+                        if (vid) clearContinueWatchingForVideo(vid);
+                        renderContinueWatchingPanel();
+                        updateContinueWatchingButton();
+                        return;
+                    }
+                    if (action === 'seek') {
+                        const t = Number(cwActionBtn.getAttribute('data-t'));
+                        const v = getMainVideoEl();
+                        if (!v || !Number.isFinite(t)) return;
+                        v.currentTime = Math.max(0, t);
+                        v.play?.().catch(() => { });
+                        try {
+                            Notify('success', `Resume: ${formatTimeShort(t)}`);
+                        } catch (e2) { }
+                        updateContinueWatchingButton();
+                        return;
+                    }
+                }
+            }, true);
+        }
+
+        // Save on tab close / navigation (once)
+        if (!rt.pagehideHandlerInitialized) {
+            rt.pagehideHandlerInitialized = true;
+            window.addEventListener('pagehide', () => {
+                try {
+                    if (!rt.enabled) return;
+                    if (!isWatchPage()) return;
+                    const vid = getCurrentVideoId();
+                    const v = getMainVideoEl();
+                    if (!vid || !v) return;
+                    const t = Number(v.currentTime);
+                    const d = Number(v.duration);
+                    if (Number.isFinite(t) && t >= 5) setContinueWatchingForVideo(vid, t, d);
+                    // best-effort immediate flush
+                    if (rt.flushT) {
+                        clearTimeout(rt.flushT);
+                        rt.flushT = null;
+                    }
+                    if (rt.map) writeJsonGM(STORAGE_KEYS_MDCM.CONTINUE_WATCHING, pruneContinueWatchingMap(rt.map, 200));
+                } catch (e) { }
+            }, {
+                capture: true
+            });
+        }
+
+        const historyBtn = $id('yt-cw-history-toggle');
+        const panel = $id('yt-continue-watching-panel');
+        if (historyBtn && !rt.enabled) historyBtn.style.display = 'none';
+        if (panel && !rt.enabled) panel.style.display = 'none';
+
+        // Not on watch page: detach video listeners and hide
+        if (!rt.enabled || !isWatchPage()) {
+            try {
+                if (rt.boundVideo && rt.handlers) {
+                    rt.boundVideo.removeEventListener('timeupdate', rt.handlers.timeupdate);
+                    rt.boundVideo.removeEventListener('pause', rt.handlers.pause);
+                    rt.boundVideo.removeEventListener('ended', rt.handlers.ended);
+                    rt.boundVideo.removeEventListener('loadedmetadata', rt.handlers.loadedmetadata);
+                    rt.boundVideo.removeEventListener('seeked', rt.handlers.seeked);
+                }
+            } catch (e) { }
+            rt.boundVideo = null;
+            rt.boundVideoId = null;
+            rt.handlers = null;
+            updateContinueWatchingButton();
+            updateContinueWatchingHistoryUi();
+            return;
+        }
+
+        const v = getMainVideoEl();
+        const videoId = getCurrentVideoId();
+        if (!v || !videoId) {
+            updateContinueWatchingButton();
+            updateContinueWatchingHistoryUi();
+            return;
+        }
+
+        // VideoId can change while YouTube reuses the same <video> element
+        if (rt.boundVideoId !== videoId) {
+            rt.boundVideoId = videoId;
+            rt.lastSaveAt = 0;
+            rt.lastSavedTime = -1;
+        }
+
+        // If video element changed, rebind listeners (avoid leaks)
+        if (rt.boundVideo && rt.boundVideo !== v && rt.handlers) {
+            try {
                 rt.boundVideo.removeEventListener('timeupdate', rt.handlers.timeupdate);
                 rt.boundVideo.removeEventListener('pause', rt.handlers.pause);
                 rt.boundVideo.removeEventListener('ended', rt.handlers.ended);
                 rt.boundVideo.removeEventListener('loadedmetadata', rt.handlers.loadedmetadata);
                 rt.boundVideo.removeEventListener('seeked', rt.handlers.seeked);
-            }
-        } catch (e) { }
-        rt.boundVideo = null;
-        rt.boundVideoId = null;
-        rt.handlers = null;
-        updateContinueWatchingButton();
-        updateContinueWatchingHistoryUi();
-        return;
-    }
+            } catch (e) { }
+            rt.boundVideo = null;
+            rt.boundVideoId = null;
+            rt.handlers = null;
+        }
 
-    const v = getMainVideoEl();
-    const videoId = getCurrentVideoId();
-    if (!v || !videoId) {
-        updateContinueWatchingButton();
-        updateContinueWatchingHistoryUi();
-        return;
-    }
-
-    // VideoId can change while YouTube reuses the same <video> element
-    if (rt.boundVideoId !== videoId) {
+        rt.boundVideo = v;
         rt.boundVideoId = videoId;
-        rt.lastSaveAt = 0;
-        rt.lastSavedTime = -1;
-    }
 
-    // If video element changed, rebind listeners (avoid leaks)
-    if (rt.boundVideo && rt.boundVideo !== v && rt.handlers) {
-        try {
-            rt.boundVideo.removeEventListener('timeupdate', rt.handlers.timeupdate);
-            rt.boundVideo.removeEventListener('pause', rt.handlers.pause);
-            rt.boundVideo.removeEventListener('ended', rt.handlers.ended);
-            rt.boundVideo.removeEventListener('loadedmetadata', rt.handlers.loadedmetadata);
-            rt.boundVideo.removeEventListener('seeked', rt.handlers.seeked);
-        } catch (e) { }
-        rt.boundVideo = null;
-        rt.boundVideoId = null;
-        rt.handlers = null;
-    }
-
-    rt.boundVideo = v;
-    rt.boundVideoId = videoId;
-
-    if (!rt.handlers) {
-        rt.handlers = {
-            timeupdate: () => {
-                try {
-                    if (!rt.enabled) return;
-                    const vid = getCurrentVideoId();
-                    if (!vid) return;
-                    const now = Date.now();
-                    if (now - rt.lastSaveAt < 5000) return; // throttle
-                    if (v.paused) return;
-                    const t = Number(v.currentTime);
-                    const d = Number(v.duration);
-                    if (!Number.isFinite(t)) return;
-                    if (Math.abs(t - rt.lastSavedTime) < 2) return;
-                    rt.lastSaveAt = now;
-                    rt.lastSavedTime = t;
-                    if (t < 5) return;
-                    setContinueWatchingForVideo(vid, t, d);
-                    updateContinueWatchingButton();
-                    // Avoid re-rendering the whole panel every few seconds.
-                    // If panel is open and row exists, just update its text.
-                    if (rt.panelOpen) {
-                        if (!updateContinueWatchingPanelRow(vid)) renderContinueWatchingPanel();
-                    }
-                } catch (e) { }
-            },
-            pause: () => {
-                try {
-                    if (!rt.enabled) return;
-                    const vid = getCurrentVideoId();
-                    if (!vid) return;
-                    const t = Number(v.currentTime);
-                    const d = Number(v.duration);
-                    if (!Number.isFinite(t)) return;
-                    if (t < 5) {
-                        clearContinueWatchingForVideo(vid);
-                    } else {
+        if (!rt.handlers) {
+            rt.handlers = {
+                timeupdate: () => {
+                    try {
+                        if (!rt.enabled) return;
+                        const vid = getCurrentVideoId();
+                        if (!vid) return;
+                        const now = Date.now();
+                        if (now - rt.lastSaveAt < 5000) return; // throttle
+                        if (v.paused) return;
+                        const t = Number(v.currentTime);
+                        const d = Number(v.duration);
+                        if (!Number.isFinite(t)) return;
+                        if (Math.abs(t - rt.lastSavedTime) < 2) return;
+                        rt.lastSaveAt = now;
+                        rt.lastSavedTime = t;
+                        if (t < 5) return;
                         setContinueWatchingForVideo(vid, t, d);
-                    }
-                    updateContinueWatchingButton();
-                    if (rt.panelOpen) {
-                        if (!updateContinueWatchingPanelRow(vid)) renderContinueWatchingPanel();
-                    }
-                } catch (e) { }
-            },
-            ended: () => {
-                try {
-                    const vid = getCurrentVideoId();
-                    if (vid) clearContinueWatchingForVideo(vid);
+                        updateContinueWatchingButton();
+                        // Avoid re-rendering the whole panel every few seconds.
+                        // If panel is open and row exists, just update its text.
+                        if (rt.panelOpen) {
+                            if (!updateContinueWatchingPanelRow(vid)) renderContinueWatchingPanel();
+                        }
+                    } catch (e) { }
+                },
+                pause: () => {
+                    try {
+                        if (!rt.enabled) return;
+                        const vid = getCurrentVideoId();
+                        if (!vid) return;
+                        const t = Number(v.currentTime);
+                        const d = Number(v.duration);
+                        if (!Number.isFinite(t)) return;
+                        if (t < 5) {
+                            clearContinueWatchingForVideo(vid);
+                        } else {
+                            setContinueWatchingForVideo(vid, t, d);
+                        }
+                        updateContinueWatchingButton();
+                        if (rt.panelOpen) {
+                            if (!updateContinueWatchingPanelRow(vid)) renderContinueWatchingPanel();
+                        }
+                    } catch (e) { }
+                },
+                ended: () => {
+                    try {
+                        const vid = getCurrentVideoId();
+                        if (vid) clearContinueWatchingForVideo(vid);
+                        updateContinueWatchingButton();
+                        if (rt.panelOpen) renderContinueWatchingPanel();
+                    } catch (e) { }
+                },
+                loadedmetadata: () => {
                     updateContinueWatchingButton();
                     if (rt.panelOpen) renderContinueWatchingPanel();
-                } catch (e) { }
-            },
-            loadedmetadata: () => {
-                updateContinueWatchingButton();
-                if (rt.panelOpen) renderContinueWatchingPanel();
-            },
-            seeked: () => {
-                updateContinueWatchingButton();
-                const vid = getCurrentVideoId();
-                if (rt.panelOpen && vid) updateContinueWatchingPanelRow(vid);
-            },
+                },
+                seeked: () => {
+                    updateContinueWatchingButton();
+                    const vid = getCurrentVideoId();
+                    if (rt.panelOpen && vid) updateContinueWatchingPanelRow(vid);
+                },
+            };
+
+            v.addEventListener('timeupdate', rt.handlers.timeupdate, {
+                passive: true
+            });
+            v.addEventListener('pause', rt.handlers.pause, {
+                passive: true
+            });
+            v.addEventListener('ended', rt.handlers.ended, {
+                passive: true
+            });
+            v.addEventListener('loadedmetadata', rt.handlers.loadedmetadata, {
+                passive: true
+            });
+            v.addEventListener('seeked', rt.handlers.seeked, {
+                passive: true
+            });
+        }
+
+        updateContinueWatchingButton();
+        updateContinueWatchingHistoryUi();
+    }
+
+
+    // ------------------------------
+    // Feature: Show channel name on Shorts list (Home / feeds)
+    // Adapted from: @𝖢𝖸 𝖥𝗎𝗇𝗀
+
+    // ------------------------------
+    function setupShortsChannelNameFeature(enabled) {
+        __ytToolsRuntime.shortsChannelName.enabled = !!enabled;
+        document.documentElement.dataset.mdcmShortsChannelName = enabled ? '1' : '0';
+
+        // Disable: stop observers to reduce overhead
+        if (!enabled) {
+            try {
+                __ytToolsRuntime.shortsChannelName.observer?.disconnect?.();
+            } catch (e) { }
+            try {
+                __ytToolsRuntime.shortsChannelName.io?.disconnect?.();
+            } catch (e) { }
+            __ytToolsRuntime.shortsChannelName.observer = null;
+            __ytToolsRuntime.shortsChannelName.io = null;
+            clearTimeout(__ytToolsRuntime.shortsChannelName.scanT);
+            __ytToolsRuntime.shortsChannelName.scanT = null;
+            return;
+        }
+
+        const rt = __ytToolsRuntime.shortsChannelName;
+
+        const getShortsVideoIdFromItem = (item) => {
+            const a = item.querySelector('a[href^="/shorts/"]');
+            const href = a?.getAttribute('href') || '';
+            const m = href.match(/\/shorts\/([^/?]+)/);
+            return m?.[1] || null;
         };
 
-        v.addEventListener('timeupdate', rt.handlers.timeupdate, {
-            passive: true
-        });
-        v.addEventListener('pause', rt.handlers.pause, {
-            passive: true
-        });
-        v.addEventListener('ended', rt.handlers.ended, {
-            passive: true
-        });
-        v.addEventListener('loadedmetadata', rt.handlers.loadedmetadata, {
-            passive: true
-        });
-        v.addEventListener('seeked', rt.handlers.seeked, {
-            passive: true
-        });
-    }
+        const findSubhead = (item) => {
+            return item.querySelector(
+                '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
+                ' .shortsLockupViewModelHostOutsideMetadataSubhead,' +
+                ' .ShortsLockupViewModelHostMetadataSubhead,' +
+                ' .shortsLockupViewModelHostMetadataSubhead'
+            );
+        };
 
-    updateContinueWatchingButton();
-    updateContinueWatchingHistoryUi();
-}
-
-
-// ------------------------------
-// Feature: Show channel name on Shorts list (Home / feeds)
-// Adapted from: @𝖢𝖸 𝖥𝗎𝗇𝗀
-
-// ------------------------------
-function setupShortsChannelNameFeature(enabled) {
-    __ytToolsRuntime.shortsChannelName.enabled = !!enabled;
-    document.documentElement.dataset.mdcmShortsChannelName = enabled ? '1' : '0';
-
-    // Disable: stop observers to reduce overhead
-    if (!enabled) {
-        try {
-            __ytToolsRuntime.shortsChannelName.observer?.disconnect?.();
-        } catch (e) { }
-        try {
-            __ytToolsRuntime.shortsChannelName.io?.disconnect?.();
-        } catch (e) { }
-        __ytToolsRuntime.shortsChannelName.observer = null;
-        __ytToolsRuntime.shortsChannelName.io = null;
-        clearTimeout(__ytToolsRuntime.shortsChannelName.scanT);
-        __ytToolsRuntime.shortsChannelName.scanT = null;
-        return;
-    }
-
-    const rt = __ytToolsRuntime.shortsChannelName;
-
-    const getShortsVideoIdFromItem = (item) => {
-        const a = item.querySelector('a[href^="/shorts/"]');
-        const href = a?.getAttribute('href') || '';
-        const m = href.match(/\/shorts\/([^/?]+)/);
-        return m?.[1] || null;
-    };
-
-    const findSubhead = (item) => {
-        return item.querySelector(
-            '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
-            ' .shortsLockupViewModelHostOutsideMetadataSubhead,' +
-            ' .ShortsLockupViewModelHostMetadataSubhead,' +
-            ' .shortsLockupViewModelHostMetadataSubhead'
-        );
-    };
-
-    const ensureLabel = (subhead) => {
-        const parent = subhead?.parentElement;
-        if (!parent) return null;
-        let el = parent.querySelector('.yt-tools-shorts-channel-name');
-        if (!el) {
-            el = document.createElement('div');
-            el.className = 'yt-tools-shorts-channel-name';
-            el.textContent = '';
-            parent.insertBefore(el, subhead);
-        }
-        return el;
-    };
-
-    const tryExtractChannelNameFromDom = (item) => {
-        const a = item.querySelector('a[href^="/@"], a[href^="/channel/"]');
-        const name = (a?.textContent || a?.getAttribute('title') || '').trim();
-        return name || null;
-    };
-
-    const fetchChannelNameFromWatch = (videoId) => {
-        rt.fetchChain = rt.fetchChain.then(async () => {
-            if (rt.cache.has(videoId)) return rt.cache.get(videoId);
-            let res = null;
-            try {
-                res = await fetch(`/watch?v=${videoId}`, {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    cache: 'force-cache',
-                });
-            } catch (e) {
-                return '';
+        const ensureLabel = (subhead) => {
+            const parent = subhead?.parentElement;
+            if (!parent) return null;
+            let el = parent.querySelector('.yt-tools-shorts-channel-name');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'yt-tools-shorts-channel-name';
+                el.textContent = '';
+                parent.insertBefore(el, subhead);
             }
-            if (!res?.ok) return '';
-            const html = await res.text();
+            return el;
+        };
 
-            const idx = html.indexOf('itemprop="author"');
-            if (idx < 0) return '';
-            const start = html.lastIndexOf('<span', idx);
-            const end = html.indexOf('</span>', idx);
-            if (start < 0 || end < 0) return '';
-            const chunk = html.slice(start, end + 7);
+        const tryExtractChannelNameFromDom = (item) => {
+            const a = item.querySelector('a[href^="/@"], a[href^="/channel/"]');
+            const name = (a?.textContent || a?.getAttribute('title') || '').trim();
+            return name || null;
+        };
 
-            const doc = new DOMParser().parseFromString(chunk, 'text/html');
-            const link = doc.querySelector('link[itemprop="name"]');
-            return (link?.getAttribute('content') || '').trim();
-        });
-        return rt.fetchChain;
-    };
-
-    const getChannelName = (videoId, item) => {
-        const cached = rt.cache.get(videoId);
-        if (cached) return Promise.resolve(cached);
-
-        const persisted = getShortsChannelFromPersistedCache(videoId);
-        if (persisted) {
-            rt.cache.set(videoId, persisted);
-            return Promise.resolve(persisted);
-        }
-
-        const domName = tryExtractChannelNameFromDom(item);
-        if (domName) {
-            rt.cache.set(videoId, domName);
-            setShortsChannelToPersistedCache(videoId, domName);
-            return Promise.resolve(domName);
-        }
-
-        const inflight = rt.inflight.get(videoId);
-        if (inflight) return inflight;
-
-        const p = fetchChannelNameFromWatch(videoId)
-            .then((name) => {
-                const finalName = (name || '').trim();
-                if (finalName) {
-                    rt.cache.set(videoId, finalName);
-                    setShortsChannelToPersistedCache(videoId, finalName);
-                }
-                return finalName;
-            })
-            .finally(() => {
-                rt.inflight.delete(videoId);
-            });
-        rt.inflight.set(videoId, p);
-        return p;
-    };
-
-    const processItem = (item) => {
-        if (!(item instanceof Element)) return;
-        if (item.dataset.ytToolsShortsChannelProcessed === '1') return;
-
-        const subhead = findSubhead(item);
-        if (!subhead) return;
-
-        const videoId = getShortsVideoIdFromItem(item);
-        if (!videoId) return;
-
-        item.dataset.ytToolsShortsChannelProcessed = '1';
-        item.dataset.ytToolsShortsVideoId = videoId;
-
-        const label = ensureLabel(subhead);
-        if (!label) return;
-        label.textContent = '';
-
-        rt.io?.observe(item);
-    };
-
-    if (!rt.io) {
-        rt.io = new IntersectionObserver((entries) => {
-            for (const entry of entries) {
-                if (!entry.isIntersecting) continue;
-                const item = entry.target;
-                const videoId = item?.dataset?.ytToolsShortsVideoId;
-                const subhead = findSubhead(item);
-                const label = subhead?.parentElement?.querySelector?.('.yt-tools-shorts-channel-name');
-
-                if (!videoId || !label) {
-                    rt.io.unobserve(item);
-                    continue;
-                }
-
-                getChannelName(videoId, item)
-                    .then((name) => {
-                        if (name) label.textContent = name;
-                    })
-                    .finally(() => {
-                        rt.io.unobserve(item);
+        const fetchChannelNameFromWatch = (videoId) => {
+            rt.fetchChain = rt.fetchChain.then(async () => {
+                if (rt.cache.has(videoId)) return rt.cache.get(videoId);
+                let res = null;
+                try {
+                    res = await fetch(`/watch?v=${videoId}`, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        cache: 'force-cache',
                     });
+                } catch (e) {
+                    return '';
+                }
+                if (!res?.ok) return '';
+                const html = await res.text();
+
+                const idx = html.indexOf('itemprop="author"');
+                if (idx < 0) return '';
+                const start = html.lastIndexOf('<span', idx);
+                const end = html.indexOf('</span>', idx);
+                if (start < 0 || end < 0) return '';
+                const chunk = html.slice(start, end + 7);
+
+                const doc = new DOMParser().parseFromString(chunk, 'text/html');
+                const link = doc.querySelector('link[itemprop="name"]');
+                return (link?.getAttribute('content') || '').trim();
+            });
+            return rt.fetchChain;
+        };
+
+        const getChannelName = (videoId, item) => {
+            const cached = rt.cache.get(videoId);
+            if (cached) return Promise.resolve(cached);
+
+            const persisted = getShortsChannelFromPersistedCache(videoId);
+            if (persisted) {
+                rt.cache.set(videoId, persisted);
+                return Promise.resolve(persisted);
             }
-        }, {
-            threshold: 0.15
+
+            const domName = tryExtractChannelNameFromDom(item);
+            if (domName) {
+                rt.cache.set(videoId, domName);
+                setShortsChannelToPersistedCache(videoId, domName);
+                return Promise.resolve(domName);
+            }
+
+            const inflight = rt.inflight.get(videoId);
+            if (inflight) return inflight;
+
+            const p = fetchChannelNameFromWatch(videoId)
+                .then((name) => {
+                    const finalName = (name || '').trim();
+                    if (finalName) {
+                        rt.cache.set(videoId, finalName);
+                        setShortsChannelToPersistedCache(videoId, finalName);
+                    }
+                    return finalName;
+                })
+                .finally(() => {
+                    rt.inflight.delete(videoId);
+                });
+            rt.inflight.set(videoId, p);
+            return p;
+        };
+
+        const processItem = (item) => {
+            if (!(item instanceof Element)) return;
+            if (item.dataset.ytToolsShortsChannelProcessed === '1') return;
+
+            const subhead = findSubhead(item);
+            if (!subhead) return;
+
+            const videoId = getShortsVideoIdFromItem(item);
+            if (!videoId) return;
+
+            item.dataset.ytToolsShortsChannelProcessed = '1';
+            item.dataset.ytToolsShortsVideoId = videoId;
+
+            const label = ensureLabel(subhead);
+            if (!label) return;
+            label.textContent = '';
+
+            rt.io?.observe(item);
+        };
+
+        if (!rt.io) {
+            rt.io = new IntersectionObserver((entries) => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    const item = entry.target;
+                    const videoId = item?.dataset?.ytToolsShortsVideoId;
+                    const subhead = findSubhead(item);
+                    const label = subhead?.parentElement?.querySelector?.('.yt-tools-shorts-channel-name');
+
+                    if (!videoId || !label) {
+                        rt.io.unobserve(item);
+                        continue;
+                    }
+
+                    getChannelName(videoId, item)
+                        .then((name) => {
+                            if (name) label.textContent = name;
+                        })
+                        .finally(() => {
+                            rt.io.unobserve(item);
+                        });
+                }
+            }, {
+                threshold: 0.15
+            });
+        }
+
+        const scan = () => {
+            clearTimeout(rt.scanT);
+            rt.scanT = setTimeout(() => {
+                document
+                    .querySelectorAll('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')
+                    .forEach(processItem);
+            }, 120);
+        };
+
+        if (!rt.observer) {
+            rt.observer = new MutationObserver(scan);
+            const observeTarget = document.querySelector('#page-manager') || document.body;
+            rt.observer.observe(observeTarget, {
+                childList: true,
+                subtree: true
+            });
+        }
+
+        scan();
+    }
+
+
+    // ------------------------------
+    // Feature: Show cached rating/likes/dislikes on video cards (watch related + home/search)
+
+    // ------------------------------
+    function getVideoIdFromLockup(lockup) {
+        const a = lockup.querySelector('a[href*="watch?v="]');
+        if (a) {
+            const m = (a.getAttribute('href') || '').match(/[?&]v=([^&]+)/);
+            if (m) return m[1];
+        }
+        const el = lockup.querySelector('[class*="content-id-"]');
+        if (el) {
+            const m = el.className.match(/content-id-([A-Za-z0-9_-]+)/);
+            if (m) return m[1];
+        }
+        return null;
+    }
+
+    function createSvgIconFromString(svgString, sizePx) {
+        const div = document.createElement('div');
+        div.innerHTML = safeHTML(svgString.trim());
+        const svg = div.firstElementChild;
+        if (!svg) return null;
+        svg.setAttribute('width', String(sizePx || 14));
+        svg.setAttribute('height', String(sizePx || 14));
+        svg.style.display = 'inline-block';
+        svg.style.verticalAlign = 'middle';
+        svg.style.marginRight = '2px';
+        return svg;
+    }
+
+    const LOCKUP_RATING_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-star"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245" /></svg>';
+    const LOCKUP_LIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 11v8a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-7a1 1 0 0 1 1 -1h3a4 4 0 0 0 4 -4v-1a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a2 3 0 0 1 -2 2h-7a3 3 0 0 1 -3 -3" /></svg>';
+    const LOCKUP_DISLIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 13v-8a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v7a1 1 0 0 0 1 1h3a4 4 0 0 1 4 4v1a2 2 0 0 0 4 0v-5h3a2 2 0 0 0 2 -2l-1 -5a2 3 0 0 0 -2 -2h-7a3 3 0 0 0 -3 3" /></svg>';
+
+    function injectLockupCachedStats() {
+        if (!window.location.href.includes('youtube.com')) return;
+        document.querySelectorAll('yt-lockup-view-model').forEach((lockup) => {
+            if (lockup.hasAttribute('data-yt-tools-lockup-stats')) return;
+            const videoId = getVideoIdFromLockup(lockup);
+            if (!videoId) return;
+            const cached = getLikesDislikesFromPersistedCache(videoId);
+            if (!cached) return;
+            const hasRating = cached.rating != null;
+            const hasLikes = cached.likes != null;
+            const hasDislikes = cached.dislikes != null;
+            if (!hasRating && !hasLikes && !hasDislikes) return;
+            const meta = lockup.querySelector('yt-content-metadata-view-model');
+            if (!meta) return;
+            const row = document.createElement('div');
+            row.className = 'yt-content-metadata-view-model__metadata-row';
+            row.setAttribute('data-yt-tools-lockup-stats-row', '1');
+            const wrap = document.createElement('span');
+            wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color';
+            wrap.setAttribute('dir', 'auto');
+            wrap.setAttribute('role', 'text');
+            const sep = () => {
+                const s = document.createTextNode(' · ');
+                return s;
+            };
+            if (hasRating) {
+                const ratingIcon = createSvgIconFromString(LOCKUP_RATING_SVG, 14);
+                if (ratingIcon) wrap.appendChild(ratingIcon);
+                wrap.appendChild(document.createTextNode(' ' + cached.rating.toFixed(1)));
+                if (hasLikes || hasDislikes) wrap.appendChild(sep());
+            }
+            if (hasLikes) {
+                const likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 14);
+                if (likeIcon) wrap.appendChild(likeIcon);
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
+                if (hasDislikes) wrap.appendChild(sep());
+            }
+            if (hasDislikes) {
+                const dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 14);
+                if (dislikeIcon) wrap.appendChild(dislikeIcon);
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
+            }
+            row.appendChild(wrap);
+            meta.appendChild(row);
+            lockup.setAttribute('data-yt-tools-lockup-stats', videoId);
         });
     }
 
-    const scan = () => {
-        clearTimeout(rt.scanT);
-        rt.scanT = setTimeout(() => {
-            document
-                .querySelectorAll('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')
-                .forEach(processItem);
-        }, 120);
-    };
+    function getVideoIdFromShortsLockup(item) {
+        if (item.dataset.ytToolsShortsVideoId) return item.dataset.ytToolsShortsVideoId;
+        var a = item.querySelector('a[href^="/shorts/"]');
+        if (!a) return null;
+        var m = (a.getAttribute('href') || '').match(/\/shorts\/([^/?]+)/);
+        return m ? m[1] : null;
+    }
 
-    if (!rt.observer) {
-        rt.observer = new MutationObserver((mutations) => {
-            let shouldScan = false;
-            for (let i = 0; i < mutations.length; i++) {
-                const m = mutations[i];
-                if (m.addedNodes.length > 0) {
-                    for (let j = 0; j < m.addedNodes.length; j++) {
-                        const node = m.addedNodes[j];
-                        if (node.nodeType === 1) { // ELEMENT_NODE
-                            if (
-                                node.tagName === 'YTM-SHORTS-LOCKUP-VIEW-MODEL' ||
-                                node.tagName === 'YTM-SHORTS-LOCKUP-VIEW-MODEL-V2' ||
-                                node.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')
-                            ) {
-                                shouldScan = true;
-                                break;
-                            }
-                        }
-                    }
+    function injectShortsLockupCachedStats() {
+        if (!window.location.href.includes('youtube.com')) return;
+        // Process inner lockup (has metadata); v2 wraps it and would duplicate
+        document.querySelectorAll('ytm-shorts-lockup-view-model').forEach(function (item) {
+            if (item.hasAttribute('data-yt-tools-shorts-stats')) return;
+            var videoId = getVideoIdFromShortsLockup(item);
+            if (!videoId) return;
+            var cached = getLikesDislikesFromPersistedCache(videoId);
+            if (!cached) return;
+            var hasLikes = cached.likes != null;
+            var hasDislikes = cached.dislikes != null;
+            if (!hasLikes && !hasDislikes) return;
+            var subhead = item.querySelector(
+                '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
+                '.shortsLockupViewModelHostOutsideMetadataSubhead,' +
+                '.ShortsLockupViewModelHostMetadataSubhead,' +
+                '.shortsLockupViewModelHostMetadataSubhead'
+            );
+            if (!subhead || !subhead.parentElement) return;
+            var wrap = document.createElement('span');
+            wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color yt-tools-shorts-stats-row';
+            wrap.setAttribute('dir', 'auto');
+            wrap.setAttribute('role', 'text');
+            wrap.setAttribute('style', 'color: #aaa !important;');
+            var sep = function () {
+                return document.createTextNode(' \u00b7 ');
+            };
+            if (hasLikes) {
+                var likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 12);
+                if (likeIcon) {
+                    likeIcon.style.setProperty('color', '#aaa', 'important');
+                    wrap.appendChild(likeIcon);
                 }
-                if (shouldScan) break;
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
+                if (hasDislikes) wrap.appendChild(sep());
             }
-            if (shouldScan) scan();
+            if (hasDislikes) {
+                var dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 12);
+                if (dislikeIcon) {
+                    dislikeIcon.style.setProperty('color', '#aaa', 'important');
+                    wrap.appendChild(dislikeIcon);
+                }
+                wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
+            }
+            var row = document.createElement('div');
+            row.className = 'yt-tools-shorts-stats-wrap';
+            row.setAttribute('style', 'color: #aaa !important;');
+            row.appendChild(wrap);
+            subhead.parentElement.appendChild(row);
+            item.setAttribute('data-yt-tools-shorts-stats', videoId);
         });
-        const observeTarget = document.querySelector('#page-manager') || document.body;
-        rt.observer.observe(observeTarget, {
+    }
+
+    function createLockupStatsObserver(target) {
+        var lockupStatsDebounceT = null;
+        var lockupStatsScheduled = false;
+        var obs = new MutationObserver(function () {
+            if (lockupStatsScheduled) return;
+            lockupStatsScheduled = true;
+            clearTimeout(lockupStatsDebounceT);
+            lockupStatsDebounceT = setTimeout(function () {
+                lockupStatsScheduled = false;
+                if (!window.location.href.includes('youtube.com')) return;
+                injectLockupCachedStats();
+                injectShortsLockupCachedStats();
+                // Single extra pass for late-rendered lockups (reduced from 3 passes)
+                setTimeout(function () {
+                    if (!window.location.href.includes('youtube.com')) return;
+                    if (!hasUnprocessedLockups()) return;
+                    injectLockupCachedStats();
+                    injectShortsLockupCachedStats();
+                }, 1200);
+            }, 280);
+        });
+        obs.observe(target, {
             childList: true,
             subtree: true
         });
+        return obs;
     }
 
-    scan();
-}
-
-
-// ------------------------------
-// Feature: Show cached rating/likes/dislikes on video cards (watch related + home/search)
-
-// ------------------------------
-function getVideoIdFromLockup(lockup) {
-    const a = lockup.querySelector('a[href*="watch?v="]');
-    if (a) {
-        const m = (a.getAttribute('href') || '').match(/[?&]v=([^&]+)/);
-        if (m) return m[1];
+    function retargetLockupStatsObserverIfNeeded() {
+        if (!window.location.href.includes('youtube.com/watch')) return;
+        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
+        if (!secondary || !secondary.parentNode) return;
+        if (__ytToolsRuntime.lockupCachedStatsObserveTarget === secondary) return;
+        var obs = __ytToolsRuntime.lockupCachedStatsObserver;
+        if (!obs) return;
+        obs.disconnect();
+        __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(secondary);
+        __ytToolsRuntime.lockupCachedStatsObserveTarget = secondary;
     }
-    const el = lockup.querySelector('[class*="content-id-"]');
-    if (el) {
-        const m = el.className.match(/content-id-([A-Za-z0-9_-]+)/);
-        if (m) return m[1];
+
+    function hasUnprocessedLockups() {
+        var normal = document.querySelectorAll('yt-lockup-view-model:not([data-yt-tools-lockup-stats])').length > 0;
+        var shorts = document.querySelectorAll('ytm-shorts-lockup-view-model:not([data-yt-tools-shorts-stats])').length > 0;
+        return normal || shorts;
     }
-    return null;
-}
 
-function createSvgIconFromString(svgString, sizePx) {
-    const div = document.createElement('div');
-    div.innerHTML = safeHTML(svgString.trim());
-    const svg = div.firstElementChild;
-    if (!svg) return null;
-    svg.setAttribute('width', String(sizePx || 14));
-    svg.setAttribute('height', String(sizePx || 14));
-    svg.style.display = 'inline-block';
-    svg.style.verticalAlign = 'middle';
-    svg.style.marginRight = '2px';
-    return svg;
-}
+    function runLockupCachedStatsCatchUp() {
+        if (!window.location.href.includes('youtube.com')) return;
+        if (document.visibilityState !== 'visible') return;
+        if (!hasUnprocessedLockups()) return;
+        injectLockupCachedStats();
+        injectShortsLockupCachedStats();
+    }
 
-const LOCKUP_RATING_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-star"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245" /></svg>';
-const LOCKUP_LIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 11v8a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-7a1 1 0 0 1 1 -1h3a4 4 0 0 0 4 -4v-1a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a2 3 0 0 1 -2 2h-7a3 3 0 0 1 -3 -3" /></svg>';
-const LOCKUP_DISLIKE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 13v-8a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v7a1 1 0 0 0 1 1h3a4 4 0 0 1 4 4v1a2 2 0 0 0 4 0v-5h3a2 2 0 0 0 2 -2l-1 -5a2 3 0 0 0 -2 -2h-7a3 3 0 0 0 -3 3" /></svg>';
+    function setupLockupCachedStats() {
+        if (!window.location.href.includes('youtube.com')) return;
+        injectLockupCachedStats();
+        injectShortsLockupCachedStats();
+        var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
+        var observeTarget = secondary && secondary.parentNode ? secondary : document.body;
+        if (__ytToolsRuntime.lockupCachedStatsObserver) {
+            if (observeTarget !== __ytToolsRuntime.lockupCachedStatsObserveTarget) {
+                __ytToolsRuntime.lockupCachedStatsObserver.disconnect();
+                __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
+                __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
+            }
+            return;
+        }
+        __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
+        __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
+        // Catch-up interval: apply stats to any new cards (scroll, filters, SPA) every 1.8s when there are unprocessed lockups
+        if (!__ytToolsRuntime.lockupCachedStatsIntervalId) {
+            __ytToolsRuntime.lockupCachedStatsIntervalId = setInterval(runLockupCachedStatsCatchUp, 1800);
+        }
+    }
 
-function injectLockupCachedStats() {
-    if (!window.location.href.includes('youtube.com')) return;
-    document.querySelectorAll('yt-lockup-view-model').forEach((lockup) => {
-        if (lockup.hasAttribute('data-yt-tools-lockup-stats')) return;
-        const videoId = getVideoIdFromLockup(lockup);
-        if (!videoId) return;
-        const cached = getLikesDislikesFromPersistedCache(videoId);
-        if (!cached) return;
-        const hasRating = cached.rating != null;
-        const hasLikes = cached.likes != null;
-        const hasDislikes = cached.dislikes != null;
-        if (!hasRating && !hasLikes && !hasDislikes) return;
-        const meta = lockup.querySelector('yt-content-metadata-view-model');
-        if (!meta) return;
-        const row = document.createElement('div');
-        row.className = 'yt-content-metadata-view-model__metadata-row';
-        row.setAttribute('data-yt-tools-lockup-stats-row', '1');
-        const wrap = document.createElement('span');
-        wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color';
-        wrap.setAttribute('dir', 'auto');
-        wrap.setAttribute('role', 'text');
-        const sep = () => {
-            const s = document.createTextNode(' · ');
-            return s;
+
+    // ------------------------------
+    // Feature: Bookmarks per video (persisted)
+
+    // ------------------------------
+    function getBookmarksForVideo(videoId) {
+        const all = readJsonGM(STORAGE_KEYS_MDCM.BOOKMARKS, {});
+        const list = Array.isArray(all[videoId]) ? all[videoId] : [];
+        return {
+            all,
+            list
         };
-        if (hasRating) {
-            const ratingIcon = createSvgIconFromString(LOCKUP_RATING_SVG, 14);
-            if (ratingIcon) wrap.appendChild(ratingIcon);
-            wrap.appendChild(document.createTextNode(' ' + cached.rating.toFixed(1)));
-            if (hasLikes || hasDislikes) wrap.appendChild(sep());
-        }
-        if (hasLikes) {
-            const likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 14);
-            if (likeIcon) wrap.appendChild(likeIcon);
-            wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
-            if (hasDislikes) wrap.appendChild(sep());
-        }
-        if (hasDislikes) {
-            const dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 14);
-            if (dislikeIcon) wrap.appendChild(dislikeIcon);
-            wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
-        }
-        row.appendChild(wrap);
-        meta.appendChild(row);
-        lockup.setAttribute('data-yt-tools-lockup-stats', videoId);
-    });
-}
+    }
 
-function getVideoIdFromShortsLockup(item) {
-    if (item.dataset.ytToolsShortsVideoId) return item.dataset.ytToolsShortsVideoId;
-    var a = item.querySelector('a[href^="/shorts/"]');
-    if (!a) return null;
-    var m = (a.getAttribute('href') || '').match(/\/shorts\/([^/?]+)/);
-    return m ? m[1] : null;
-}
-
-function injectShortsLockupCachedStats() {
-    if (!window.location.href.includes('youtube.com')) return;
-    // Process inner lockup (has metadata); v2 wraps it and would duplicate
-    document.querySelectorAll('ytm-shorts-lockup-view-model').forEach(function (item) {
-        if (item.hasAttribute('data-yt-tools-shorts-stats')) return;
-        var videoId = getVideoIdFromShortsLockup(item);
-        if (!videoId) return;
-        var cached = getLikesDislikesFromPersistedCache(videoId);
-        if (!cached) return;
-        var hasLikes = cached.likes != null;
-        var hasDislikes = cached.dislikes != null;
-        if (!hasLikes && !hasDislikes) return;
-        var subhead = item.querySelector(
-            '.ShortsLockupViewModelHostOutsideMetadataSubhead,' +
-            '.shortsLockupViewModelHostOutsideMetadataSubhead,' +
-            '.ShortsLockupViewModelHostMetadataSubhead,' +
-            '.shortsLockupViewModelHostMetadataSubhead'
-        );
-        if (!subhead || !subhead.parentElement) return;
-        var wrap = document.createElement('span');
-        wrap.className = 'yt-core-attributed-string yt-content-metadata-view-model__metadata-text yt-core-attributed-string--white-space-pre-wrap yt-core-attributed-string--link-inherit-color yt-tools-shorts-stats-row';
-        wrap.setAttribute('dir', 'auto');
-        wrap.setAttribute('role', 'text');
-        wrap.setAttribute('style', 'color: #aaa !important;');
-        var sep = function () {
-            return document.createTextNode(' \u00b7 ');
+    function saveBookmark(videoId, seconds, label) {
+        const {
+            all,
+            list
+        } = getBookmarksForVideo(videoId);
+        const t = Math.max(0, Math.floor(Number(seconds) || 0));
+        const exists = list.some(b => b && b.t === t);
+        const item = {
+            t,
+            label: (label || formatTimeShort(t)).trim(),
+            createdAt: Date.now()
         };
-        if (hasLikes) {
-            var likeIcon = createSvgIconFromString(LOCKUP_LIKE_SVG, 12);
-            if (likeIcon) {
-                likeIcon.style.setProperty('color', '#aaa', 'important');
-                wrap.appendChild(likeIcon);
-            }
-            wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.likes, 0)));
-            if (hasDislikes) wrap.appendChild(sep());
-        }
-        if (hasDislikes) {
-            var dislikeIcon = createSvgIconFromString(LOCKUP_DISLIKE_SVG, 12);
-            if (dislikeIcon) {
-                dislikeIcon.style.setProperty('color', '#aaa', 'important');
-                wrap.appendChild(dislikeIcon);
-            }
-            wrap.appendChild(document.createTextNode(' ' + FormatterNumber(cached.dislikes, 0)));
-        }
-        var row = document.createElement('div');
-        row.className = 'yt-tools-shorts-stats-wrap';
-        row.setAttribute('style', 'color: #aaa !important;');
-        row.appendChild(wrap);
-        subhead.parentElement.appendChild(row);
-        item.setAttribute('data-yt-tools-shorts-stats', videoId);
-    });
-}
-
-function createLockupStatsObserver(target) {
-    var lockupStatsDebounceT = null;
-    var lockupStatsScheduled = false;
-    var obs = new MutationObserver(function (mutations) {
-        let hasAddedNodes = false;
-        for (let i = 0; i < mutations.length; i++) {
-            if (mutations[i].addedNodes.length > 0) {
-                hasAddedNodes = true;
-                break;
-            }
-        }
-        if (!hasAddedNodes) return;
-
-        if (lockupStatsScheduled) return;
-        lockupStatsScheduled = true;
-        clearTimeout(lockupStatsDebounceT);
-        lockupStatsDebounceT = setTimeout(function () {
-            lockupStatsScheduled = false;
-            if (!window.location.href.includes('youtube.com')) return;
-            injectLockupCachedStats();
-            injectShortsLockupCachedStats();
-            // Single extra pass for late-rendered lockups (reduced from 3 passes)
-            setTimeout(function () {
-                if (!window.location.href.includes('youtube.com')) return;
-                if (!hasUnprocessedLockups()) return;
-                injectLockupCachedStats();
-                injectShortsLockupCachedStats();
-            }, 1200);
-        }, 280);
-    });
-    obs.observe(target, {
-        childList: true,
-        subtree: true
-    });
-    return obs;
-}
-
-function retargetLockupStatsObserverIfNeeded() {
-    if (!window.location.href.includes('youtube.com/watch')) return;
-    var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
-    if (!secondary || !secondary.parentNode) return;
-    if (__ytToolsRuntime.lockupCachedStatsObserveTarget === secondary) return;
-    var obs = __ytToolsRuntime.lockupCachedStatsObserver;
-    if (!obs) return;
-    obs.disconnect();
-    __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(secondary);
-    __ytToolsRuntime.lockupCachedStatsObserveTarget = secondary;
-}
-
-function hasUnprocessedLockups() {
-    var normal = document.querySelectorAll('yt-lockup-view-model:not([data-yt-tools-lockup-stats])').length > 0;
-    var shorts = document.querySelectorAll('ytm-shorts-lockup-view-model:not([data-yt-tools-shorts-stats])').length > 0;
-    return normal || shorts;
-}
-
-function runLockupCachedStatsCatchUp() {
-    if (!window.location.href.includes('youtube.com')) return;
-    if (document.visibilityState !== 'visible') return;
-    if (!hasUnprocessedLockups()) return;
-    injectLockupCachedStats();
-    injectShortsLockupCachedStats();
-}
-
-function setupLockupCachedStats() {
-    if (!window.location.href.includes('youtube.com')) return;
-    injectLockupCachedStats();
-    injectShortsLockupCachedStats();
-    var secondary = document.getElementById('secondary') || document.querySelector('ytd-watch-next-secondary-results-renderer');
-    var observeTarget = secondary && secondary.parentNode ? secondary : document.body;
-    if (__ytToolsRuntime.lockupCachedStatsObserver) {
-        if (observeTarget !== __ytToolsRuntime.lockupCachedStatsObserveTarget) {
-            __ytToolsRuntime.lockupCachedStatsObserver.disconnect();
-            __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
-            __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
-        }
-        return;
-    }
-    __ytToolsRuntime.lockupCachedStatsObserver = createLockupStatsObserver(observeTarget);
-    __ytToolsRuntime.lockupCachedStatsObserveTarget = observeTarget;
-    // Catch-up interval: apply stats to any new cards (scroll, filters, SPA) every 1.8s when there are unprocessed lockups
-    if (!__ytToolsRuntime.lockupCachedStatsIntervalId) {
-        __ytToolsRuntime.lockupCachedStatsIntervalId = setInterval(runLockupCachedStatsCatchUp, 1800);
-    }
-}
-
-
-// ------------------------------
-// Feature: Bookmarks per video (persisted)
-
-// ------------------------------
-function getBookmarksForVideo(videoId) {
-    const all = readJsonGM(STORAGE_KEYS_MDCM.BOOKMARKS, {});
-    const list = Array.isArray(all[videoId]) ? all[videoId] : [];
-    return {
-        all,
-        list
-    };
-}
-
-function saveBookmark(videoId, seconds, label) {
-    const {
-        all,
-        list
-    } = getBookmarksForVideo(videoId);
-    const t = Math.max(0, Math.floor(Number(seconds) || 0));
-    const exists = list.some(b => b && b.t === t);
-    const item = {
-        t,
-        label: (label || formatTimeShort(t)).trim(),
-        createdAt: Date.now()
-    };
-    const nextList = exists ? list.map(b => (b.t === t ? item : b)) : [...list, item];
-    nextList.sort((a, b) => a.t - b.t);
-    all[videoId] = nextList;
-    writeJsonGM(STORAGE_KEYS_MDCM.BOOKMARKS, all);
-}
-
-function deleteBookmark(videoId, seconds) {
-    const {
-        all,
-        list
-    } = getBookmarksForVideo(videoId);
-    const t = Math.max(0, Math.floor(Number(seconds) || 0));
-    all[videoId] = list.filter(b => b && b.t !== t);
-    writeJsonGM(STORAGE_KEYS_MDCM.BOOKMARKS, all);
-}
-
-function renderBookmarksPanel(videoId) {
-    const panel = $id('yt-bookmarks-panel');
-    if (!panel) return;
-
-    const {
-        list
-    } = getBookmarksForVideo(videoId);
-    if (!list.length) {
-        panel.innerHTML = safeHTML(`<div class="yt-bm-empty">No bookmarks yet. Click ★ to save one.</div>`);
-        return;
+        const nextList = exists ? list.map(b => (b.t === t ? item : b)) : [...list, item];
+        nextList.sort((a, b) => a.t - b.t);
+        all[videoId] = nextList;
+        writeJsonGM(STORAGE_KEYS_MDCM.BOOKMARKS, all);
     }
 
-    panel.innerHTML = safeHTML(list
-        .map((b) => {
-            const time = formatTimeShort(b.t);
-            const safeLabel = (b.label || time).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `
+    function deleteBookmark(videoId, seconds) {
+        const {
+            all,
+            list
+        } = getBookmarksForVideo(videoId);
+        const t = Math.max(0, Math.floor(Number(seconds) || 0));
+        all[videoId] = list.filter(b => b && b.t !== t);
+        writeJsonGM(STORAGE_KEYS_MDCM.BOOKMARKS, all);
+    }
+
+    function renderBookmarksPanel(videoId) {
+        const panel = $id('yt-bookmarks-panel');
+        if (!panel) return;
+
+        const {
+            list
+        } = getBookmarksForVideo(videoId);
+        if (!list.length) {
+            panel.innerHTML = safeHTML(`<div class="yt-bm-empty">No bookmarks yet. Click ★ to save one.</div>`);
+            return;
+        }
+
+        panel.innerHTML = safeHTML(list
+            .map((b) => {
+                const time = formatTimeShort(b.t);
+                const safeLabel = (b.label || time).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `
           <div class="yt-bm-item">
             <button type="button" class="yt-bm-go" data-action="go" data-t="${b.t}" title="Go to ${time}">${time}</button>
             <div class="yt-bm-label" title="${safeLabel}">${safeLabel}</div>
             <button type="button" class="yt-bm-del" data-action="del" data-t="${b.t}" title="Delete">✕</button>
           </div>
         `;
-        })
-        .join(''));
-}
+            })
+            .join(''));
+    }
 
-function applyBookmarksIfEnabled(settings) {
-    const addBtn = $id('yt-bookmark-add');
-    const toggleBtn = $id('yt-bookmark-toggle');
-    const panel = $id('yt-bookmarks-panel');
+    function applyBookmarksIfEnabled(settings) {
+        const addBtn = $id('yt-bookmark-add');
+        const toggleBtn = $id('yt-bookmark-toggle');
+        const panel = $id('yt-bookmarks-panel');
 
-    if (!addBtn || !toggleBtn || !panel) return;
+        if (!addBtn || !toggleBtn || !panel) return;
 
-    const enabled = !!settings?.bookmarks;
-    addBtn.style.display = enabled ? 'inline-flex' : 'none';
-    toggleBtn.style.display = enabled ? 'inline-flex' : 'none';
-    panel.style.display = enabled && __ytToolsRuntime.bookmarksPanelOpen ? 'block' : 'none';
+        const enabled = !!settings?.bookmarks;
+        addBtn.style.display = enabled ? 'inline-flex' : 'none';
+        toggleBtn.style.display = enabled ? 'inline-flex' : 'none';
+        panel.style.display = enabled && __ytToolsRuntime.bookmarksPanelOpen ? 'block' : 'none';
 
-    if (!enabled) return;
+        if (!enabled) return;
 
-    const videoId = getCurrentVideoId();
-    if (!videoId) return;
-    renderBookmarksPanel(videoId);
+        const videoId = getCurrentVideoId();
+        if (!videoId) return;
+        renderBookmarksPanel(videoId);
 
-    if (__ytToolsRuntime.bookmarkClickHandlerInitialized) return;
-    __ytToolsRuntime.bookmarkClickHandlerInitialized = true;
+        if (__ytToolsRuntime.bookmarkClickHandlerInitialized) return;
+        __ytToolsRuntime.bookmarkClickHandlerInitialized = true;
 
-    document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (!(target instanceof Element)) return;
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (!(target instanceof Element)) return;
 
-        const add = target.closest('#yt-bookmark-add');
-        const tog = target.closest('#yt-bookmark-toggle');
-        const actionBtn = target.closest('[data-action][data-t]');
+            const add = target.closest('#yt-bookmark-add');
+            const tog = target.closest('#yt-bookmark-toggle');
+            const actionBtn = target.closest('[data-action][data-t]');
 
-        if (add) {
-            e.preventDefault();
-            e.stopPropagation();
-            const v = $e('video');
-            const vid = getCurrentVideoId();
-            if (!v || !vid) return;
-            const t = Math.floor(v.currentTime || 0);
-            const defaultLabel = formatTimeShort(t);
-            const label = prompt('Bookmark name (optional):', defaultLabel) || defaultLabel;
-            saveBookmark(vid, t, label);
-            __ytToolsRuntime.bookmarksPanelOpen = true;
-            panel.style.display = 'block';
-            renderBookmarksPanel(vid);
-            Notify('success', `Bookmark saved at ${defaultLabel}`);
-            return;
-        }
-
-        if (tog) {
-            e.preventDefault();
-            e.stopPropagation();
-            __ytToolsRuntime.bookmarksPanelOpen = !__ytToolsRuntime.bookmarksPanelOpen;
-            panel.style.display = __ytToolsRuntime.bookmarksPanelOpen ? 'block' : 'none';
-            const vid = getCurrentVideoId();
-            if (vid && __ytToolsRuntime.bookmarksPanelOpen) renderBookmarksPanel(vid);
-            return;
-        }
-
-        if (actionBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const action = actionBtn.getAttribute('data-action');
-            const t = Number(actionBtn.getAttribute('data-t'));
-            const v = $e('video');
-            const vid = getCurrentVideoId();
-            if (!v || !vid) return;
-            if (action === 'go') {
-                v.currentTime = Math.max(0, t || 0);
-                v.play?.().catch(() => { });
-            } else if (action === 'del') {
-                deleteBookmark(vid, t);
+            if (add) {
+                e.preventDefault();
+                e.stopPropagation();
+                const v = $e('video');
+                const vid = getCurrentVideoId();
+                if (!v || !vid) return;
+                const t = Math.floor(v.currentTime || 0);
+                const defaultLabel = formatTimeShort(t);
+                const label = prompt('Bookmark name (optional):', defaultLabel) || defaultLabel;
+                saveBookmark(vid, t, label);
+                __ytToolsRuntime.bookmarksPanelOpen = true;
+                panel.style.display = 'block';
                 renderBookmarksPanel(vid);
+                Notify('success', `Bookmark saved at ${defaultLabel}`);
+                return;
             }
+
+            if (tog) {
+                e.preventDefault();
+                e.stopPropagation();
+                __ytToolsRuntime.bookmarksPanelOpen = !__ytToolsRuntime.bookmarksPanelOpen;
+                panel.style.display = __ytToolsRuntime.bookmarksPanelOpen ? 'block' : 'none';
+                const vid = getCurrentVideoId();
+                if (vid && __ytToolsRuntime.bookmarksPanelOpen) renderBookmarksPanel(vid);
+                return;
+            }
+
+            if (actionBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const action = actionBtn.getAttribute('data-action');
+                const t = Number(actionBtn.getAttribute('data-t'));
+                const v = $e('video');
+                const vid = getCurrentVideoId();
+                if (!v || !vid) return;
+                if (action === 'go') {
+                    v.currentTime = Math.max(0, t || 0);
+                    v.play?.().catch(() => { });
+                } else if (action === 'del') {
+                    deleteBookmark(vid, t);
+                    renderBookmarksPanel(vid);
+                }
+            }
+        });
+    }
+
+
+    // ------------------------------
+    // Feature: Like vs Dislike bar
+
+    // ------------------------------
+    function parseCountText(text) {
+        if (!text) return null;
+        const s0 = String(text).trim().toLowerCase();
+        if (!s0) return null;
+        let mult = 1;
+        let s = s0.replace(/\s+/g, '');
+        if (s.includes('mil')) {
+            mult = 1000;
+            s = s.replace('mil', '');
+        } else if (s.includes('k')) {
+            mult = 1000;
+            s = s.replace('k', '');
+        } else if (s.includes('m')) {
+            mult = 1000000;
+            s = s.replace('m', '');
         }
-    });
-}
-
-
-// ------------------------------
-// Feature: Like vs Dislike bar
-
-// ------------------------------
-function parseCountText(text) {
-    if (!text) return null;
-    const s0 = String(text).trim().toLowerCase();
-    if (!s0) return null;
-    let mult = 1;
-    let s = s0.replace(/\s+/g, '');
-    if (s.includes('mil')) {
-        mult = 1000;
-        s = s.replace('mil', '');
-    } else if (s.includes('k')) {
-        mult = 1000;
-        s = s.replace('k', '');
-    } else if (s.includes('m')) {
-        mult = 1000000;
-        s = s.replace('m', '');
+        // normalize decimal separators
+        s = s.replace(/[^\d.,]/g, '');
+        if (!s) return null;
+        // If both separators exist, assume last is decimal
+        const lastDot = s.lastIndexOf('.');
+        const lastComma = s.lastIndexOf(',');
+        let nStr = s;
+        if (lastDot !== -1 && lastComma !== -1) {
+            const dec = Math.max(lastDot, lastComma);
+            const intPart = s.slice(0, dec).replace(/[.,]/g, '');
+            const decPart = s.slice(dec + 1);
+            nStr = `${intPart}.${decPart}`;
+        } else {
+            // Use dot as decimal
+            nStr = s.replace(',', '.');
+        }
+        const num = Number.parseFloat(nStr);
+        if (!Number.isFinite(num)) return null;
+        return Math.round(num * mult);
     }
-    // normalize decimal separators
-    s = s.replace(/[^\d.,]/g, '');
-    if (!s) return null;
-    // If both separators exist, assume last is decimal
-    const lastDot = s.lastIndexOf('.');
-    const lastComma = s.lastIndexOf(',');
-    let nStr = s;
-    if (lastDot !== -1 && lastComma !== -1) {
-        const dec = Math.max(lastDot, lastComma);
-        const intPart = s.slice(0, dec).replace(/[.,]/g, '');
-        const decPart = s.slice(dec + 1);
-        nStr = `${intPart}.${decPart}`;
-    } else {
-        // Use dot as decimal
-        nStr = s.replace(',', '.');
-    }
-    const num = Number.parseFloat(nStr);
-    if (!Number.isFinite(num)) return null;
-    return Math.round(num * mult);
-}
 
-async function ensureDislikesForCurrentVideo() {
-    const videoId = getCurrentVideoId();
-    if (!videoId) return null;
-    const now = Date.now();
-    if (__ytToolsRuntime.dislikesCache.videoId === videoId && __ytToolsRuntime.dislikesCache.dislikes != null && (now - __ytToolsRuntime.dislikesCache.ts) < 10 * 60 * 1000) {
-        return __ytToolsRuntime.dislikesCache;
-    }
-    const persisted = getLikesDislikesFromPersistedCache(videoId);
-    if (persisted && persisted.dislikes != null) {
-        __ytToolsRuntime.dislikesCache = {
-            videoId,
-            likes: persisted.likes,
-            dislikes: persisted.dislikes,
-            viewCount: persisted.viewCount,
-            rating: persisted.rating,
-            ts: now
-        };
-        return __ytToolsRuntime.dislikesCache;
-    }
-    try {
-        const res = await fetch(`${apiDislikes}${videoId}`);
-        const data = await res.json();
-        const dislikes = Number(data?.dislikes);
-        const likes = Number(data?.likes);
-        const viewCount = Number(data?.viewCount);
-        const rating = Number(data?.rating);
+    async function ensureDislikesForCurrentVideo() {
+        const videoId = getCurrentVideoId();
+        if (!videoId) return null;
         const now = Date.now();
-
-        if (Number.isFinite(dislikes)) {
-            __ytToolsRuntime.dislikesCache = {
-                videoId,
-                likes: Number.isFinite(likes) ? likes : getLikesFromDom(),
-                dislikes,
-                viewCount,
-                rating,
-                ts: now
-            };
-            setLikesDislikesToPersistedCache(
-                videoId,
-                __ytToolsRuntime.dislikesCache.likes,
-                dislikes,
-                Number.isFinite(viewCount) ? viewCount : undefined,
-                (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined
-            );
+        if (__ytToolsRuntime.dislikesCache.videoId === videoId && __ytToolsRuntime.dislikesCache.dislikes != null && (now - __ytToolsRuntime.dislikesCache.ts) < 10 * 60 * 1000) {
             return __ytToolsRuntime.dislikesCache;
         }
-    } catch (e) {
-        console.error('[YT Tools] Error fetching dislikes:', e);
-    }
-    return null;
-}
-
-function getLikesFromDom() {
-    // Try grab visible like count (YouTube UI varies a lot)
-    const likeBtn =
-        $e('#top-level-buttons-computed like-button-view-model button-view-model button') ||
-        $e('#top-level-buttons-computed like-button-view-model button') ||
-        $e('#top-level-buttons-computed ytd-toggle-button-renderer:nth-child(1)') ||
-        $e('segmented-like-dislike-button-view-model like-button-view-model');
-    if (!likeBtn) return null;
-
-    // Prefer visible counter first; aria-label can include locale thousands separators (17.606) that are ambiguous.
-    const candidates = [
-        likeBtn.querySelector?.('.yt-spec-button-shape-next__button-text-content')?.textContent,
-        likeBtn.textContent,
-        likeBtn.getAttribute?.('aria-label'),
-    ].filter(Boolean);
-
-    for (const txt of candidates) {
-        const n = parseCountText(txt);
-        if (n != null) return n;
-    }
-    return null;
-}
-
-function updateLikeDislikeBar(likes, dislikes) {
-    // Prefer placing it above the "copy description" button (as requested).
-    const copyDesc = $id('button_copy_description');
-    const host =
-        $e('#top-level-buttons-computed') ||
-        $e('ytd-watch-metadata #top-level-buttons-computed');
-    if (!host && !copyDesc) return;
-
-    let bar = $id('yt-like-dislike-bar-mdcm');
-    if (!bar) {
-        bar = document.createElement('div');
-        bar.id = 'yt-like-dislike-bar-mdcm';
-        bar.innerHTML = safeHTML(`<div class="like"></div><div class="dislike"></div>`);
-        if (copyDesc) {
-            copyDesc.insertAdjacentElement('beforebegin', bar);
-        } else {
-            host.appendChild(bar);
-        }
-    } else if (copyDesc && bar.previousElementSibling !== copyDesc) {
-        // Keep it near the copy description area if the DOM changed
-        try {
-            copyDesc.insertAdjacentElement('beforebegin', bar);
-        } catch (e) { }
-    }
-
-    if (!Number.isFinite(likes) || !Number.isFinite(dislikes) || likes + dislikes <= 0) {
-        bar.style.display = 'none';
-        return;
-    }
-
-    const total = likes + dislikes;
-    const likePct = Math.max(0, Math.min(100, (likes / total) * 100));
-    const dislikePct = 100 - likePct;
-    bar.style.display = 'block';
-    const likeEl = bar.querySelector('.like');
-    const dislikeEl = bar.querySelector('.dislike');
-    likeEl.style.width = `${likePct}%`;
-    dislikeEl.style.width = `${dislikePct}%`;
-    bar.title = `Likes: ${likes.toLocaleString()} | Dislikes: ${dislikes.toLocaleString()}`;
-}
-
-async function applyLikeDislikeBarIfEnabled(settings) {
-    if (!settings?.likeDislikeBar) {
-        const existing = $id('yt-like-dislike-bar-mdcm');
-        if (existing) existing.style.display = 'none';
-        return;
-    }
-    if (!window.location.href.includes('youtube.com/watch')) return;
-    const videoId = getCurrentVideoId();
-    if (!videoId) return;
-    const data = await ensureDislikesForCurrentVideo();
-    if (!data || data.likes == null || data.dislikes == null) return;
-    updateLikeDislikeBar(data.likes, data.dislikes);
-}
-
-// Retry helper (YT often renders likes late; keep it lightweight)
-function scheduleLikeBarUpdate(settings, attempts = 4) {
-    if (!settings?.likeDislikeBar) return;
-    let i = 0;
-    const tick = async () => {
-        i += 1;
-        await applyLikeDislikeBarIfEnabled(settings);
-        const bar = $id('yt-like-dislike-bar-mdcm');
-        if (bar && bar.style.display !== 'none') return;
-        if (i < attempts) setTimeout(tick, 800);
-    };
-    setTimeout(tick, 300);
-}
-
-//   Dislikes video
-async function videoDislike() {
-    if (isYTMusic) return;
-    validoUrl = document.location.href;
-
-    const validoVentana = $e('#below > ytd-watch-metadata > div');
-    if (validoVentana != undefined && document.location.href.split('?v=')[0].includes('youtube.com/watch')) {
-        let localVideoId = paramsVideoURL();
-        if (!localVideoId) return;
-        validoUrl = localVideoId;
-        const data = await ensureDislikesForCurrentVideo();
-        if (!data || data.dislikes == null) return;
-
-        const dislikes = data.dislikes;
-        const dislikes_btn = $e('#top-level-buttons-computed > segmented-like-dislike-button-view-model > yt-smartimation > div > div > dislike-button-view-model > toggle-button-view-model > button-view-model > button');
-
-        if (dislikes_btn != null) {
-            const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-
-            // Find or create our custom count element
-            let textContent = dislikes_btn.querySelector('.yt-tools-dislike-count');
-            if (!textContent) {
-                textContent = document.createElement('div');
-                textContent.className = 'ytSpecButtonShapeNextButtonTextContent yt-tools-dislike-count';
-
-                // Insert it after the icon container
-                const iconDiv = dislikes_btn.querySelector('.ytSpecButtonShapeNextIcon');
-                if (iconDiv) {
-                    iconDiv.insertAdjacentElement('afterend', textContent);
-                    // Convert button style to icon+text layout
-                    dislikes_btn.classList.add('ytSpecButtonShapeNextIconLeading');
-                    dislikes_btn.classList.remove('ytSpecButtonShapeNextIconButton');
-                } else {
-                    dislikes_btn.appendChild(textContent);
-                }
-            }
-
-            if (settings.dislikes) {
-                textContent.textContent = FormatterNumber(dislikes, 0);
-                textContent.style.display = 'block';
-                showDislikes = true;
-            } else {
-                textContent.style.display = 'none';
-                showDislikes = false;
-            }
-
-            const likes_btn =
-                $e('#top-level-buttons-computed like-button-view-model button-view-model button') ||
-                $e('#top-level-buttons-computed like-button-view-model button') ||
-                $e('#top-level-buttons-computed ytd-toggle-button-renderer:nth-child(1)') ||
-                $e('segmented-like-dislike-button-view-model like-button-view-model button');
-
-            // Capture current state as "initial" for this data load
-            const currentIsPressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
-            dislikes_btn.dataset.initialState = currentIsPressed;
-            dislikes_btn.dataset.originalCount = dislikes;
-
-            if (likes_btn) {
-                likes_btn.dataset.initialState = likes_btn.getAttribute('aria-pressed') === 'true';
-                likes_btn.dataset.originalCount = data.likes || 0;
-            }
-
-            const updateCount = () => {
-                // Dislikes calculation
-                const isDislikePressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
-                const wasDislikePressed = dislikes_btn.dataset.initialState === 'true';
-                const originalDislikes = Number(dislikes_btn.dataset.originalCount);
-
-                let dislikeOffset = 0;
-                if (!wasDislikePressed && isDislikePressed) dislikeOffset = 1;
-                else if (wasDislikePressed && !isDislikePressed) dislikeOffset = -1;
-
-                const newDislikes = Math.max(0, originalDislikes + dislikeOffset);
-
-                // Likes calculation
-                let newLikes = data.likes || 0;
-                if (likes_btn) {
-                    const isLikePressed = likes_btn.getAttribute('aria-pressed') === 'true';
-                    const wasLikePressed = likes_btn.dataset.initialState === 'true';
-                    const originalLikes = Number(likes_btn.dataset.originalCount);
-
-                    let likeOffset = 0;
-                    if (!wasLikePressed && isLikePressed) likeOffset = 1;
-                    else if (wasLikePressed && !isLikePressed) likeOffset = -1;
-
-                    newLikes = Math.max(0, originalLikes + likeOffset);
-                }
-
-                // Update run-time cache
-                if (__ytToolsRuntime.dislikesCache.videoId === localVideoId) {
-                    __ytToolsRuntime.dislikesCache.dislikes = newDislikes;
-                    __ytToolsRuntime.dislikesCache.likes = newLikes;
-
-                    // Also persist it so F5 uses the updated count as "original"
-                    setLikesDislikesToPersistedCache(
-                        localVideoId,
-                        newLikes,
-                        newDislikes,
-                        __ytToolsRuntime.dislikesCache.viewCount,
-                        __ytToolsRuntime.dislikesCache.rating
-                    );
-                }
-
-                if (settings.dislikes && textContent) {
-                    textContent.textContent = FormatterNumber(newDislikes, 0);
-                }
-
-                // Sync the like/dislike bar immediately
-                if (settings.likeDislikeBar) {
-                    updateLikeDislikeBar(newLikes, newDislikes);
-                }
+        const persisted = getLikesDislikesFromPersistedCache(videoId);
+        if (persisted && persisted.dislikes != null) {
+            __ytToolsRuntime.dislikesCache = {
+                videoId,
+                likes: persisted.likes,
+                dislikes: persisted.dislikes,
+                viewCount: persisted.viewCount,
+                rating: persisted.rating,
+                ts: now
             };
+            return __ytToolsRuntime.dislikesCache;
+        }
+        try {
+            const res = await fetch(`${apiDislikes}${videoId}`);
+            const data = await res.json();
+            const dislikes = Number(data?.dislikes);
+            const likes = Number(data?.likes);
+            const viewCount = Number(data?.viewCount);
+            const rating = Number(data?.rating);
+            const now = Date.now();
 
-            // Initial update
-            updateCount();
-
-            // Use MutationObserver for robust state tracking (handles Like button clicks too)
-            if (!dislikes_btn.dataset.observerInitialized) {
-                dislikes_btn.dataset.observerInitialized = 'true';
-
-                const observer = new MutationObserver((mutations) => {
-                    for (const mutation of mutations) {
-                        if (mutation.type === 'attributes' && mutation.attributeName === 'aria-pressed') {
-                            updateCount();
-                        }
-                    }
-                });
-
-                observer.observe(dislikes_btn, { attributes: true, attributeFilter: ['aria-pressed'] });
-                if (likes_btn) observer.observe(likes_btn, { attributes: true, attributeFilter: ['aria-pressed'] });
-
-                // Also handle direct clicks just in case
-                dislikes_btn.addEventListener('click', () => {
-                    setTimeout(updateCount, 150);
-                });
-                if (likes_btn) {
-                    likes_btn.addEventListener('click', () => {
-                        setTimeout(updateCount, 150);
-                    });
-                }
+            if (Number.isFinite(dislikes)) {
+                __ytToolsRuntime.dislikesCache = {
+                    videoId,
+                    likes: Number.isFinite(likes) ? likes : getLikesFromDom(),
+                    dislikes,
+                    viewCount,
+                    rating,
+                    ts: now
+                };
+                setLikesDislikesToPersistedCache(
+                    videoId,
+                    __ytToolsRuntime.dislikesCache.likes,
+                    dislikes,
+                    Number.isFinite(viewCount) ? viewCount : undefined,
+                    (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined
+                );
+                return __ytToolsRuntime.dislikesCache;
             }
+        } catch (e) {
+            console.error('[YT Tools] Error fetching dislikes:', e);
+        }
+        return null;
+    }
 
+    function getLikesFromDom() {
+        // Try grab visible like count (YouTube UI varies a lot)
+        const likeBtn =
+            $e('#top-level-buttons-computed like-button-view-model button-view-model button') ||
+            $e('#top-level-buttons-computed like-button-view-model button') ||
+            $e('#top-level-buttons-computed ytd-toggle-button-renderer:nth-child(1)') ||
+            $e('segmented-like-dislike-button-view-model like-button-view-model');
+        if (!likeBtn) return null;
+
+        // Prefer visible counter first; aria-label can include locale thousands separators (17.606) that are ambiguous.
+        const candidates = [
+            likeBtn.querySelector?.('.yt-spec-button-shape-next__button-text-content')?.textContent,
+            likeBtn.textContent,
+            likeBtn.getAttribute?.('aria-label'),
+        ].filter(Boolean);
+
+        for (const txt of candidates) {
+            const n = parseCountText(txt);
+            if (n != null) return n;
+        }
+        return null;
+    }
+
+    function updateLikeDislikeBar(likes, dislikes) {
+        // Prefer placing it above the "copy description" button (as requested).
+        const copyDesc = $id('button_copy_description');
+        const host =
+            $e('#top-level-buttons-computed') ||
+            $e('ytd-watch-metadata #top-level-buttons-computed');
+        if (!host && !copyDesc) return;
+
+        let bar = $id('yt-like-dislike-bar-mdcm');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'yt-like-dislike-bar-mdcm';
+            bar.innerHTML = safeHTML(`<div class="like"></div><div class="dislike"></div>`);
+            if (copyDesc) {
+                copyDesc.insertAdjacentElement('beforebegin', bar);
+            } else {
+                host.appendChild(bar);
+            }
+        } else if (copyDesc && bar.previousElementSibling !== copyDesc) {
+            // Keep it near the copy description area if the DOM changed
             try {
-                scheduleLikeBarUpdate(settings, 5);
+                copyDesc.insertAdjacentElement('beforebegin', bar);
             } catch (e) { }
         }
+
+        if (!Number.isFinite(likes) || !Number.isFinite(dislikes) || likes + dislikes <= 0) {
+            bar.style.display = 'none';
+            return;
+        }
+
+        const total = likes + dislikes;
+        const likePct = Math.max(0, Math.min(100, (likes / total) * 100));
+        const dislikePct = 100 - likePct;
+        bar.style.display = 'block';
+        const likeEl = bar.querySelector('.like');
+        const dislikeEl = bar.querySelector('.dislike');
+        likeEl.style.width = `${likePct}%`;
+        dislikeEl.style.width = `${dislikePct}%`;
+        bar.title = `Likes: ${likes.toLocaleString()} | Dislikes: ${dislikes.toLocaleString()}`;
     }
-}
 
-// dislikes shorts + views button (viewCount from Return YouTube Dislike API)
-async function shortDislike() {
-    validoUrl = document.location.href;
-    const validoVentanaShort = $m(
-        "#button-bar > reel-action-bar-view-model > dislike-button-view-model > toggle-button-view-model > button-view-model > label > div > span"
-    );
+    async function applyLikeDislikeBarIfEnabled(settings) {
+        if (!settings?.likeDislikeBar) {
+            const existing = $id('yt-like-dislike-bar-mdcm');
+            if (existing) existing.style.display = 'none';
+            return;
+        }
+        if (!window.location.href.includes('youtube.com/watch')) return;
+        const videoId = getCurrentVideoId();
+        if (!videoId) return;
+        const data = await ensureDislikesForCurrentVideo();
+        if (!data || data.likes == null || data.dislikes == null) return;
+        updateLikeDislikeBar(data.likes, data.dislikes);
+    }
 
-    if (validoVentanaShort != undefined && document.location.href.split('/')[3] === 'shorts') {
-        validoUrl = document.location.href.split('/')[4];
-        let dislikes = null;
-        let viewCount = null;
-        let rating = null;
-        const persisted = getLikesDislikesFromPersistedCache(validoUrl);
-        if (persisted && persisted.dislikes != null) {
-            dislikes = persisted.dislikes;
-            viewCount = persisted.viewCount ?? null;
-            rating = persisted.rating ?? null;
-        } else {
-            const urlShorts = `${apiDislikes}${validoUrl}`;
-            try {
-                const respuesta = await fetch(urlShorts);
-                const datosShort = await respuesta.json();
-                dislikes = Number(datosShort?.dislikes);
-                viewCount = Number(datosShort?.viewCount);
-                rating = Number(datosShort?.rating);
-                if (Number.isFinite(dislikes)) setLikesDislikesToPersistedCache(validoUrl, undefined, dislikes, Number.isFinite(viewCount) ? viewCount : undefined, (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined);
-            } catch (error) {
-                console.log(error);
+    // Retry helper (YT often renders likes late; keep it lightweight)
+    function scheduleLikeBarUpdate(settings, attempts = 4) {
+        if (!settings?.likeDislikeBar) return;
+        let i = 0;
+        const tick = async () => {
+            i += 1;
+            await applyLikeDislikeBarIfEnabled(settings);
+            const bar = $id('yt-like-dislike-bar-mdcm');
+            if (bar && bar.style.display !== 'none') return;
+            if (i < attempts) setTimeout(tick, 800);
+        };
+        setTimeout(tick, 300);
+    }
+
+    //   Dislikes video
+    async function videoDislike() {
+        if (isYTMusic) return;
+        validoUrl = document.location.href;
+
+        const validoVentana = $e('#below > ytd-watch-metadata > div');
+        if (validoVentana != undefined && document.location.href.split('?v=')[0].includes('youtube.com/watch')) {
+            let localVideoId = paramsVideoURL();
+            if (!localVideoId) return;
+            validoUrl = localVideoId;
+            const data = await ensureDislikesForCurrentVideo();
+            if (!data || data.dislikes == null) return;
+
+            const dislikes = data.dislikes;
+            const dislikes_btn = $e('#top-level-buttons-computed > segmented-like-dislike-button-view-model > yt-smartimation > div > div > dislike-button-view-model > toggle-button-view-model > button-view-model > button');
+
+            if (dislikes_btn != null) {
+                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+
+                // Find or create our custom count element
+                let textContent = dislikes_btn.querySelector('.yt-tools-dislike-count');
+                if (!textContent) {
+                    textContent = document.createElement('div');
+                    textContent.className = 'ytSpecButtonShapeNextButtonTextContent yt-tools-dislike-count';
+
+                    // Insert it after the icon container
+                    const iconDiv = dislikes_btn.querySelector('.ytSpecButtonShapeNextIcon');
+                    if (iconDiv) {
+                        iconDiv.insertAdjacentElement('afterend', textContent);
+                        // Convert button style to icon+text layout
+                        dislikes_btn.classList.add('ytSpecButtonShapeNextIconLeading');
+                        dislikes_btn.classList.remove('ytSpecButtonShapeNextIconButton');
+                    } else {
+                        dislikes_btn.appendChild(textContent);
+                    }
+                }
+
+                if (settings.dislikes) {
+                    textContent.textContent = FormatterNumber(dislikes, 0);
+                    textContent.style.display = 'block';
+                    showDislikes = true;
+                } else {
+                    textContent.style.display = 'none';
+                    showDislikes = false;
+                }
+
+                const likes_btn =
+                    $e('#top-level-buttons-computed like-button-view-model button-view-model button') ||
+                    $e('#top-level-buttons-computed like-button-view-model button') ||
+                    $e('#top-level-buttons-computed ytd-toggle-button-renderer:nth-child(1)') ||
+                    $e('segmented-like-dislike-button-view-model like-button-view-model button');
+
+                // Capture current state as "initial" for this data load
+                const currentIsPressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
+                dislikes_btn.dataset.initialState = currentIsPressed;
+                dislikes_btn.dataset.originalCount = dislikes;
+
+                if (likes_btn) {
+                    likes_btn.dataset.initialState = likes_btn.getAttribute('aria-pressed') === 'true';
+                    likes_btn.dataset.originalCount = data.likes || 0;
+                }
+
+                const updateCount = () => {
+                    // Dislikes calculation
+                    const isDislikePressed = dislikes_btn.getAttribute('aria-pressed') === 'true';
+                    const wasDislikePressed = dislikes_btn.dataset.initialState === 'true';
+                    const originalDislikes = Number(dislikes_btn.dataset.originalCount);
+
+                    let dislikeOffset = 0;
+                    if (!wasDislikePressed && isDislikePressed) dislikeOffset = 1;
+                    else if (wasDislikePressed && !isDislikePressed) dislikeOffset = -1;
+
+                    const newDislikes = Math.max(0, originalDislikes + dislikeOffset);
+
+                    // Likes calculation
+                    let newLikes = data.likes || 0;
+                    if (likes_btn) {
+                        const isLikePressed = likes_btn.getAttribute('aria-pressed') === 'true';
+                        const wasLikePressed = likes_btn.dataset.initialState === 'true';
+                        const originalLikes = Number(likes_btn.dataset.originalCount);
+
+                        let likeOffset = 0;
+                        if (!wasLikePressed && isLikePressed) likeOffset = 1;
+                        else if (wasLikePressed && !isLikePressed) likeOffset = -1;
+
+                        newLikes = Math.max(0, originalLikes + likeOffset);
+                    }
+
+                    // Update run-time cache
+                    if (__ytToolsRuntime.dislikesCache.videoId === localVideoId) {
+                        __ytToolsRuntime.dislikesCache.dislikes = newDislikes;
+                        __ytToolsRuntime.dislikesCache.likes = newLikes;
+
+                        // Also persist it so F5 uses the updated count as "original"
+                        setLikesDislikesToPersistedCache(
+                            localVideoId,
+                            newLikes,
+                            newDislikes,
+                            __ytToolsRuntime.dislikesCache.viewCount,
+                            __ytToolsRuntime.dislikesCache.rating
+                        );
+                    }
+
+                    if (settings.dislikes && textContent) {
+                        textContent.textContent = FormatterNumber(newDislikes, 0);
+                    }
+
+                    // Sync the like/dislike bar immediately
+                    if (settings.likeDislikeBar) {
+                        updateLikeDislikeBar(newLikes, newDislikes);
+                    }
+                };
+
+                // Initial update
+                updateCount();
+
+                // Use MutationObserver for robust state tracking (handles Like button clicks too)
+                if (!dislikes_btn.dataset.observerInitialized) {
+                    dislikes_btn.dataset.observerInitialized = 'true';
+
+                    const observer = new MutationObserver((mutations) => {
+                        for (const mutation of mutations) {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'aria-pressed') {
+                                updateCount();
+                            }
+                        }
+                    });
+
+                    observer.observe(dislikes_btn, { attributes: true, attributeFilter: ['aria-pressed'] });
+                    if (likes_btn) observer.observe(likes_btn, { attributes: true, attributeFilter: ['aria-pressed'] });
+
+                    // Also handle direct clicks just in case
+                    dislikes_btn.addEventListener('click', () => {
+                        setTimeout(updateCount, 150);
+                    });
+                    if (likes_btn) {
+                        likes_btn.addEventListener('click', () => {
+                            setTimeout(updateCount, 150);
+                        });
+                    }
+                }
+
+                try {
+                    scheduleLikeBarUpdate(settings, 5);
+                } catch (e) { }
             }
         }
-        if (dislikes != null) {
-            const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-            for (let i = 0; i < validoVentanaShort.length; i++) {
-                const el = validoVentanaShort[i];
-                if (settings.dislikes) {
-                    if (!el.dataset.originalLabel) el.dataset.originalLabel = el.textContent;
-                    el.textContent = `${FormatterNumber(dislikes, 0)}`;
-                } else {
-                    if (el.dataset.originalLabel) {
-                        el.textContent = el.dataset.originalLabel;
-                        delete el.dataset.originalLabel;
+    }
+
+    // dislikes shorts + views button (viewCount from Return YouTube Dislike API)
+    async function shortDislike() {
+        validoUrl = document.location.href;
+        const validoVentanaShort = $m(
+            "#button-bar > reel-action-bar-view-model > dislike-button-view-model > toggle-button-view-model > button-view-model > label > div > span"
+        );
+
+        if (validoVentanaShort != undefined && document.location.href.split('/')[3] === 'shorts') {
+            validoUrl = document.location.href.split('/')[4];
+            let dislikes = null;
+            let viewCount = null;
+            let rating = null;
+            const persisted = getLikesDislikesFromPersistedCache(validoUrl);
+            if (persisted && persisted.dislikes != null) {
+                dislikes = persisted.dislikes;
+                viewCount = persisted.viewCount ?? null;
+                rating = persisted.rating ?? null;
+            } else {
+                const urlShorts = `${apiDislikes}${validoUrl}`;
+                try {
+                    const respuesta = await fetch(urlShorts);
+                    const datosShort = await respuesta.json();
+                    dislikes = Number(datosShort?.dislikes);
+                    viewCount = Number(datosShort?.viewCount);
+                    rating = Number(datosShort?.rating);
+                    if (Number.isFinite(dislikes)) setLikesDislikesToPersistedCache(validoUrl, undefined, dislikes, Number.isFinite(viewCount) ? viewCount : undefined, (Number.isFinite(rating) && rating >= 0 && rating <= 5) ? rating : undefined);
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+            if (dislikes != null) {
+                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+                for (let i = 0; i < validoVentanaShort.length; i++) {
+                    const el = validoVentanaShort[i];
+                    if (settings.dislikes) {
+                        if (!el.dataset.originalLabel) el.dataset.originalLabel = el.textContent;
+                        el.textContent = `${FormatterNumber(dislikes, 0)}`;
+                    } else {
+                        if (el.dataset.originalLabel) {
+                            el.textContent = el.dataset.originalLabel;
+                            delete el.dataset.originalLabel;
+                        }
                     }
                 }
             }
+            if (__ytToolsRuntime.updateShortsViewsButton) __ytToolsRuntime.updateShortsViewsButton(validoUrl, viewCount);
+            if (__ytToolsRuntime.updateShortsRatingButton) __ytToolsRuntime.updateShortsRatingButton(validoUrl, rating);
         }
-        if (__ytToolsRuntime.updateShortsViewsButton) __ytToolsRuntime.updateShortsViewsButton(validoUrl, viewCount);
-        if (__ytToolsRuntime.updateShortsRatingButton) __ytToolsRuntime.updateShortsRatingButton(validoUrl, rating);
     }
-}
 
-let showDislikes = false;
+    let showDislikes = false;
 
-window.addEventListener('yt-navigate-finish', () => {
-    if (isYTMusic) return; // Dislikes UI not available on YTM
-    const svgDislike = $e('.svg-dislike-ico');
-    if (!svgDislike && showDislikes) {
-        setTimeout(async () => {
-            await videoDislike();
-            await shortDislike();
-        }, 1500);
-    }
-});
+    window.addEventListener('yt-navigate-finish', () => {
+        if (isYTMusic) return; // Dislikes UI not available on YTM
+        const svgDislike = $e('.svg-dislike-ico');
+        if (!svgDislike && showDislikes) {
+            setTimeout(async () => {
+                await videoDislike();
+                await shortDislike();
+            }, 1500);
+        }
+    });
 
 
 
@@ -2733,7 +2631,6 @@ window.addEventListener('yt-navigate-finish', () => {
             background-color: var(--yt-enhance-menu-bg, #252525);
             z-index: 10;
             display: flex;
-            flex-wrap: wrap;
             gap: 8px;
             -ms-overflow-style: none;
             padding-bottom: 8px;
@@ -2768,10 +2665,11 @@ window.addEventListener('yt-navigate-finish', () => {
             color: var(--text-custom-secondary);
             border-radius: 6px;
             transition: all 0.3s;
-            flex: 1 1 auto; /* auto to allow natural shrinking/growing when wrapped */
+            flex: 1;
             display: flex;
             align-items: center;
             gap: 6px;
+            flex-shrink: 0;
             justify-content: center;
             white-space: nowrap;
         }
@@ -2804,12 +2702,6 @@ window.addEventListener('yt-navigate-finish', () => {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 8px;
-        }
-        
-        .options-mdcm h4 {
-            grid-column: 1 / -1; /* Make title span full width of the grid */
-            margin-top: 0;
-            margin-bottom: 10px;
         }
 
         .options-settings-mdcm {
@@ -4238,28 +4130,24 @@ window.addEventListener('yt-navigate-finish', () => {
 
     /* YouTube watch playlist panel: reuse the same 3 style choices as YTM. */
     body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
-      background: rgba(255, 255, 255, 0.08) !important;
+      background: rgba(20, 20, 20, 0.62) !important;
       backdrop-filter: blur(20px) saturate(140%) !important;
       -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.38) !important;
       border-radius: 16px !important;
       overflow: hidden !important;
-      --yt-lightsource-section2-color: transparent !important;
-      --yt-lightsource-section4-color: transparent !important;
     }
 
     body.ytm-style-liquid ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
-      backdrop-filter: blur(40px) saturate(180%) brightness(1.1) !important;
-      -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.1) !important;
+      background: rgba(25, 25, 25, 0.45) !important;
+      backdrop-filter: blur(24px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
       border-top-color: rgba(255, 255, 255, 0.25) !important;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
       border-radius: 16px !important;
       overflow: hidden !important;
-      --yt-lightsource-section2-color: transparent !important;
-      --yt-lightsource-section4-color: transparent !important;
     }
 
     body.ytm-style-transparent ytd-watch-flexy ytd-playlist-panel-renderer#playlist {
@@ -4268,52 +4156,6 @@ window.addEventListener('yt-navigate-finish', () => {
       -webkit-backdrop-filter: none !important;
       border: none !important;
       box-shadow: none !important;
-    }
-
-    /* YouTube Search Bar Glassmorphism */
-    body.ytm-style-blur ytd-searchbox#search form#search-form,
-    body.ytm-style-blur yt-searchbox .ytSearchboxComponentInputContainer,
-    body.ytm-style-blur #voice-search-button button {
-      background: rgba(255, 255, 255, 0.08) !important;
-      backdrop-filter: blur(20px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      border-radius: 40px !important;
-      overflow: hidden !important;
-    }
-    body.ytm-style-liquid ytd-searchbox#search form#search-form,
-    body.ytm-style-liquid yt-searchbox .ytSearchboxComponentInputContainer,
-    body.ytm-style-liquid #voice-search-button button {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
-      backdrop-filter: blur(40px) saturate(180%) brightness(1.1) !important;
-      border: 1px solid rgba(255, 255, 255, 0.15) !important;
-      border-top-color: rgba(255, 255, 255, 0.25) !important;
-      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
-      border-radius: 40px !important;
-      overflow: hidden !important;
-    }
-    body.ytm-style-transparent ytd-searchbox#search form#search-form,
-    body.ytm-style-transparent yt-searchbox .ytSearchboxComponentInputContainer,
-    body.ytm-style-transparent #voice-search-button button {
-      background: transparent !important;
-      backdrop-filter: none !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      border-radius: 40px !important;
-    }
-    /* Hide native backgrounds so the form's glass effect shows through */
-    body[class*="ytm-style-"] ytd-searchbox#search #container.ytd-searchbox,
-    body[class*="ytm-style-"] ytd-searchbox#search #search-icon-legacy.ytd-searchbox,
-    body[class*="ytm-style-"] yt-searchbox .ytSearchboxComponentInputBox,
-    body[class*="ytm-style-"] yt-searchbox .ytSearchboxComponentSearchButton,
-    body[class*="ytm-style-"] yt-searchbox button.ytdTextInputAssistantButton {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-    body[class*="ytm-style-"] ytd-searchbox,
-    body[class*="ytm-style-"] yt-searchbox {
-      --ytd-searchbox-background: transparent !important;
-      --ytd-searchbox-legacy-button-color: transparent !important;
-      --ytd-searchbox-legacy-button-border-color: transparent !important;
     }
 
     body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,
@@ -5017,21 +4859,7 @@ window.addEventListener('yt-navigate-finish', () => {
                 // download-again just re-opens the last URL (no restart)
                 if (clicked.classList.contains('download-again-btn')) {
                     const url = container.dataset.lastDownloadUrl;
-                    if (url) {
-                        try {
-                            const rawTitle = isYTMusic
-                                ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
-                                : ($e('h1.style-scope.ytd-watch-metadata')?.innerText?.trim() || 'video');
-                            const title = rawTitle.replace(/[\\/:*?"<>|]/g, '_').trim() || 'download';
-                            GM_download({
-                                url: url,
-                                name: title,
-                                onerror: () => alert('Lỗi tải xuống từ máy chủ (Server Error). Vui lòng thử lại sau.')
-                            });
-                        } catch (e) {
-                            alert('Lỗi tải xuống (Download Error)');
-                        }
-                    }
+                    if (url) window.open(url);
                     return;
                 }
                 if (!quality || !type) return;
@@ -5349,11 +5177,6 @@ window.addEventListener('yt-navigate-finish', () => {
         if (canvas) {
             canvas.style.opacity = '1';
             if (controlPanel) controlPanel.style.opacity = '1';
-            
-            // Restart drawing loop if it stopped
-            if (!animationId && window.__ytToolsDraw) {
-                window.__ytToolsDraw();
-            }
         }
     }
 
@@ -5400,24 +5223,18 @@ window.addEventListener('yt-navigate-finish', () => {
         progressFill.style.width = '0%';
         progressText.textContent = '0%';
 
-        const fetchJsonWithTimeout = (url, timeoutMs = 20000) => {
-            return new Promise((resolve, reject) => {
-                GM_xmlhttpRequest({
-                    method: 'GET',
-                    url: url,
-                    timeout: timeoutMs,
-                    responseType: 'json',
-                    onload: (response) => {
-                        if (response.status >= 200 && response.status < 300) {
-                            resolve(response.response);
-                        } else {
-                            reject(new Error(`HTTP ${response.status}`));
-                        }
-                    },
-                    onerror: () => reject(new Error('Network error')),
-                    ontimeout: () => reject(new Error('Request timed out')),
+        const fetchJsonWithTimeout = async (url, timeoutMs = 20000) => {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, {
+                    signal: ctrl.signal
                 });
-            });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } finally {
+                clearTimeout(t);
+            }
         };
 
         const setErrorState = () => {
@@ -5428,483 +5245,6 @@ window.addEventListener('yt-navigate-finish', () => {
             container.dataset.downloading = 'false';
             container.dataset.urlOpened = 'false';
             container.dataset.lastDownloadUrl = '';
-        };
-
-        // Helper: fetch arraybuffer, trying native fetch first (to bypass strict extension blocking), fallback to GM_xmlhttpRequest
-        const fetchArrayBuffer = (url, timeoutMs = 120000, maxRetries = 2) => {
-            return new Promise((resolve, reject) => {
-                const attempt = async (retriesLeft) => {
-                    try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), timeoutMs);
-                        const response = await fetch(url, { signal: controller.signal });
-                        clearTimeout(id);
-                        if (response.ok) {
-                            const buffer = await response.arrayBuffer();
-                            resolve(buffer);
-                            return;
-                        } else if (response.status >= 500 && retriesLeft > 0) {
-                            console.warn(`fetch HTTP ${response.status} for ${url}, retrying...`);
-                            setTimeout(() => attempt(retriesLeft - 1), 2000);
-                            return;
-                        }
-                    } catch (err) {
-                        // fetch failed (CORS or network error), fallback to GM_xmlhttpRequest
-                    }
-
-                    GM_xmlhttpRequest({
-                        method: 'GET',
-                        url: url,
-                        timeout: timeoutMs,
-                        responseType: 'arraybuffer',
-                        onload: (r) => {
-                            if (r.status >= 200 && r.status < 300) {
-                                resolve(r.response);
-                            } else if (r.status >= 500 && retriesLeft > 0) {
-                                console.warn(`GM HTTP ${r.status} fetching ${url}, retrying...`);
-                                setTimeout(() => attempt(retriesLeft - 1), 2000);
-                            } else {
-                                reject(new Error(`HTTP ${r.status}`));
-                            }
-                        },
-                        onerror: () => {
-                            if (retriesLeft > 0) setTimeout(() => attempt(retriesLeft - 1), 2000);
-                            else reject(new Error('Network error'));
-                        },
-                        ontimeout: () => {
-                            if (retriesLeft > 0) setTimeout(() => attempt(retriesLeft - 1), 2000);
-                            else reject(new Error('Timeout'));
-                        },
-                    });
-                };
-                attempt(maxRetries);
-            });
-        };
-
-        // Helper: get media metadata from DOM
-        const getMediaMeta = () => {
-            const meta = { title: 'download', artist: '', album: '', year: '', coverUrl: '' };
-            try {
-                if (isYTMusic) {
-                    meta.title = $e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music';
-                    // Language-independent extraction:
-                    // Official songs have links for Artist and Album. Videos only have a link for the Channel.
-                    // Example Song: <a href="...">Artist</a> • <a href="...">Album</a> • <span>2024</span>
-                    // Example Video: <a href="...">Channel</a> • <span>15M views</span> • <span>111K likes</span>
-                    const bylineEl = $e('ytmusic-player-bar .byline');
-                    if (bylineEl) {
-                        const links = Array.from(bylineEl.querySelectorAll('a')).map(a => a.textContent.trim());
-                        if (links.length > 0) meta.artist = links[0];
-                        if (links.length > 1) meta.album = links[1]; // Only songs have a second link for the Album
-
-                        // The year is always the last part of the string, if it's a 4-digit number
-                        const parts = bylineEl.getAttribute('title')?.split(' • ') || [];
-                        const lastPart = parts[parts.length - 1]?.trim();
-                        if (lastPart && lastPart.match(/^\d{4}$/)) {
-                            meta.year = lastPart;
-                        }
-                    }
-                    // cover art - get high-res version
-                    const coverImg = $e('ytmusic-player-bar .image img') || $e('ytmusic-player-bar img');
-                    if (coverImg?.src) {
-                        let src = coverImg.src;
-                        if (src.includes('=w')) {
-                            src = src.replace(/=w\d+-h\d+.*$/, '=w1000-h1000-l90-rj');
-                        } else if (src.includes('i.ytimg.com/vi/')) {
-                            src = src.replace(/(hqdefault|mqdefault|sddefault|default)\.jpg/, 'maxresdefault.jpg');
-                        }
-                        meta.coverUrl = src;
-                    }
-                } else {
-                    meta.title = $e('h1.style-scope.ytd-watch-metadata')?.innerText?.trim() || 'video';
-                    meta.artist = $e('#owner #channel-name a')?.textContent?.trim() || '';
-                }
-            } catch (e) { console.warn('Error reading media meta:', e); }
-            return meta;
-        };
-
-        // Helper: trigger blob download via <a> element
-        const triggerBlobDownload = (blob, fileName) => {
-            const blobUrl = URL.createObjectURL(blob);
-            const a = $cl('a');
-            a.href = blobUrl;
-            a.download = fileName;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-        };
-
-        // ── MP3: embed ID3v2 tags via browser-id3-writer ──
-        const tagMp3 = async (audioBuffer, meta, coverBuffer) => {
-            const writer = new ID3Writer(audioBuffer);
-            writer.setFrame('TIT2', meta.title);
-            if (meta.artist) writer.setFrame('TPE1', [meta.artist]);
-            if (meta.album) writer.setFrame('TALB', meta.album);
-            if (meta.year) writer.setFrame('TYER', parseInt(meta.year) || 0);
-            if (coverBuffer) {
-                writer.setFrame('APIC', { type: 3, data: coverBuffer, description: 'Cover' });
-            }
-            writer.addTag();
-            return writer.getBlob();
-        };
-
-        // ── FLAC: embed Vorbis Comments metadata block ──
-        const tagFlac = (audioBuffer, meta, coverBuffer) => {
-            const src = new Uint8Array(audioBuffer);
-            // Verify FLAC magic: "fLaC"
-            if (src[0] !== 0x66 || src[1] !== 0x4C || src[2] !== 0x61 || src[3] !== 0x43) {
-                throw new Error('Not a valid FLAC file');
-            }
-
-            const enc = new TextEncoder();
-            // Build Vorbis Comment fields
-            const vendor = enc.encode('youtube-tools');
-            const fields = [];
-            if (meta.title) fields.push(enc.encode('TITLE=' + meta.title));
-            if (meta.artist) fields.push(enc.encode('ARTIST=' + meta.artist));
-            if (meta.album) fields.push(enc.encode('ALBUM=' + meta.album));
-            if (meta.year) fields.push(enc.encode('DATE=' + meta.year));
-
-            // Calculate Vorbis Comment block size
-            let vcSize = 4 + vendor.length + 4; // vendor length + vendor + field count
-            for (const f of fields) vcSize += 4 + f.length;
-
-            // Build PICTURE block if cover exists
-            let picBlock = null;
-            if (coverBuffer) {
-                // Detect actual image format from magic bytes (YouTube often returns WebP)
-                const cArr = new Uint8Array(coverBuffer);
-                let mimeType = 'image/jpeg';
-                if (cArr.length > 12) {
-                    if (cArr[0] === 0xFF && cArr[1] === 0xD8 && cArr[2] === 0xFF) mimeType = 'image/jpeg';
-                    else if (cArr[0] === 0x89 && cArr[1] === 0x50 && cArr[2] === 0x4E && cArr[3] === 0x47) mimeType = 'image/png';
-                    else if (cArr[0] === 0x52 && cArr[1] === 0x49 && cArr[2] === 0x46 && cArr[3] === 0x46 &&
-                             cArr[8] === 0x57 && cArr[9] === 0x45 && cArr[10] === 0x42 && cArr[11] === 0x50) {
-                        mimeType = 'image/webp';
-                    }
-                }
-                const mimeBytes = enc.encode(mimeType);
-                const descBytes = enc.encode('Cover');
-                // PICTURE: type(4) + mime_len(4) + mime + desc_len(4) + desc + width(4) + height(4) + bpp(4) + colors(4) + data_len(4) + data
-                const picDataLen = 4 + 4 + mimeBytes.length + 4 + descBytes.length + 4 * 4 + 4 + coverBuffer.byteLength;
-                picBlock = new Uint8Array(picDataLen);
-                const dv = new DataView(picBlock.buffer);
-                let o = 0;
-                dv.setUint32(o, 3); o += 4; // type: Cover (front)
-                dv.setUint32(o, mimeBytes.length); o += 4;
-                picBlock.set(mimeBytes, o); o += mimeBytes.length;
-                dv.setUint32(o, descBytes.length); o += 4;
-                picBlock.set(descBytes, o); o += descBytes.length;
-                dv.setUint32(o, 1000); o += 4; // width
-                dv.setUint32(o, 1000); o += 4; // height
-                dv.setUint32(o, 24); o += 4;  // bpp
-                dv.setUint32(o, 0); o += 4;   // indexed colors
-                dv.setUint32(o, coverBuffer.byteLength); o += 4;
-                picBlock.set(new Uint8Array(coverBuffer), o);
-            }
-
-            // Scan existing metadata blocks, keep valid ones, discard old VC (4) and PICTURE (6)
-            let pos = 4; // after "fLaC"
-            const keptBlocks = [];
-            while (pos < src.length) {
-                const header = src[pos];
-                const type = header & 0x7F;
-                const isLast = !!(header & 0x80);
-                const blockLen = (src[pos + 1] << 16) | (src[pos + 2] << 8) | src[pos + 3];
-                const blockEnd = pos + 4 + blockLen;
-                
-                // Drop existing VORBIS_COMMENT and PICTURE blocks
-                if (type !== 4 && type !== 6) {
-                    // clear the last-block flag (we will set it on our injected blocks later)
-                    const blockData = new Uint8Array(src.buffer, pos, 4 + blockLen);
-                    blockData[0] = blockData[0] & 0x7F; 
-                    keptBlocks.push(blockData);
-                }
-                
-                pos = blockEnd;
-                if (isLast) break;
-            }
-            
-            const audioFrames = new Uint8Array(src.buffer, pos);
-
-            // Build new Vorbis Comment block header (type 4)
-            const vcHeader = new Uint8Array(4);
-            vcHeader[0] = picBlock ? 4 : (4 | 0x80); // type 4, set last-flag if no picture
-            vcHeader[1] = (vcSize >> 16) & 0xFF;
-            vcHeader[2] = (vcSize >> 8) & 0xFF;
-            vcHeader[3] = vcSize & 0xFF;
-
-            // Build VC data
-            const vcData = new Uint8Array(vcSize);
-            const vcDv = new DataView(vcData.buffer);
-            let vp = 0;
-            vcDv.setUint32(vp, vendor.length, true); vp += 4; // little-endian!
-            vcData.set(vendor, vp); vp += vendor.length;
-            vcDv.setUint32(vp, fields.length, true); vp += 4;
-            for (const f of fields) {
-                vcDv.setUint32(vp, f.length, true); vp += 4;
-                vcData.set(f, vp); vp += f.length;
-            }
-
-            // Build PICTURE block header (type 6) if needed
-            let picHeader = null;
-            if (picBlock) {
-                picHeader = new Uint8Array(4);
-                picHeader[0] = 6 | 0x80; // type 6 (PICTURE), last block
-                picHeader[1] = (picBlock.length >> 16) & 0xFF;
-                picHeader[2] = (picBlock.length >> 8) & 0xFF;
-                picHeader[3] = picBlock.length & 0xFF;
-            }
-
-            // Assemble new blocks
-            const newBlocks = [...keptBlocks, new Uint8Array([...vcHeader, ...vcData])];
-            if (picHeader && picBlock) {
-                newBlocks.push(new Uint8Array([...picHeader, ...picBlock]));
-            }
-            
-            // Set the last-block flag on the very last metadata block
-            const lastMetaBlock = newBlocks[newBlocks.length - 1];
-            lastMetaBlock[0] = lastMetaBlock[0] | 0x80;
-
-            // Assemble final file: "fLaC" + newBlocks + audioFrames
-            const parts = [new Uint8Array([0x66, 0x4C, 0x61, 0x43]), ...newBlocks, audioFrames];
-            const totalLen = parts.reduce((s, p) => s + p.length, 0);
-            const result = new Uint8Array(totalLen);
-            let offset = 0;
-            for (const p of parts) {
-                result.set(p, offset);
-                offset += p.length;
-            }
-            return new Blob([result], { type: 'audio/flac' });
-        };
-
-        // ── WAV: embed RIFF LIST-INFO chunk ──
-        const tagWav = (audioBuffer, meta) => {
-            const enc = new TextEncoder();
-            // Build INFO sub-chunks: INAM (title), IART (artist), IPRD (album), ICRD (year)
-            const infoFields = [];
-            if (meta.title) infoFields.push(['INAM', meta.title]);
-            if (meta.artist) infoFields.push(['IART', meta.artist]);
-            if (meta.album) infoFields.push(['IPRD', meta.album]);
-            if (meta.year) infoFields.push(['ICRD', meta.year]);
-
-            if (infoFields.length === 0) return new Blob([audioBuffer], { type: 'audio/wav' });
-
-            // Calculate LIST-INFO chunk size
-            let infoSize = 4; // "INFO"
-            for (const [, val] of infoFields) {
-                const valBytes = enc.encode(val + '\0');
-                infoSize += 4 + 4 + valBytes.length; // id(4) + size(4) + data
-                if (valBytes.length % 2 !== 0) infoSize += 1; // pad
-            }
-
-            const listChunk = new Uint8Array(8 + infoSize);
-            const ldv = new DataView(listChunk.buffer);
-            listChunk.set(enc.encode('LIST'), 0);
-            ldv.setUint32(4, infoSize, true);
-            listChunk.set(enc.encode('INFO'), 8);
-            let lp = 12;
-            for (const [id, val] of infoFields) {
-                const valBytes = enc.encode(val + '\0');
-                listChunk.set(enc.encode(id), lp); lp += 4;
-                ldv.setUint32(lp, valBytes.length, true); lp += 4;
-                listChunk.set(valBytes, lp); lp += valBytes.length;
-                if (valBytes.length % 2 !== 0) { listChunk[lp] = 0; lp += 1; }
-            }
-
-            // Update RIFF header size
-            const src = new Uint8Array(audioBuffer);
-            const oldSize = new DataView(audioBuffer).getUint32(4, true);
-            const newSrc = new Uint8Array(src.length);
-            newSrc.set(src);
-            new DataView(newSrc.buffer).setUint32(4, oldSize + listChunk.length, true);
-
-            return new Blob([newSrc, listChunk], { type: 'audio/wav' });
-        };
-
-        // ── Fetch via GM_xmlhttpRequest for CSP bypass ──
-        const fetchBlobUrlGM = (url, mimeType) => {
-            return new Promise((resolve, reject) => {
-                GM_xmlhttpRequest({
-                    method: 'GET',
-                    url: url,
-                    responseType: 'arraybuffer',
-                    onload: (res) => {
-                        if (res.status >= 200 && res.status < 300) {
-                            const blob = new Blob([res.response], { type: mimeType });
-                            resolve(URL.createObjectURL(blob));
-                        } else {
-                            reject(new Error(`HTTP ${res.status}`));
-                        }
-                    },
-                    onerror: reject
-                });
-            });
-        };
-
-        // Helper: fetch text, trying native fetch first, fallback to GM_xmlhttpRequest
-        const fetchText = (url, timeoutMs = 120000) => {
-            return new Promise((resolve, reject) => {
-                const attempt = async () => {
-                    try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), timeoutMs);
-                        const response = await fetch(url, { signal: controller.signal });
-                        clearTimeout(id);
-                        if (response.ok) {
-                            resolve(await response.text());
-                            return;
-                        }
-                    } catch (err) {}
-                    
-                    GM_xmlhttpRequest({
-                        method: 'GET',
-                        url: url,
-                        timeout: timeoutMs,
-                        onload: (r) => {
-                            if (r.status >= 200 && r.status < 300) resolve(r.responseText);
-                            else reject(new Error(`HTTP ${r.status}`));
-                        },
-                        onerror: () => reject(new Error('Network error')),
-                        ontimeout: () => reject(new Error('Timeout'))
-                    });
-                };
-                attempt();
-            });
-        };
-
-        // ── M4A: embed metadata using ffmpeg-core directly (No Web Workers!) ──
-        const tagM4a = async (audioBuffer, meta, coverBuffer) => {
-            downloadText.textContent = 'Loading FFmpeg Core (30MB)...';
-
-            // Fetch core JS and evaluate in main thread
-            const coreJsText = await fetchText('https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js');
-
-            // Fetch WASM binary
-            const wasmBuffer = await fetchArrayBuffer('https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm');
-
-            // Evaluate the core JS to get createFFmpegCore globally
-            // TrustedTypes bypass for eval/inline script
-            const script = document.createElement('script');
-            let safeCode = coreJsText + '\nwindow.createFFmpegCore = createFFmpegCore;\n';
-            if (window.trustedTypes) {
-                const policyNames = ['default', 'ffmpeg-tt', 'dompurify', 'polymer-html-default', 'goog#html', 'youtube-music'];
-                let ttPolicy;
-                for (const name of policyNames) {
-                    try { ttPolicy = window.trustedTypes.createPolicy(name, { createScriptURL: s => s, createScript: s => s }); if (ttPolicy) break; } catch(e) {}
-                }
-                if (ttPolicy) safeCode = ttPolicy.createScript(safeCode);
-            }
-            script.textContent = safeCode;
-            document.body.appendChild(script);
-
-            downloadText.textContent = 'Initializing FFmpeg...';
-            
-            if (typeof createFFmpegCore === 'undefined') throw new Error('Failed to evaluate FFmpeg core');
-            
-            const core = await createFFmpegCore({
-                wasmBinary: wasmBuffer,
-                print: (msg) => console.log('[ffmpeg]', msg),
-                printErr: (msg) => console.error('[ffmpeg]', msg)
-            });
-
-            // Write input
-            core.FS.writeFile('input.m4a', new Uint8Array(audioBuffer));
-            
-            // Validate input audio stream
-            downloadText.textContent = 'Validating Audio...';
-            const validateArgs = ['-v', 'error', '-i', 'input.m4a', '-f', 'null', '-'];
-            const validateExitCode = core.exec(...validateArgs);
-            if (validateExitCode !== 0) {
-                throw new Error('Server returned a corrupted M4A file');
-            }
-            
-            downloadText.textContent = 'Muxing M4A...';
-            
-            if (coverBuffer) {
-                core.FS.writeFile('cover.jpg', new Uint8Array(coverBuffer));
-            }
-
-            // Build arguments
-            const args = ['-i', 'input.m4a'];
-            if (coverBuffer) {
-                args.push('-i', 'cover.jpg', '-map', '0:a', '-map', '1:v', '-c:v', 'copy', '-disposition:v', 'attached_pic');
-            }
-            args.push('-c:a', 'copy', '-movflags', '+faststart');
-            
-            // Add metadata tags
-            if (meta.title) args.push('-metadata', `title=${meta.title}`);
-            if (meta.artist) args.push('-metadata', `artist=${meta.artist}`);
-            if (meta.album) args.push('-metadata', `album=${meta.album}`);
-            
-            args.push('output.m4a');
-
-            console.log('[ffmpeg] Executing:', args.join(' '));
-            const exitCode = core.exec(...args);
-            if (exitCode !== 0) throw new Error('FFmpeg failed with exit code ' + exitCode);
-
-            const outData = core.FS.readFile('output.m4a');
-            return new Blob([outData.buffer], { type: 'audio/mp4' });
-        };
-
-        // ── Main: download audio with metadata tags ──
-        const downloadWithTags = async (downloadUrl, fileName, fmtLower) => {
-            const meta = getMediaMeta();
-            downloadText.textContent = 'Adding metadata...';
-
-            try {
-                const audioBuffer = await fetchArrayBuffer(downloadUrl);
-                let coverBuffer = null;
-
-                // Fetch cover art (for MP3, FLAC, and M4A)
-                if (meta.coverUrl && (fmtLower === 'mp3' || fmtLower === 'flac' || fmtLower === 'm4a')) {
-                    try {
-                        coverBuffer = await fetchArrayBuffer(meta.coverUrl, 15000);
-                    } catch (e) { 
-                        console.warn('Could not fetch high-res cover art, trying fallback:', e);
-                        if (meta.coverUrl.includes('maxresdefault.jpg')) {
-                            try {
-                                coverBuffer = await fetchArrayBuffer(meta.coverUrl.replace('maxresdefault.jpg', 'hqdefault.jpg'), 15000);
-                            } catch (e2) { console.warn('Could not fetch fallback cover art either:', e2); }
-                        }
-                    }
-                }
-
-                let blob;
-                if (fmtLower === 'mp3' && typeof ID3Writer !== 'undefined') {
-                    blob = await tagMp3(audioBuffer, meta, coverBuffer);
-                } else if (fmtLower === 'flac') {
-                    blob = tagFlac(audioBuffer, meta, coverBuffer);
-                } else if (fmtLower === 'wav') {
-                    blob = tagWav(audioBuffer, meta);
-                } else if (fmtLower === 'm4a') {
-                    blob = await tagM4a(audioBuffer, meta, coverBuffer);
-                } else {
-                    throw new Error('Unsupported format for tagging: ' + fmtLower);
-                }
-
-                triggerBlobDownload(blob, fileName);
-                downloadText.textContent = 'Download Complete!';
-                console.log('✅ Downloaded with metadata:', fmtLower.toUpperCase(), meta);
-            } catch (e) {
-                console.warn('Metadata tagging failed:', e);
-                const msg = e.message || '';
-                if (msg.includes('corrupted') || msg.includes('HTTP ')) {
-                    throw e; // Bubble up to trigger server fallback
-                }
-                downloadText.textContent = 'Tagging failed, downloading direct...';
-                GM_download({
-                    url: downloadUrl,
-                    name: fileName,
-                    onerror: (err) => {
-                        console.error('GM_download failed:', err);
-                        downloadText.textContent = '❌ Download Error';
-                        progressFill.style.backgroundColor = '#ff4444';
-                    }
-                });
-            }
         };
 
         const markCompleteAndOpen = (downloadUrl) => {
@@ -5921,67 +5261,40 @@ window.addEventListener('yt-navigate-finish', () => {
             // Update UI to show completion
             container.classList.add('completed');
             container.classList.remove('video', 'audio');
-            downloadText.textContent = 'Processing...';
+            downloadText.textContent = 'Download Complete!';
             progressFill.style.width = '100%';
             progressText.textContent = '100%';
             progressRetryBtn.style.display = 'none';
             if (downloadAgainBtn) downloadAgainBtn.style.display = 'flex';
             container.dataset.downloading = 'false';
             try {
-                const rawTitle = isYTMusic
-                    ? ($e('ytmusic-player-bar .title')?.textContent?.trim() || 'YouTube Music')
-                    : ($e('h1.style-scope.ytd-watch-metadata')?.innerText?.trim() || 'video');
-                const title = rawTitle.replace(/[\\/:*?"<>|]/g, '_').trim() || 'download';
-                const fmtLower = String(format).toLowerCase();
-                const isAudio = ['mp3', 'flac', 'wav', 'ogg', 'aac', 'm4a', 'webm'].includes(fmtLower);
-                const ext = isAudio ? `.${fmtLower}` : '.mp4';
-                const fileName = title + ext;
-
-                // For supported audio formats: embed metadata tags
-                const taggableFormats = ['mp3', 'flac', 'wav', 'm4a'];
-                if (taggableFormats.includes(fmtLower)) {
-                    downloadWithTags(downloadUrl, fileName, fmtLower);
-                } else {
-                    GM_download({
-                        url: downloadUrl,
-                        name: fileName,
-                        onerror: (err) => {
-                            console.error('GM_download failed:', err);
-                            downloadText.textContent = '❌ Server Error';
-                            progressFill.style.backgroundColor = '#ff4444';
-                        }
-                    });
-                }
+                window.open(downloadUrl);
             } catch (e) {
-                console.error('Could not start download:', e);
-                downloadText.textContent = '❌ Download Error';
-                progressFill.style.backgroundColor = '#ff4444';
+                console.warn('Could not open download URL:', e);
             }
         };
 
         const pollProgressUrl = (progressURL) => {
-            return new Promise((resolve, reject) => {
-                container.__ytDownloadPoll = setInterval(async () => {
-                    try {
-                        const progressData = await fetchJsonWithTimeout(progressURL, 15000);
+            container.__ytDownloadPoll = setInterval(async () => {
+                try {
+                    const progressData = await fetchJsonWithTimeout(progressURL, 15000);
 
-                        const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
-                        progressFill.style.width = `${progress}%`;
-                        progressText.textContent = `${Math.round(progress)}%`;
+                    const progress = Math.min((Number(progressData.progress) || 0) / 10, 100);
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `${Math.round(progress)}%`;
 
-                        if (Number(progressData.progress) >= 1000 && progressData.download_url) {
-                            clearInterval(container.__ytDownloadPoll);
-                            container.__ytDownloadPoll = null;
-                            resolve(progressData.download_url);
-                        }
-                    } catch (e) {
-                        console.error('Error in progress:', e);
+                    if (Number(progressData.progress) >= 1000 && progressData.download_url) {
                         clearInterval(container.__ytDownloadPoll);
                         container.__ytDownloadPoll = null;
-                        reject(e);
+                        markCompleteAndOpen(progressData.download_url);
                     }
-                }, 3000);
-            });
+                } catch (e) {
+                    console.error('Error in progress:', e);
+                    clearInterval(container.__ytDownloadPoll);
+                    container.__ytDownloadPoll = null;
+                    setErrorState();
+                }
+            }, 3000);
         };
 
         const trySaveNowProvider = async (baseUrl) => {
@@ -6014,51 +5327,48 @@ window.addEventListener('yt-navigate-finish', () => {
             const statusUrl = new URL(DUBS_STATUS_ENDPOINT);
             statusUrl.searchParams.set('id', startData.progressId);
 
-            return new Promise((resolve, reject) => {
-                container.__ytDownloadPoll = setInterval(async () => {
-                    try {
-                        const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
-                        const rawProgress = Number(st?.progress) || 0; // 0..1000
-                        const progress = Math.min(rawProgress / 10, 100);
-                        progressFill.style.width = `${progress}%`;
-                        progressText.textContent = `${Math.round(progress)}%`;
+            container.__ytDownloadPoll = setInterval(async () => {
+                try {
+                    const st = await fetchJsonWithTimeout(statusUrl.toString(), 20000);
+                    const rawProgress = Number(st?.progress) || 0; // 0..1000
+                    const progress = Math.min(rawProgress / 10, 100);
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `${Math.round(progress)}%`;
 
-                        if (st?.finished && st?.downloadUrl) {
-                            clearInterval(container.__ytDownloadPoll);
-                            container.__ytDownloadPoll = null;
-                            resolve(st.downloadUrl);
-                        }
-                    } catch (e) {
-                        console.error('❌ Error polling dubs status:', e);
+                    if (st?.finished && st?.downloadUrl) {
                         clearInterval(container.__ytDownloadPoll);
                         container.__ytDownloadPoll = null;
-                        reject(e);
-                    }
-                }, 3000);
-            });
-        };
-
-        const doDownloadProcess = async () => {
-            for (const base of DOWNLOAD_API_FALLBACK_BASES) {
-                try {
-                    const started = await trySaveNowProvider(base);
-                    if (started?.success && started?.progress_url) {
-                        const downloadUrl = await pollProgressUrl(started.progress_url);
-                        await markCompleteAndOpen(downloadUrl);
-                        return;
+                        markCompleteAndOpen(st.downloadUrl);
                     }
                 } catch (e) {
-                    console.warn(`Provider ${base} failed:`, e);
+                    console.error('❌ Error polling dubs status:', e);
+                    clearInterval(container.__ytDownloadPoll);
+                    container.__ytDownloadPoll = null;
+                    setErrorState();
                 }
-            }
-
-            console.warn('All SaveNow providers failed, falling back to dubs.io');
-            const dubsUrl = await tryDubsProvider();
-            await markCompleteAndOpen(dubsUrl);
+            }, 3000);
         };
 
         try {
-            await doDownloadProcess();
+            let started = null;
+            let lastErr = null;
+
+            for (const base of DOWNLOAD_API_FALLBACK_BASES) {
+                try {
+                    started = await trySaveNowProvider(base);
+                    break;
+                } catch (e) {
+                    lastErr = e;
+                }
+            }
+
+            if (started?.success && started?.progress_url) {
+                pollProgressUrl(started.progress_url);
+                return;
+            }
+
+            console.warn('SaveNow providers failed, falling back to dubs.io', lastErr);
+            await tryDubsProvider();
         } catch (error) {
             setErrorState();
             console.error('❌ Error starting download:', error);
@@ -6298,10 +5608,6 @@ window.addEventListener('yt-navigate-finish', () => {
         <i class="fa-regular fa-newspaper"></i>
         Header
       </button>
-      <button class="tab-mdcm" data-tab="ambilight">
-        <i class="fa-solid fa-lightbulb"></i>
-        Ambilight Pro
-      </button>
     </div>
 
 
@@ -6313,7 +5619,7 @@ window.addEventListener('yt-navigate-finish', () => {
             <input type="checkbox" class="checkbox-mdcm" id="themes-toggle"> Active Themes
           </div>
         </label>
-        <label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" id="sync-cinematic-toggle"> Ambilight
           </div>
@@ -6335,17 +5641,12 @@ window.addEventListener('yt-navigate-finish', () => {
         </label>
         <label>
           <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="cinematic-lighting-toggle"> Cinematic Mode
+            <input type="checkbox" class="checkbox-mdcm" id="cinematic-lighting-toggle"> ${isYTMusic ? 'Ambient Mode' : 'Cinematic Mode'}
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" id="continue-watching-toggle"> Continue watching
-          </div>
-        </label>
-        <label ${isYTMusic ? 'style="display:none"' : ''}>
-          <div class="option-mdcm">
-            <input type="checkbox" class="checkbox-mdcm" id="annotations-toggle"> Disable Annotations
           </div>
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
@@ -6415,7 +5716,7 @@ window.addEventListener('yt-navigate-finish', () => {
         </label>
         <div class="quality-selector-mdcm" style="grid-column: span 2;">
           <div class="select-wrapper-mdcm">
-            <label>Glassmorphism UI Style:
+            <label>Side/Playlist Panel Style:
               <select class="tab-button-active" id="side-panel-style-select">
                 <option value="blur">Blur</option>
                 <option value="liquid">Liquid Glass</option>
@@ -6601,60 +5902,6 @@ window.addEventListener('yt-navigate-finish', () => {
       </div>
     </div>
 
-    <div id="ambilight" class="tab-content">
-      <div class="options-mdcm">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0;">
-          <h4 style="margin: 0;">Ambilight Pro Settings</h4>
-          <button id="reset-ambi-settings" class="btn-mdcm" style="padding: 4px 10px; font-size: 12px; background: var(--bg-hover, #333); color: var(--text-primary, #fff); border: none; border-radius: 4px; cursor: pointer;">Reset</button>
-        </div>
-        
-        <div class="slider-container-mdcm">
-          <label>Blur: <span id="ambi-blur-val">10</span>px</label>
-          <input type="range" id="ambi-blur-slider" class="slider-mdcm" min="0" max="300" value="10">
-        </div>
-        
-        <div class="slider-container-mdcm">
-          <label>Spread: <span id="ambi-spread-val">40</span>%</label>
-          <input type="range" id="ambi-spread-slider" class="slider-mdcm" min="0" max="200" value="40">
-        </div>
-
-        <div class="slider-container-mdcm">
-          <label>Edge Fade (Viền mờ): <span id="ambi-edge-fade-val">3</span>%</label>
-          <input type="range" id="ambi-edge-fade-slider" class="slider-mdcm" min="0" max="50" value="3">
-        </div>
-
-        <div class="slider-container-mdcm">
-          <label>Crop Y (Cắt viền đen): <span id="ambi-crop-y-val">0</span>%</label>
-          <input type="range" id="ambi-crop-y-slider" class="slider-mdcm" min="0" max="30" value="0">
-        </div>
-
-        <div class="slider-container-mdcm">
-          <label>Crop X (Cắt viền ngang): <span id="ambi-crop-x-val">0</span>%</label>
-          <input type="range" id="ambi-crop-x-slider" class="slider-mdcm" min="0" max="30" value="0">
-        </div>
-        
-        <div class="slider-container-mdcm">
-          <label>Brightness: <span id="ambi-brightness-val">111</span>%</label>
-          <input type="range" id="ambi-brightness-slider" class="slider-mdcm" min="10" max="300" value="111">
-        </div>
-        
-        <div class="slider-container-mdcm">
-          <label>Contrast: <span id="ambi-contrast-val">100</span>%</label>
-          <input type="range" id="ambi-contrast-slider" class="slider-mdcm" min="10" max="300" value="100">
-        </div>
-        
-        <div class="slider-container-mdcm">
-          <label>Saturation: <span id="ambi-saturation-val">100</span>%</label>
-          <input type="range" id="ambi-saturation-slider" class="slider-mdcm" min="0" max="300" value="100">
-        </div>
-
-        <div class="slider-container-mdcm">
-          <label>Opacity: <span id="ambi-opacity-val">90</span>%</label>
-          <input type="range" id="ambi-opacity-slider" class="slider-mdcm" min="0" max="100" value="90">
-        </div>
-      </div>
-    </div>
-
     <div id="headers" class="tab-content">
       <div class="options-mdcm">
         <label>Available in next update</label>
@@ -6739,7 +5986,7 @@ window.addEventListener('yt-navigate-finish', () => {
       <div style="font-size: 11px; opacity: 0.9; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; line-height: 1.6;">
         Developed by <a href="https://github.com/akari310" target="_blank" style="color: #ff4444; text-decoration: none;"><i class="fa-brands fa-github"></i> Akari</a>.
         Base by <a href="https://github.com/DeveloperMDCM" target="_blank" style="color: #00aaff; text-decoration: none;"><i class="fa-brands fa-github"></i> MDCM</a>.
-        Features from <a href="https://github.com/nvbangg" target="_blank" style="color: #00ffaa; text-decoration: none;"><i class="fa-brands fa-github"></i> nvbangg</a> and <a href="https://github.com/WesselKroos" target="_blank" style="color: #ffd700; text-decoration: none;"><i class="fa-brands fa-github"></i> WesselKroos</a>.
+        Features from <a href="https://github.com/nvbangg" target="_blank" style="color: #00ffaa; text-decoration: none;"><i class="fa-brands fa-github"></i> nvbangg</a>.
       </div>
     </div>
     <span style="color: #fff" ;>v${GM_info.script.version}</span>
@@ -6752,701 +5999,16 @@ window.addEventListener('yt-navigate-finish', () => {
 
     let headerObserver = null;
 
-// Simplified WebGL Ambilight for YouTube and YouTube Music
-// Inspired by and credits to WesselKroos:
-// https://github.com/WesselKroos/youtube-ambilight (Ambient light for YouTube)
-
-class YTAmbilightWebGL {
-    constructor() {
-        this.video = null;
-        this.canvas = null;
-        this.gl = null;
-        this.program = null;
-        this.animationId = null;
-        this.checkInterval = null;
-        this.isActive = false;
-        
-        // State
-        this.isAudioOnly = false;
-        this.currentThumbUrl = '';
-        this.thumbImage = null;
-        this.thumbLoaded = false;
-        this.thumbDrawn = false;
-        
-        // Shader locations
-        this.positionLocation = null;
-        this.texCoordLocation = null;
-        this.textureLocation = null;
-        
-        // Settings
-        this.opacity = 0.8;
-    }
-
-    setup(videoElement) {
-        if (!videoElement) return;
-        this.video = videoElement;
-        
-        if (!this.canvas) {
-            this.canvas = document.createElement('canvas');
-            this.canvas.id = 'ytm-ambilight-webgl-canvas';
-            
-            // Hardware acceleration hints
-            this.canvas.style.willChange = 'transform, opacity';
-            this.canvas.style.transform = 'translateZ(0)';
-            
-            this.canvas.style.position = 'fixed';
-            this.canvas.style.left = '0';
-            this.canvas.style.top = '0';
-            this.canvas.style.width = '100vw';
-            this.canvas.style.height = '100vh';
-            this.canvas.style.pointerEvents = 'none';
-            this.canvas.style.zIndex = '0';
-            this.canvas.style.opacity = this.opacity;
-            // Additional CSS blur to smooth out the WebGL downsampling
-            this.canvas.style.filter = 'blur(40px) saturate(150%)'; 
-            
-            // For YTM, insert it behind everything
-            const player = document.querySelector('ytmusic-player');
-            if (player) {
-                this.canvas.style.zIndex = '0';
-                const app = document.querySelector('ytmusic-app') || document.body;
-                app.insertBefore(this.canvas, app.firstChild);
-                
-                if (!document.getElementById('ambilight-ytm-transparent-fix')) {
-                    const style = document.createElement('style');
-                    style.id = 'ambilight-ytm-transparent-fix';
-                    style.textContent = `
-                        ytmusic-player,
-                        ytmusic-player #song-video,
-                        ytmusic-player .html5-video-player,
-                        ytmusic-player .html5-video-container,
-                        ytmusic-player #song-image,
-                        ytmusic-player-page,
-                        ytmusic-player-page #background,
-                        ytmusic-player-page .background,
-                        ytmusic-app-layout,
-                        ytmusic-app-layout > [id="background"] {
-                            background: transparent !important;
-                            background-color: transparent !important;
-                        }
-                    `;
-                    document.head.appendChild(style);
-                }
-            } else {
-                // Regular YT - we use a 300% absolute canvas inside the video player.
-                // This gives WebGL physical space to draw the light rays outside the video,
-                // while preventing layout breakage because it's safely inside the player container.
-                this.isRegularYT = true;
-                const container = document.querySelector('.html5-video-player') || document.querySelector('#ytd-player');
-                
-                this.canvas.style.position = 'absolute';
-                this.canvas.style.width = '300%';
-                this.canvas.style.height = '300%';
-                this.canvas.style.left = '-100%';
-                this.canvas.style.top = '-100%';
-                this.canvas.style.zIndex = ''; // Let DOM order dictate z-index
-                this.canvas.style.pointerEvents = 'none';
-                
-                if (container) {
-                    container.insertBefore(this.canvas, container.firstChild);
-                    
-                    // CRITICAL: YouTube restricts player containers with overflow:hidden.
-                    // To let the fixed canvas bleed out, we MUST override overflow on all parents!
-                    if (!document.getElementById('ambilight-yt-overflow-fix')) {
-                        const style = document.createElement('style');
-                        style.id = 'ambilight-yt-overflow-fix';
-                        style.textContent = `
-                            ytd-watch-flexy #player-container-outer,
-                            ytd-watch-flexy #player-container-inner,
-                            ytd-watch-flexy #player-container,
-                            ytd-watch-flexy #full-bleed-container,
-                            ytd-watch-flexy #player-full-bleed-container,
-                            ytd-watch-flexy,
-                            #ytd-player,
-                            .html5-video-player {
-                                overflow: visible !important;
-                                clip-path: none !important;
-                                background-color: transparent !important;
-                            }
-                        `;
-                        document.head.appendChild(style);
-                    }
-                } else {
-                    const ytdApp = document.querySelector('ytd-app') || document.body;
-                    ytdApp.insertBefore(this.canvas, ytdApp.firstChild);
-                }
-            }
-        }
-
-        this.initWebGL();
-        this.start();
-        
-        this.resizeObserver = new ResizeObserver(() => this.resizeCanvas());
-        this.resizeObserver.observe(this.video);
-        this.resizeCanvas();
-    }
-
-    initWebGL() {
-        // Enable alpha blending to prevent black shadows
-        this.gl = this.canvas.getContext('webgl', { 
-            preserveDrawingBuffer: true,
-            antialias: false,
-            depth: false,
-            alpha: true,
-            premultipliedAlpha: false
-        });
-        
-        if (!this.gl) {
-            console.error('WebGL not supported for Ambilight');
-            return;
-        }
-
-        const gl = this.gl;
-
-        const vsSource = `
-            attribute vec2 a_position;
-            attribute vec2 a_texCoord;
-            varying vec2 v_screenCoord;
-            void main() {
-                gl_Position = vec4(a_position, 0, 1);
-                // a_texCoord is already DOM-aligned (0,0 at Top-Left)
-                v_screenCoord = a_texCoord;
-            }
-        `;
-
-        const fsSource = `
-            precision mediump float;
-            uniform sampler2D u_image;
-            uniform float u_brightness;
-            uniform float u_contrast;
-            uniform float u_saturation;
-            uniform float u_cropX;
-            uniform float u_cropY;
-            uniform vec4 u_videoRect;
-            uniform float u_spread;
-            varying vec2 v_screenCoord;
-            
-            vec3 adjustSaturation(vec3 color, float value) {
-                const vec3 luminosityWeighting = vec3(0.2126, 0.7152, 0.0722);
-                float grayscale = dot(color, luminosityWeighting);
-                return mix(vec3(grayscale), color, value);
-            }
-            
-            vec3 adjustContrast(vec3 color, float value) {
-                return 0.5 + value * (color - 0.5);
-            }
-            
-            void main() {
-                // Map screen coordinates to video texture coordinates
-                // Since the canvas is 300% size and centered, the video is in the middle 1/3
-                vec2 videoPos = (v_screenCoord - u_videoRect.xy) / (u_videoRect.zw - u_videoRect.xy);
-                
-                // Crop black bars
-                videoPos.x = u_cropX + videoPos.x * (1.0 - 2.0 * u_cropX);
-                videoPos.y = u_cropY + videoPos.y * (1.0 - 2.0 * u_cropY);
-                
-                vec2 center = vec2(0.5, 0.5);
-                vec2 dir = videoPos - center;
-                
-                // Raycast to find the intersection with the video bounding box [0, 1]
-                vec2 absDir = abs(dir);
-                float k = min(0.5 / max(absDir.x, 0.00001), 0.5 / max(absDir.y, 0.00001));
-                
-                // If k >= 1.0, the pixel is INSIDE the video bounds.
-                // Draw the actual video pixel here! This prevents any black holes or shadows
-                // if the video is faded, and prevents CSS blur from pulling in black edges!
-                if (k >= 1.0) {
-                    vec4 centerColor = texture2D(u_image, videoPos);
-                    
-                    // Apply brightness/contrast to center as well so it matches the glow
-                    vec3 rgb = centerColor.rgb;
-                    rgb = adjustContrast(rgb, u_contrast);
-                    rgb = adjustSaturation(rgb, u_saturation);
-                    rgb = rgb * u_brightness;
-                    
-                    gl_FragColor = vec4(rgb, 1.0);
-                    return;
-                }
-                
-                // Pixel is OUTSIDE the video.
-                // Find the exact point on the edge of the video.
-                vec2 edgePos = center + dir * k;
-                
-                // PURE RADIAL EDGE EXTRAPOLATION
-                // Sample exactly 0.5% inside the video edge (approx 10-20px) to avoid 1px black borders.
-                // By taking just this pixel, we create razor-sharp God Rays shooting outwards!
-                vec2 samplePos = mix(edgePos, center, 0.005);
-                vec4 finalColor = texture2D(u_image, samplePos);
-                
-                // Fade the light rays based on distance from the edge
-                float distFromEdge = length(videoPos - edgePos);
-                
-                // We want a default spread (u_spread = 0) to still stretch 30% of the video size outwards!
-                // If u_spread goes up to 2.0 (200%), it stretches up to 150% of the video size outwards.
-                float maxDist = 0.3 + u_spread * 0.6;
-                float falloff = 1.0 / maxDist;
-                
-                float alpha = max(0.0, 1.0 - (distFromEdge * falloff));
-                
-                // Apply Settings
-                vec3 rgb = finalColor.rgb;
-                rgb = adjustContrast(rgb, u_contrast);
-                rgb = adjustSaturation(rgb, u_saturation);
-                rgb = rgb * u_brightness;
-                
-                gl_FragColor = vec4(rgb, alpha);
-            }
-        `;
-
-        const vertexShader = this.createShader(gl.VERTEX_SHADER, vsSource);
-        const fragmentShader = this.createShader(gl.FRAGMENT_SHADER, fsSource);
-
-        this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
-        gl.linkProgram(this.program);
-
-        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-            console.error('Unable to initialize the shader program:', gl.getProgramInfoLog(this.program));
-            return;
-        }
-
-        this.positionLocation = gl.getAttribLocation(this.program, "a_position");
-        this.texCoordLocation = gl.getAttribLocation(this.program, "a_texCoord");
-        this.textureLocation = gl.getUniformLocation(this.program, "u_image");
-        this.brightnessLoc = gl.getUniformLocation(this.program, "u_brightness");
-        this.contrastLoc = gl.getUniformLocation(this.program, "u_contrast");
-        this.saturationLoc = gl.getUniformLocation(this.program, "u_saturation");
-        this.cropXLoc = gl.getUniformLocation(this.program, "u_cropX");
-        this.cropYLoc = gl.getUniformLocation(this.program, "u_cropY");
-        this.videoRectLoc = gl.getUniformLocation(this.program, "u_videoRect");
-        this.spreadLoc = gl.getUniformLocation(this.program, "u_spread");
-
-        // Quad for the whole screen
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
-            -1.0,  1.0,  1.0, -1.0,  1.0,  1.0,
-        ]), gl.STATIC_DRAW);
-
-        const texCoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        
-        // Edge size logic - instead of sampling the entire video frame, we only sample the outer edges (or spread the frame).
-        // For simplicity in the lightweight model, we will use texture coordinates to "zoom" into the frame 
-        // to ignore the center, or we just draw the frame. We will implement "edge size" via UV scaling later.
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            0.0,  1.0,  1.0,  1.0,  0.0,  0.0,
-            0.0,  0.0,  1.0,  1.0,  1.0,  0.0,
-        ]), gl.STATIC_DRAW);
-
-        this.positionBuffer = positionBuffer;
-        this.texCoordBuffer = texCoordBuffer;
-        
-        // Create Texture
-        this.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    }
-
-    createShader(type, source) {
-        const gl = this.gl;
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        return shader;
-    }
-
-    resizeCanvas() {
-        if (!this.canvas || !this.video) return;
-        
-        let rect = this.video.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
-        
-        // Since we are not using CSS Blur by default anymore, we need HIGH resolution
-        // to render crisp, sharp God Rays without pixelation.
-        const scale = 0.5; // Render at 50% of actual physical size for performance
-        let targetWidth, targetHeight;
-        
-        if (this.isRegularYT) {
-            targetWidth = Math.floor(rect.width * 3 * scale);
-            targetHeight = Math.floor(rect.height * 3 * scale);
-        } else {
-            targetWidth = Math.floor(window.innerWidth * scale);
-            targetHeight = Math.floor(window.innerHeight * scale);
-        }
-        
-        // Cap max resolution to prevent lag on 4K/8K screens
-        if (targetWidth > 1920) {
-            targetHeight = Math.floor(targetHeight * (1920 / targetWidth));
-            targetWidth = 1920;
-        }
-        
-        if (this.canvas.width !== targetWidth || this.canvas.height !== targetHeight) {
-            this.canvas.width = targetWidth;
-            this.canvas.height = targetHeight;
-            if (this.gl) {
-                this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-                this.thumbDrawn = false;
-            }
-        }
-    }
-
-    getThumbUrl() {
-        try {
-            const mp = document.getElementById('movie_player');
-            if (mp && typeof mp.getVideoData === 'function') {
-                const vData = mp.getVideoData();
-                if (vData && vData.video_id) {
-                    return `https://i.ytimg.com/vi/${vData.video_id}/sddefault.jpg`;
-                }
-            }
-        } catch (e) { }
-
-        const selectors = [
-            '#song-image yt-img-shadow img', '#song-image img',
-            'ytmusic-player-page #thumbnail img', 'ytmusic-player-bar .image img'
-        ];
-        for (const sel of selectors) {
-            const img = document.querySelector(sel);
-            if (img && img.src && img.src.startsWith('http')) {
-                return img.src;
-            }
-        }
-        return null;
-    }
-
-    // 1Hz Polling to avoid doing expensive DOM checks inside requestAnimationFrame
-    updateTrackState() {
-        if (!this.isActive || !this.video) return;
-        
-        let audioOnly = false;
-        if (this.video.videoWidth === 0) {
-            audioOnly = true;
-        } else {
-            // Expensive check only once per second
-            const songImage = document.querySelector('#song-image');
-            if (songImage && songImage.offsetWidth > 0 && this.video.offsetWidth === 0) {
-                audioOnly = true;
-            }
-        }
-        
-        this.isAudioOnly = audioOnly;
-
-        let ambiEnabled = true;
-        try {
-            if (typeof GM_getValue !== 'undefined' && typeof SETTINGS_KEY !== 'undefined') {
-                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-                if (settings.syncCinematic !== undefined) {
-                    ambiEnabled = settings.syncCinematic;
-                }
-            }
-        } catch (e) {}
-
-        if (!ambiEnabled) {
-            // Ambilight disabled
-            if (this.canvas) this.canvas.style.display = 'none';
-        } else {
-            if (this.canvas) this.canvas.style.display = 'block';
-        }
-    }
-
-    updateCanvasStyles() {
-        if (!this.canvas) return;
-        
-        // Changed default blur to 0 so the user can see the sharp rays by default
-        let blur = 0;
-        let spread = 1.0;
-        let opacity = 0.8;
-        let edgeFade = 0;
-        
-        try {
-            if (typeof GM_getValue !== 'undefined') {
-                const settings = JSON.parse(GM_getValue('ytSettingsMDCM', '{}'));
-                this.cachedSettings = settings; // Cache for shader loop
-                
-                if (settings.ambiBlur !== undefined) blur = settings.ambiBlur;
-                if (settings.ambiSpread !== undefined) spread = 1.0 + (settings.ambiSpread / 100);
-                if (settings.ambiOpacity !== undefined) opacity = settings.ambiOpacity / 100;
-                if (settings.ambiEdgeFade !== undefined) edgeFade = settings.ambiEdgeFade;
-            }
-        } catch (e) {}
-
-        this.canvas.style.opacity = opacity;
-        this.canvas.style.filter = `blur(${blur}px) saturate(150%)`;
-        this.canvas.style.transform = `translateZ(0)`;
-
-        // Apply Edge Fade to the video element
-        if (this.video) {
-            if (edgeFade > 0) {
-                const f = edgeFade; // 0 to 50
-                const mask = `linear-gradient(to right, transparent 0%, black ${f}%, black ${100 - f}%, transparent 100%), linear-gradient(to bottom, transparent 0%, black ${f}%, black ${100 - f}%, transparent 100%)`;
-                this.video.style.maskImage = mask;
-                this.video.style.webkitMaskImage = mask;
-                this.video.style.maskComposite = 'intersect';
-                this.video.style.webkitMaskComposite = 'source-in';
-            } else {
-                this.video.style.maskImage = 'none';
-                this.video.style.webkitMaskImage = 'none';
-            }
-        }
-    }
-
-    uploadAndDraw(textureSource, isImage = false, rectElement = null) {
-        // Update video rect (used for YTM fixed canvas mode only)
-        const sourceForRect = rectElement || textureSource;
-        if (sourceForRect) {
-            const videoRect = sourceForRect.getBoundingClientRect();
-            const winW = window.innerWidth || 1;
-            const winH = window.innerHeight || 1;
-            
-            const vw = isImage ? (textureSource.naturalWidth || 1) : (textureSource.videoWidth || 1);
-            const vh = isImage ? (textureSource.naturalHeight || 1) : (textureSource.videoHeight || 1);
-            const videoAspect = vw / vh;
-            const rectAspect = (videoRect.width || 1) / (videoRect.height || 1);
-            
-            let contentRelLeft, contentRelTop, contentRelRight, contentRelBottom;
-            
-            if (videoAspect > rectAspect) {
-                // Letterbox
-                const contentHeight = videoRect.width / videoAspect;
-                const offsetY = (videoRect.height - contentHeight) / 2;
-                contentRelLeft = 0;
-                contentRelTop = offsetY / videoRect.height;
-                contentRelRight = 1;
-                contentRelBottom = (offsetY + contentHeight) / videoRect.height;
-            } else {
-                // Pillarbox
-                const contentWidth = videoRect.height * videoAspect;
-                const offsetX = (videoRect.width - contentWidth) / 2;
-                contentRelLeft = offsetX / videoRect.width;
-                contentRelTop = 0;
-                contentRelRight = (offsetX + contentWidth) / videoRect.width;
-                contentRelBottom = 1;
-            }
-            
-            // Map video content coords to window coords
-            const contentAbsLeft = videoRect.left + contentRelLeft * videoRect.width;
-            const contentAbsTop = videoRect.top + contentRelTop * videoRect.height;
-            const contentAbsRight = videoRect.left + contentRelRight * videoRect.width;
-            const contentAbsBottom = videoRect.top + contentRelBottom * videoRect.height;
-            
-            this.currentVideoRect = [
-                contentAbsLeft / winW,
-                contentAbsTop / winH,
-                contentAbsRight / winW,
-                contentAbsBottom / winH
-            ];
-        } else {
-            this.currentVideoRect = [0.25, 0.25, 0.75, 0.75]; // fallback
-        }
-
-        // Also update styles periodically to refresh cached settings
-        if (!this.cachedSettings || Math.random() < 0.05) {
-            this.updateCanvasStyles(); // update every ~20 frames
-        }
-        
-        const gl = this.gl;
-        gl.useProgram(this.program);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-        gl.enableVertexAttribArray(this.positionLocation);
-        gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
-        gl.enableVertexAttribArray(this.texCoordLocation);
-        gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        
-        try {
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureSource);
-            gl.uniform1i(this.textureLocation, 0);
-            
-            // Get settings (we'll fetch from GM_getValue, or use defaults)
-            let brightness = 1.0;
-            let contrast = 1.0;
-            let saturation = 1.0;
-            let cropX = 0.0;
-            let cropY = 0.0;
-            
-            let spread = 1.0;
-            
-            if (this.cachedSettings) {
-                const settings = this.cachedSettings;
-                if (settings.ambiBrightness !== undefined) brightness = settings.ambiBrightness / 100;
-                if (settings.ambiContrast !== undefined) contrast = settings.ambiContrast / 100;
-                if (settings.ambiSaturation !== undefined) saturation = settings.ambiSaturation / 100;
-                if (settings.ambiCropX !== undefined) cropX = settings.ambiCropX / 100;
-                if (settings.ambiCropY !== undefined) cropY = settings.ambiCropY / 100;
-                if (settings.ambiSpread !== undefined) spread = 1.0 + (settings.ambiSpread / 100);
-            }
-
-            gl.uniform1f(this.brightnessLoc, brightness);
-            gl.uniform1f(this.contrastLoc, contrast);
-            gl.uniform1f(this.saturationLoc, saturation);
-            gl.uniform1f(this.cropXLoc, cropX);
-            gl.uniform1f(this.cropYLoc, cropY);
-            gl.uniform1f(this.spreadLoc, spread);
-            
-            if (this.currentVideoRect) {
-                if (this.isRegularYT) {
-                    // The canvas is 300% of the container, centered.
-                    // In canvas texture coords (0..1), the container occupies (1/3..2/3).
-                    // But the ACTUAL video content may not fill the entire container
-                    // because YouTube uses object-fit:contain on <video>.
-                    // We must compute where the rendered content sits.
-                    
-                    const container = document.querySelector('.html5-video-player') || this.video.parentElement;
-                    const containerRect = container.getBoundingClientRect();
-                    const cw = containerRect.width || 1;
-                    const ch = containerRect.height || 1;
-                    
-                    const vw = this.video.videoWidth || 1;
-                    const vh = this.video.videoHeight || 1;
-                    const videoAspect = vw / vh;
-                    const containerAspect = cw / ch;
-                    
-                    let contentRelLeft, contentRelTop, contentRelRight, contentRelBottom;
-                    
-                    if (videoAspect > containerAspect) {
-                        // Video is wider than container → letterbox (black bars top/bottom)
-                        const contentHeight = cw / videoAspect;
-                        const offsetY = (ch - contentHeight) / 2;
-                        contentRelLeft = 0;
-                        contentRelTop = offsetY / ch;
-                        contentRelRight = 1;
-                        contentRelBottom = (offsetY + contentHeight) / ch;
-                    } else {
-                        // Video is taller/squarer than container → pillarbox (black bars left/right)
-                        const contentWidth = ch * videoAspect;
-                        const offsetX = (cw - contentWidth) / 2;
-                        contentRelLeft = offsetX / cw;
-                        contentRelTop = 0;
-                        contentRelRight = (offsetX + contentWidth) / cw;
-                        contentRelBottom = 1;
-                    }
-                    
-                    // Map from container-relative (0..1) to canvas-relative (0..1)
-                    // Container occupies the middle 1/3 of the 300% canvas
-                    const canvasLeft = (1/3) + contentRelLeft * (1/3);
-                    const canvasTop = (1/3) + contentRelTop * (1/3);
-                    const canvasRight = (1/3) + contentRelRight * (1/3);
-                    const canvasBottom = (1/3) + contentRelBottom * (1/3);
-                    
-                    gl.uniform4f(this.videoRectLoc, canvasLeft, canvasTop, canvasRight, canvasBottom);
-                } else {
-                    // For fixed canvas (like YTM), we use the actual viewport rect
-                    gl.uniform4f(this.videoRectLoc, this.currentVideoRect[0], this.currentVideoRect[1], this.currentVideoRect[2], this.currentVideoRect[3]);
-                }
-            }
-
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-        } catch (e) {
-            // Ignore cross-origin or empty source errors gracefully
-        }
-    }
-
-    draw() {
-        if (!this.isActive || !this.gl || !this.video) return;
-        
-        const now = performance.now();
-        // 30fps for video, 10fps check rate for audio-only (saves CPU loops)
-        const delay = this.isAudioOnly ? 100 : 33;
-        
-        if (now - this.lastDraw < delay) {
-            this.animationId = requestAnimationFrame(() => this.draw());
-            return;
-        }
-        this.lastDraw = now;
-
-        if (this.isAudioOnly) {
-            const thumbImg = document.querySelector('#song-image img#img') || document.querySelector('ytmusic-player-page img');
-            if (thumbImg && thumbImg.src && document.visibilityState === 'visible') {
-                if (!this.cachedThumbImg || this.cachedThumbUrl !== thumbImg.src) {
-                    this.cachedThumbImg = new Image();
-                    this.cachedThumbImg.crossOrigin = 'anonymous';
-                    this.cachedThumbImg.src = thumbImg.src;
-                    this.cachedThumbUrl = thumbImg.src;
-                }
-                if (this.cachedThumbImg.complete && this.cachedThumbImg.naturalWidth > 0) {
-                    this.uploadAndDraw(this.cachedThumbImg, true, thumbImg);
-                }
-            }
-        } else {
-            if (!this.video.paused && !this.video.ended && document.visibilityState === 'visible') {
-                this.uploadAndDraw(this.video, false);
-            }
-        }
-
-        this.animationId = requestAnimationFrame(() => this.draw());
-    }
-
-    start() {
-        this.isActive = true;
-        this.lastDraw = 0;
-        this.currentThumbUrl = '';
-        this.thumbLoaded = false;
-        this.thumbDrawn = false;
-        this.canvas.style.display = 'block';
-        
-        if (this.checkInterval) clearInterval(this.checkInterval);
-        this.checkInterval = setInterval(() => this.updateTrackState(), 1000);
-        this.updateTrackState(); // Initial check
-        
-        this.draw();
-    }
-
-    stop() {
-        this.isActive = false;
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-            this.animationId = null;
-        }
-        if (this.checkInterval) {
-            clearInterval(this.checkInterval);
-            this.checkInterval = null;
-        }
-        if (this.canvas) {
-            this.canvas.style.display = 'none';
-        }
-    }
-
-    cleanup() {
-        this.stop();
-        if (this.resizeObserver) {
-            this.resizeObserver.disconnect();
-            this.resizeObserver = null;
-        }
-        if (this.canvas && this.canvas.parentNode) {
-            this.canvas.parentNode.removeChild(this.canvas);
-        }
-        const overflowFix = document.getElementById('ambilight-yt-overflow-fix');
-        if (overflowFix) {
-            overflowFix.remove();
-        }
-        if (this.gl) {
-            this.gl.deleteTexture(this.texture);
-            this.gl.deleteBuffer(this.positionBuffer);
-            this.gl.deleteBuffer(this.texCoordBuffer);
-            this.gl.deleteProgram(this.program);
-        }
-        this.canvas = null;
-        this.gl = null;
-    }
-}
-
-window.ytmAmbilightWebGL = new YTAmbilightWebGL();
-
     function setupHeaderObserver() {
-        if (window.__ytToolsHeaderPoll) return;
-        window.__ytToolsHeaderPoll = setInterval(() => {
-            addIcon();
-        }, 1500);
+        if (headerObserver) return;
+        const target = $e('#masthead-container') || $e('ytd-masthead') || document.body;
+        headerObserver = new MutationObserver(() => {
+            const icon = $id('icon-menu-settings');
+            if (!icon || !document.body.contains(icon)) {
+                addIcon();
+            }
+        });
+        headerObserver.observe(target, { childList: true, subtree: true });
     }
 
     function addIcon() {
@@ -7519,68 +6081,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     // Add change listener to the entire panel to save/apply settings immediately
     panel.addEventListener('change', (e) => {
         if (e.target.classList.contains('checkbox-mdcm') || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') {
-            
-            // Xóa event cascade, thay bằng xử lý xung đột trực tiếp trên thuộc tính .checked
-            let settingsChanged = false;
-            
-            const cinematicToggle = document.getElementById('cinematic-lighting-toggle');
-            const syncToggle = document.getElementById('sync-cinematic-toggle');
-            const audioOnlyToggle = document.getElementById('audio-only-toggle');
-            const audioOnlyTabToggle = document.getElementById('audio-only-tab-toggle');
-            const themesToggle = document.getElementById('themes-toggle');
-
-            // 1. Bật Cinematic hoặc Ambilight -> Tắt Audio Only & Tắt tính năng còn lại
-            if ((e.target.id === 'cinematic-lighting-toggle' || e.target.id === 'sync-cinematic-toggle') && e.target.checked) {
-                
-                // Đảm bảo chỉ 1 trong 2 được bật
-                if (e.target.id === 'cinematic-lighting-toggle' && syncToggle && syncToggle.checked) {
-                    syncToggle.checked = false;
-                    settingsChanged = true;
-                }
-                if (e.target.id === 'sync-cinematic-toggle' && cinematicToggle && cinematicToggle.checked) {
-                    cinematicToggle.checked = false;
-                    settingsChanged = true;
-                }
-
-                if (audioOnlyToggle && audioOnlyToggle.checked) {
-                    audioOnlyToggle.checked = false;
-                    settingsChanged = true;
-                }
-                if (audioOnlyTabToggle && audioOnlyTabToggle.checked) {
-                    audioOnlyTabToggle.checked = false;
-                    sessionStorage.removeItem('ytToolsAudioOnlyTabOverrideMDCM');
-                    settingsChanged = true;
-                }
-                if (themesToggle && themesToggle.checked) {
-                    themesToggle.checked = false;
-                    settingsChanged = true;
-                }
-            }
-            
-            // 2. Bật Audio Only (global hoặc tab) -> Tắt Cinematic và Ambilight
-            if ((e.target.id === 'audio-only-toggle' || e.target.id === 'audio-only-tab-toggle') && e.target.checked) {
-                if (cinematicToggle && cinematicToggle.checked) {
-                    cinematicToggle.checked = false;
-                    settingsChanged = true;
-                }
-                if (syncToggle && syncToggle.checked) {
-                    syncToggle.checked = false;
-                    settingsChanged = true;
-                }
-            }
-
-            // 3. Bật Theme -> Tắt Cinematic và Ambilight
-            if (e.target.id === 'themes-toggle' && e.target.checked) {
-                if (cinematicToggle && cinematicToggle.checked) {
-                    cinematicToggle.checked = false;
-                    settingsChanged = true;
-                }
-                if (syncToggle && syncToggle.checked) {
-                    syncToggle.checked = false;
-                    settingsChanged = true;
-                }
-            }
-
             saveSettings();
             if (typeof applySettings === 'function') {
                 applySettings();
@@ -7650,7 +6150,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             hideComments: $id('hide-comments-toggle').checked,
             hideSidebar: $id('hide-sidebar-toggle').checked,
             disableAutoplay: $id('autoplay-toggle').checked,
-            disableAnnotations: $id('annotations-toggle') ? $id('annotations-toggle').checked : false,
+            ambiEnabled: ('ambiEnabled') ? ('ambiEnabled').checked : true,
             cinematicLighting: $id('cinematic-lighting-toggle').checked,
             syncCinematic: $id('sync-cinematic-toggle') ? $id('sync-cinematic-toggle').checked : false, // NUEVO SETTING
             sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'normal',
@@ -7660,15 +6160,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             playerSize: $id('player-size-slider').value,
             selectVideoQuality: $id('select-video-qualitys-select').value,
             languagesComments: $id('select-languages-comments-select').value,
-            ambiBlur: $id('ambi-blur-slider') ? $id('ambi-blur-slider').value : 40,
-            ambiSpread: $id('ambi-spread-slider') ? $id('ambi-spread-slider').value : 0,
-            ambiEdgeFade: $id('ambi-edge-fade-slider') ? $id('ambi-edge-fade-slider').value : 0,
-            ambiCropY: $id('ambi-crop-y-slider') ? $id('ambi-crop-y-slider').value : 0,
-            ambiCropX: $id('ambi-crop-x-slider') ? $id('ambi-crop-x-slider').value : 0,
-            ambiBrightness: $id('ambi-brightness-slider') ? $id('ambi-brightness-slider').value : 100,
-            ambiContrast: $id('ambi-contrast-slider') ? $id('ambi-contrast-slider').value : 100,
-            ambiSaturation: $id('ambi-saturation-slider') ? $id('ambi-saturation-slider').value : 100,
-            ambiOpacity: $id('ambi-opacity-slider') ? $id('ambi-opacity-slider').value : 80,
             // menuBgColor: $id('menu-bg-color-picker').value,
             // menuTextColor: $id('menu-text-color-picker').value,
             menu_akari: {
@@ -7680,21 +6171,10 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
         };
 
         GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
-
-        if (typeof isYTMusic !== 'undefined' && isYTMusic) {
-            const ytSettings = JSON.parse(GM_getValue('ytSettingsMDCM', '{}'));
-            ytSettings.ambiBlur = settings.ambiBlur;
-            ytSettings.ambiSpread = settings.ambiSpread;
-            ytSettings.ambiEdgeFade = settings.ambiEdgeFade;
-            ytSettings.ambiCropY = settings.ambiCropY;
-            ytSettings.ambiCropX = settings.ambiCropX;
-            ytSettings.ambiBrightness = settings.ambiBrightness;
-            ytSettings.ambiContrast = settings.ambiContrast;
-            ytSettings.ambiSaturation = settings.ambiSaturation;
-            ytSettings.ambiOpacity = settings.ambiOpacity;
-            GM_setValue('ytSettingsMDCM', JSON.stringify(ytSettings));
-        }
     }
+
+
+
     // Function to load settings
     function loadSettings() {
         const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
@@ -7741,21 +6221,9 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
         if ($id('side-panel-style-select')) $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
         if ($id('custom-timeline-color-toggle')) $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
         if ($id('subtitles-toggle')) $id('subtitles-toggle').checked = settings.disableSubtitles || false;
-        if ($id('annotations-toggle')) $id('annotations-toggle').checked = settings.disableAnnotations || false;
         $id('player-size-slider').value = settings.playerSize || 100;
         $id('select-video-qualitys-select').value = settings.selectVideoQuality || 'user';
         $id('select-languages-comments-select').value = settings.languagesComments || 'en';
-        const ytSettings = (typeof isYTMusic !== 'undefined' && isYTMusic) ? JSON.parse(GM_getValue('ytSettingsMDCM', '{}')) : settings;
-
-        if ($id('ambi-blur-slider')) $id('ambi-blur-slider').value = ytSettings.ambiBlur ?? 40;
-        if ($id('ambi-spread-slider')) $id('ambi-spread-slider').value = ytSettings.ambiSpread ?? 0;
-        if ($id('ambi-brightness-slider')) $id('ambi-brightness-slider').value = ytSettings.ambiBrightness ?? 100;
-        if ($id('ambi-contrast-slider')) $id('ambi-contrast-slider').value = ytSettings.ambiContrast ?? 100;
-        if ($id('ambi-saturation-slider')) $id('ambi-saturation-slider').value = ytSettings.ambiSaturation ?? 100;
-        if ($id('ambi-opacity-slider')) $id('ambi-opacity-slider').value = ytSettings.ambiOpacity ?? 80;
-        if ($id('ambi-edge-fade-slider')) $id('ambi-edge-fade-slider').value = ytSettings.ambiEdgeFade ?? 0;
-        if ($id('ambi-crop-y-slider')) $id('ambi-crop-y-slider').value = ytSettings.ambiCropY ?? 0;
-        if ($id('ambi-crop-x-slider')) $id('ambi-crop-x-slider').value = ytSettings.ambiCropX ?? 0;
 
         selectedBgColor = menuData.bg;
         selectedTextColor = menuData.color;
@@ -7806,6 +6274,17 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     return;
                 }
 
+                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+                if (!settings.syncCinematic) {
+                    // apply cinematic toggle
+                    const cinematicToggle = $id('cinematic-lighting-toggle');
+                    if (cinematicToggle && cinematicDiv) {
+                        cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
+                    }
+                    resolve(false);
+                    return;
+                }
+
                 const startTime = video.currentTime;
                 const checkPlayback = () => {
                     if (video.currentTime >= startTime + 1) {
@@ -7815,11 +6294,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                         if (cinematicToggle && cinematicToggle.checked !== isActive) {
                             cinematicToggle.checked = isActive;
                             saveSettings();
-                        }
-                        
-                        // Explicitly apply state
-                        if (cinematicDiv) {
-                            cinematicDiv.style.display = isActive ? 'block' : 'none';
                         }
 
                         resolve(isActive);
@@ -7868,67 +6342,14 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
 
     function updateSliderValues() {
-        if ($id('player-size-value')) $id('player-size-value').textContent = $id('player-size-slider').value;
-        if ($id('ambi-blur-val')) $id('ambi-blur-val').textContent = $id('ambi-blur-slider').value;
-        if ($id('ambi-spread-val')) $id('ambi-spread-val').textContent = $id('ambi-spread-slider').value;
-        if ($id('ambi-edge-fade-val')) $id('ambi-edge-fade-val').textContent = $id('ambi-edge-fade-slider').value;
-        if ($id('ambi-crop-y-val')) $id('ambi-crop-y-val').textContent = $id('ambi-crop-y-slider').value;
-        if ($id('ambi-crop-x-val')) $id('ambi-crop-x-val').textContent = $id('ambi-crop-x-slider').value;
-        if ($id('ambi-brightness-val')) $id('ambi-brightness-val').textContent = $id('ambi-brightness-slider').value;
-        if ($id('ambi-contrast-val')) $id('ambi-contrast-val').textContent = $id('ambi-contrast-slider').value;
-        if ($id('ambi-saturation-val')) $id('ambi-saturation-val').textContent = $id('ambi-saturation-slider').value;
-        if ($id('ambi-opacity-val')) $id('ambi-opacity-val').textContent = $id('ambi-opacity-slider').value;
+        $id('player-size-value').textContent = $id('player-size-slider').value;
+
     }
 
-    if ($id('reset-player-size')) {
-        $id('reset-player-size').addEventListener('click', () => {
-            $id('player-size-slider').value = 100;
-            updateSliderValues();
-            applySettings();
-        });
-    }
-
-    if ($id('reset-ambi-settings')) {
-        $id('reset-ambi-settings').addEventListener('click', () => {
-            if ($id('ambi-blur-slider')) $id('ambi-blur-slider').value = 10;
-            if ($id('ambi-spread-slider')) $id('ambi-spread-slider').value = 40;
-            if ($id('ambi-edge-fade-slider')) $id('ambi-edge-fade-slider').value = 3;
-            if ($id('ambi-crop-y-slider')) $id('ambi-crop-y-slider').value = 0;
-            if ($id('ambi-crop-x-slider')) $id('ambi-crop-x-slider').value = 0;
-            if ($id('ambi-brightness-slider')) $id('ambi-brightness-slider').value = 111;
-            if ($id('ambi-contrast-slider')) $id('ambi-contrast-slider').value = 100;
-            if ($id('ambi-saturation-slider')) $id('ambi-saturation-slider').value = 100;
-            if ($id('ambi-opacity-slider')) $id('ambi-opacity-slider').value = 90;
-            
-            updateSliderValues();
-            saveSettings();
-            applySettings();
-        });
-    }
-
-    // Attach listeners for all sliders
-    const sliders = [
-        'player-size-slider',
-        'ambi-blur-slider',
-        'ambi-spread-slider',
-        'ambi-edge-fade-slider',
-        'ambi-crop-y-slider',
-        'ambi-crop-x-slider',
-        'ambi-brightness-slider',
-        'ambi-contrast-slider',
-        'ambi-saturation-slider',
-        'ambi-opacity-slider'
-    ];
-    sliders.forEach(id => {
-        const slider = $id(id);
-        if (slider) {
-            slider.addEventListener('input', () => {
-                updateSliderValues();
-                // Save settings to GM_setValue first so applySettings/WebGL can read them
-                saveSettings();
-                applySettings();
-            });
-        }
+    $id('reset-player-size').addEventListener('click', () => {
+        $id('player-size-slider').value = 100;
+        updateSliderValues();
+        applySettings();
     });
 
     // Initialize header buttons once
@@ -8196,7 +6617,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
         },
 
         _startTracker() {
-            if (this._trackerId) clearTimeout(this._trackerId);
+            if (this._trackerId) cancelAnimationFrame(this._trackerId);
 
             const self = this;
             function track() {
@@ -8222,10 +6643,10 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     self.dividerEl.classList.add('active');
                 }
 
-                self._trackerId = setTimeout(track, 250);
+                self._trackerId = requestAnimationFrame(track);
             }
 
-            this._trackerId = setTimeout(track, 250);
+            this._trackerId = requestAnimationFrame(track);
         },
 
         // Legacy aliases for compatibility
@@ -8302,8 +6723,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     }
 
     // Cinematic Lighting Control Functions
-
-
 
 
     function isWatchPage() {
@@ -8447,18 +6866,10 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'blur',
             customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
             disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
-            disableAnnotations: $id('annotations-toggle') ? $id('annotations-toggle').checked : false,
             // fontSize: $id('font-size-slider').value,
             playerSize: $id('player-size-slider').value,
             selectVideoQuality: $id('select-video-qualitys-select').value,
             languagesComments: $id('select-languages-comments-select').value,
-
-            ambiBlur: $id('ambi-blur-slider') ? $id('ambi-blur-slider').value : 40,
-            ambiSpread: $id('ambi-spread-slider') ? $id('ambi-spread-slider').value : 0,
-            ambiBrightness: $id('ambi-brightness-slider') ? $id('ambi-brightness-slider').value : 100,
-            ambiContrast: $id('ambi-contrast-slider') ? $id('ambi-contrast-slider').value : 100,
-            ambiSaturation: $id('ambi-saturation-slider') ? $id('ambi-saturation-slider').value : 100,
-            ambiOpacity: $id('ambi-opacity-slider') ? $id('ambi-opacity-slider').value : 80,
             // menuBgColor: $id('menu-bg-color-picker').value,
             // menuTextColor: $id('menu-text-color-picker').value,
             menu_developermdcm: {
@@ -8509,51 +6920,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             if (typeof videoDislike === 'function') videoDislike();
             if (typeof shortDislike === 'function') shortDislike();
             showDislikes = !!settings.dislikes;
-            
-            // Disable Annotations (YT only)
-            const annotationsStyleId = 'yt-tools-disable-annotations';
-            let annotationsStyleEl = $id(annotationsStyleId);
-            if (settings.disableAnnotations) {
-                if (!annotationsStyleEl) {
-                    annotationsStyleEl = document.createElement('style');
-                    annotationsStyleEl.id = annotationsStyleId;
-                    document.head.appendChild(annotationsStyleEl);
-                }
-                annotationsStyleEl.textContent = '.video-annotations, .ytp-ce-element, .ytp-cards-button, .ytp-cards-teaser { display: none !important; }';
-            } else {
-                if (annotationsStyleEl) annotationsStyleEl.remove();
-            }
-
-            // Enforce native YouTube toggle via click (like Subtitles)
-            const enforceAnnotations = () => {
-                const currentSettings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-                const menuItems = document.querySelectorAll('.ytp-menuitem[role="menuitemcheckbox"]');
-                for (const item of menuItems) {
-                    const path = item.querySelector('svg path');
-                    if (path && path.getAttribute('d').startsWith('M9.65 6.00L9.5')) {
-                        const isCurrentlyOn = item.getAttribute('aria-checked') === 'true';
-                        if (currentSettings.disableAnnotations && isCurrentlyOn) {
-                            item.click();
-                        } else if (!currentSettings.disableAnnotations && !isCurrentlyOn) {
-                            item.click();
-                        }
-                        break;
-                    }
-                }
-            };
-            
-            enforceAnnotations();
-            
-            if (!window.__ytToolsAnnotationsEnforcer) {
-                window.__ytToolsAnnotationsEnforcer = true;
-                document.addEventListener('click', (e) => {
-                    if (e.target.closest('.ytp-settings-button')) {
-                        // Wait for menu to render in DOM
-                        setTimeout(enforceAnnotations, 50);
-                        setTimeout(enforceAnnotations, 150);
-                    }
-                });
-            }
         }
 
         // Active inactive Themes
@@ -8598,23 +6964,32 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                 }
             }
         }
-        // Apply Ambilight Pro setting
-        if (settings.syncCinematic && isWatchPage()) {
-            setTimeout(() => {
-                const video = document.querySelector('video');
-                if (window.ytmAmbilightWebGL && video) {
-                    window.ytmAmbilightWebGL.setup(video);
-                }
-            }, 800);
-        } else {
-            if (window.ytmAmbilightWebGL) {
-                window.ytmAmbilightWebGL.cleanup();
+        // Apply cinematic/ambient lighting setting
+        if (isYTMusic) {
+            // YTM: custom ambient mode
+            if (settings.cinematicLighting && isWatchPage()) {
+                setTimeout(() => {
+                    ytmAmbientMode.setup();
+                }, 800);
+            } else {
+                ytmAmbientMode.cleanup();
             }
-        }
-        
-        // Update Ambilight Styles instantly if active
-        if (window.ytmAmbilightWebGL && window.ytmAmbilightWebGL.isActive) {
-            window.ytmAmbilightWebGL.updateCanvasStyles();
+        } else if (isWatchPage()) {
+            setTimeout(() => {
+                const isCurrentlyActive = isCinematicActive();
+                if (settings.syncCinematic) {
+                    if (settings.cinematicLighting && !isCurrentlyActive) {
+                        toggleCinematicLighting();
+                    } else if (!settings.cinematicLighting && isCurrentlyActive) {
+                        toggleCinematicLighting();
+                    }
+                } else {
+                    const cinematicDiv = $id('cinematics');
+                    if (cinematicDiv) {
+                        cinematicDiv.style.display = settings.cinematicLighting ? 'block' : 'none';
+                    }
+                }
+            }, 1000);
         }
 
         // Adjust font size
@@ -9961,8 +8336,8 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
         function updateCanvasSize() {
             if (canvas) {
-                canvas.width = Math.floor(window.innerWidth / 2);
-                canvas.height = Math.floor(canvasHeight / 2);
+                canvas.width = window.innerWidth;
+                canvas.height = canvasHeight;
             }
         }
 
@@ -9975,7 +8350,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
         function cleanup(fullCleanup = false) {
             if (fullCleanup && animationId) {
-                clearTimeout(animationId);
+                cancelAnimationFrame(animationId);
                 animationId = null;
             }
             if (currentVideo) {
@@ -10027,21 +8402,17 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             const parent = document.body;
             canvas = document.createElement('canvas');
             canvas.id = 'wave-visualizer-canvas';
-            canvas.width = Math.floor(window.innerWidth / 2);
-            canvas.height = Math.floor(canvasHeight / 2);
+            canvas.width = window.innerWidth;
+            canvas.height = canvasHeight;
             canvas.style.position = 'fixed';
             canvas.style.left = '0';
             canvas.style.top = '0';
             canvas.style.width = '100%';
-            canvas.style.height = '25vh';
             canvas.style.pointerEvents = 'none';
             canvas.style.backgroundColor = 'transparent';
-            canvas.style.isolation = 'isolate';
             canvas.style.zIndex = '10000';
             canvas.style.opacity = '0';
             canvas.style.transition = 'opacity 0.3s';
-            canvas.style.transform = 'translateZ(0)';
-            canvas.style.willChange = 'transform, opacity';
 
             parent.appendChild(canvas);
             ctx = canvas.getContext('2d');
@@ -10083,7 +8454,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
             analyser = audioCtx.createAnalyser();
             analyser.fftSize = 2048;
-            analyser.smoothingTimeConstant = 0.7;
+            analyser.smoothingTimeConstant = 0.85;
             bufferLength = analyser.fftSize;
             dataArray = new Uint8Array(bufferLength);
             smoothedData = new Array(bufferLength).fill(128);
@@ -10120,19 +8491,10 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             isSetup = true;
         }
 
-        let lastDrawTime = 0;
-        function draw(timestamp) {
-            if (!timestamp) timestamp = performance.now();
-            window.__ytToolsDraw = draw;
-            if (parseFloat(canvas.style.opacity) <= 0) {
-                animationId = null;
-                return;
-            }
+        function draw() {
             animationId = requestAnimationFrame(draw);
-            
-            // Throttle to ~30fps but KEEP it synced with vsync!
-            if (timestamp - lastDrawTime < 33) return;
-            lastDrawTime = timestamp;
+
+            if (parseFloat(canvas.style.opacity) <= 0) return;
 
             analyser.getByteTimeDomainData(dataArray);
             for (let i = 0; i < bufferLength; i++) {
@@ -10149,23 +8511,22 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     ctx.strokeStyle = 'lime';
                     ctx.beginPath();
                     let x = 0;
-                    const stepLin = Math.max(1, Math.floor(bufferLength / 128));
-                    for (let i = 0; i < bufferLength; i += stepLin) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
+                    for (let i = 0; i < bufferLength; i++) {
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         if (i === 0) ctx.moveTo(x, amplitude);
                         else ctx.lineTo(x, amplitude);
-                        x += sliceWidth * stepLin;
+                        x += sliceWidth;
                     }
                     ctx.stroke();
                     break;
                 }
                 case 'barras': {
                     let x = 0;
-                    for (let i = 0; i < bufferLength; i += 8) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
+                    for (let i = 0; i < bufferLength; i += 5) {
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         ctx.fillStyle = 'cyan';
-                        ctx.fillRect(x, 0, sliceWidth * 6, amplitude);
-                        x += sliceWidth * 8;
+                        ctx.fillRect(x, 0, sliceWidth * 4, amplitude);
+                        x += sliceWidth * 5;
                     }
                     break;
                 }
@@ -10173,16 +8534,15 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = 'yellow';
                     ctx.beginPath();
-                    ctx.moveTo(0, Math.max(0, smoothedData[0] - 128) * (scale / 4));
-                    const stepCurv = Math.max(1, Math.floor(bufferLength / 64));
-                    for (let i = 0; i < bufferLength - stepCurv; i += stepCurv) {
+                    ctx.moveTo(0, Math.max(0, smoothedData[0] - 128) * scale);
+                    for (let i = 0; i < bufferLength - 1; i++) {
                         let x0 = i * sliceWidth;
-                        let x1 = (i + stepCurv) * sliceWidth;
-                        let y0 = Math.max(0, smoothedData[i] - 128) * (scale / 4);
-                        let y1 = Math.max(0, smoothedData[i + stepCurv] - 128) * (scale / 4);
-                        let cp1x = x0 + (x1 - x0) / 3;
+                        let x1 = (i + 1) * sliceWidth;
+                        let y0 = Math.max(0, smoothedData[i] - 128) * scale;
+                        let y1 = Math.max(0, smoothedData[i + 1] - 128) * scale;
+                        let cp1x = x0 + sliceWidth / 3;
                         let cp1y = y0;
-                        let cp2x = x1 - (x1 - x0) / 3;
+                        let cp2x = x1 - sliceWidth / 3;
                         let cp2y = y1;
                         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
                     }
@@ -10192,12 +8552,12 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                 case 'picos': {
                     ctx.fillStyle = 'magenta';
                     let x = 0;
-                    for (let i = 0; i < bufferLength; i += 8) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
+                    for (let i = 0; i < bufferLength; i += 5) {
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         ctx.beginPath();
-                        ctx.arc(x, amplitude, 3, 0, Math.PI * 2);
+                        ctx.arc(x, amplitude, 2, 0, Math.PI * 2);
                         ctx.fill();
-                        x += sliceWidth * 8;
+                        x += sliceWidth * 5;
                     }
                     break;
                 }
@@ -10205,11 +8565,10 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     ctx.beginPath();
                     let x = 0;
                     ctx.moveTo(0, 0);
-                    const stepSol = Math.max(1, Math.floor(bufferLength / 128));
-                    for (let i = 0; i < bufferLength; i += stepSol) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
+                    for (let i = 0; i < bufferLength; i++) {
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         ctx.lineTo(x, amplitude);
-                        x += sliceWidth * stepSol;
+                        x += sliceWidth;
                     }
                     ctx.lineTo(canvas.width, 0);
                     ctx.closePath();
@@ -10218,24 +8577,19 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     break;
                 }
                 case 'dinamica': {
-                    if (!window.__ytToolsCachedGradient || window.__ytToolsCachedGradientWidth !== canvas.width) {
-                        let gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-                        gradient.addColorStop(0, 'red');
-                        gradient.addColorStop(0.5, 'purple');
-                        gradient.addColorStop(1, 'blue');
-                        window.__ytToolsCachedGradient = gradient;
-                        window.__ytToolsCachedGradientWidth = canvas.width;
-                    }
+                    let gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                    gradient.addColorStop(0, 'red');
+                    gradient.addColorStop(0.5, 'purple');
+                    gradient.addColorStop(1, 'blue');
                     ctx.lineWidth = 3;
-                    ctx.strokeStyle = window.__ytToolsCachedGradient;
+                    ctx.strokeStyle = gradient;
                     ctx.beginPath();
                     let x = 0;
-                    const stepDin = Math.max(1, Math.floor(bufferLength / 128));
-                    for (let i = 0; i < bufferLength; i += stepDin) {
-                        let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
+                    for (let i = 0; i < bufferLength; i++) {
+                        let amplitude = Math.max(0, smoothedData[i] - 128) * scale;
                         if (i === 0) ctx.moveTo(x, amplitude);
                         else ctx.lineTo(x, amplitude);
-                        x += sliceWidth * stepDin;
+                        x += sliceWidth;
                     }
                     ctx.stroke();
                     break;
@@ -10244,11 +8598,10 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     ctx.beginPath();
                     let x = 0;
                     ctx.moveTo(0, 0);
-                    const stepMon = Math.max(1, Math.floor(bufferLength / 128));
-                    for (let i = 0; i < bufferLength; i += stepMon) {
-                        let amp = (smoothedData[i] - 128) * (scale / 4) * 0.8;
+                    for (let i = 0; i < bufferLength; i++) {
+                        let amp = (smoothedData[i] - 128) * scale * 0.8;
                         ctx.lineTo(x, amp);
-                        x += sliceWidth * stepMon;
+                        x += sliceWidth;
                     }
                     ctx.lineTo(canvas.width, 0);
                     ctx.closePath();
@@ -10492,7 +8845,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                 // Soft cleanup: hide canvas + stop animation, but keep AudioContext alive
                 // (createMediaElementSource can only bind once per video element)
                 if (animationId) {
-                    clearTimeout(animationId);
+                    cancelAnimationFrame(animationId);
                     animationId = null;
                 }
                 hideCanvas();
@@ -10521,10 +8874,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     if (checkAudioOnlyToggle) {
         checkAudioOnlyToggle.addEventListener('change', () => {
             const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-            
-            // Clear any tab-specific overrides so the tab reflects the new global state
-            sessionStorage.removeItem('ytToolsAudioOnlyTabOverrideMDCM');
-            
             syncAudioOnlyTabCheckbox({
                 ...settings,
                 audioOnly: checkAudioOnlyToggle.checked
@@ -10540,11 +8889,18 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
         });
     }
 
-    // Themes toggle event listener
+    // Themes toggle event listener (auto-disable ambient in YTM if themes are turned on)
     const checkThemesToggle = $id('themes-toggle');
     if (checkThemesToggle) {
         checkThemesToggle.addEventListener('change', () => {
-            // Conflict handling is centralized in observers.js panel listener
+            if (isYTMusic && checkThemesToggle.checked) {
+                const cinematicToggle = $id('cinematic-lighting-toggle');
+                if (cinematicToggle && cinematicToggle.checked) {
+                    cinematicToggle.checked = false;
+                    try { saveSettings(); } catch (e) { }
+                    scheduleApplySettings();
+                }
+            }
         });
     }
 
@@ -10553,58 +8909,66 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     if (checkCinematicLighting) {
         checkCinematicLighting.addEventListener('change', () => {
             const cinematicToggle = $e('#cinematic-lighting-toggle');
+            const syncToggle = $e('#sync-cinematic-toggle');
             const cinematicDiv = $id('cinematics');
 
             if (cinematicToggle.checked) {
-                Notify('success', 'Cinematic Mode enabled');
+                Notify('success', isYTMusic ? 'Ambient mode enabled' : 'Cinematic mode enabled');
             } else {
-                Notify('success', 'Cinematic Mode disabled');
+                Notify('success', isYTMusic ? 'Ambient mode disabled' : 'Cinematic mode disabled');
             }
-            
-            // Xung đột themes đã được xử lý ở observers.js
 
             if (isYTMusic) {
-                // YTM: Cinematic Mode is a separate visual effect.
-                // WebGL Ambilight is controlled by sync-cinematic-toggle, not this toggle.
-            } else {
-                // YT: Native YouTube cinematic logic (completely separated from WebGL Ambilight)
+                // YTM: use custom ambient mode
                 if (cinematicToggle.checked) {
+                    // Auto-disable theme when ambient is ON (they conflict)
+                    const themesToggle = $id('themes-toggle');
+                    if (themesToggle && themesToggle.checked) {
+                        themesToggle.checked = false;
+                        try { saveSettings(); } catch (e) { }
+                        scheduleApplySettings();
+                    }
+                    ytmAmbientMode.show();
+                } else {
+                    ytmAmbientMode.destroy();
+                }
+            } else {
+                // YT: use cinematic lighting
+                if (syncToggle.checked) {
                     setTimeout(() => {
-                        if (typeof isCinematicActive === 'function') {
-                            if (!isCinematicActive()) {
-                                if (typeof toggleCinematicLighting === 'function') toggleCinematicLighting();
-                            }
-                        } else if (cinematicDiv) {
-                            cinematicDiv.style.display = 'block';
-                        }
+                        toggleCinematicLighting();
                     }, 300);
                 } else {
-                    setTimeout(() => {
-                        if (typeof isCinematicActive === 'function') {
-                            if (isCinematicActive()) {
-                                if (typeof toggleCinematicLighting === 'function') toggleCinematicLighting();
-                            }
-                        } else if (cinematicDiv) {
-                            cinematicDiv.style.display = 'none';
-                        }
-                    }, 300);
+                    if (cinematicDiv) {
+                        cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
+                    }
                 }
             }
         });
     }
 
-    // Sync cinematic toggle event listener (WebGL Ambilight)
+    // Sync cinematic toggle event listener
     const checkSyncCinematic = $id('sync-cinematic-toggle');
     if (checkSyncCinematic) {
         checkSyncCinematic.addEventListener('change', () => {
             const syncToggle = $e('#sync-cinematic-toggle');
+            const cinematicToggle = $e('#cinematic-lighting-toggle');
+            const cinematicDiv = $id('cinematics');
 
             if (syncToggle.checked) {
-                Notify('success', 'Ambilight enabled (WebGL Effect)');
-                if (window.ytmAmbilightWebGL) window.ytmAmbilightWebGL.setup(document.querySelector('video'));
+                Notify('success', 'Sync with YouTube enabled');
+                // Si se activa la sincronización y el modo cinematic está activado, sincronizar con YouTube
+                if (cinematicToggle.checked) {
+                    setTimeout(() => {
+                        toggleCinematicLighting();
+                    }, 500);
+                }
             } else {
-                Notify('success', 'Ambilight disabled');
-                if (window.ytmAmbilightWebGL) window.ytmAmbilightWebGL.cleanup();
+                Notify('success', 'Sync with YouTube disabled');
+                // Si se desactiva la sincronización, aplicar inmediatamente el estado del toggle
+                if (cinematicDiv) {
+                    cinematicDiv.style.display = cinematicToggle.checked ? 'block' : 'none';
+                }
             }
         });
     }
@@ -11180,7 +9544,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     }
 
     // Nuclear fix for persistent black cinematic blocks in Shorts
-
     function nukeShortsCinematic() {
         if (isYTMusic) return;
         // 1. Remove from regular DOM
