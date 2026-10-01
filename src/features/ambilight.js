@@ -417,7 +417,9 @@ class YTAmbilightWebGL {
                 if (settings.ambiBlur !== undefined) blur = settings.ambiBlur;
 
                 if (settings.ambiOpacity !== undefined) opacity = settings.ambiOpacity / 100;
-                if (settings.ambiEdgeFade !== undefined) edgeFade = settings.ambiEdgeFade;
+                const isYTM = window.location.hostname.includes('music.youtube.com');
+                const isAmbiEnabled = isYTM ? settings.syncCinematic : settings.cinematicLighting;
+                if (settings.ambiEdgeFade !== undefined && isAmbiEnabled) edgeFade = settings.ambiEdgeFade;
             }
         } catch (e) {}
 
