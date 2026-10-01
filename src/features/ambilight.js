@@ -57,7 +57,26 @@ class YTAmbilightWebGL {
                 this.canvas.style.zIndex = '0';
                 const app = document.querySelector('ytmusic-app') || document.body;
                 app.insertBefore(this.canvas, app.firstChild);
-                player.style.background = 'transparent';
+                
+                if (!document.getElementById('ambilight-ytm-transparent-fix')) {
+                    const style = document.createElement('style');
+                    style.id = 'ambilight-ytm-transparent-fix';
+                    style.textContent = `
+                        ytmusic-player,
+                        ytmusic-player #song-video,
+                        ytmusic-player .html5-video-container,
+                        ytmusic-player #song-image,
+                        ytmusic-player-page,
+                        ytmusic-player-page #background,
+                        ytmusic-player-page .background,
+                        ytmusic-app-layout,
+                        ytmusic-app-layout > [id="background"] {
+                            background: transparent !important;
+                            background-color: transparent !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
             } else {
                 // Regular YT - we use a 300% absolute canvas inside the video player.
                 // This gives WebGL physical space to draw the light rays outside the video,
