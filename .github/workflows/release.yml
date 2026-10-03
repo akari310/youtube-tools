@@ -25,13 +25,30 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
+      # Without this guard, allowUpdates:true silently replaces the asset of the
+      # release that is already published. That happened before: the 0.0.7.0
+      # release kept its version number while shipping completely different code.
+      # A release is therefore only ever published from a version that has never
+      # been released. If this step fails, bump @version (src/core/meta.js) and
+      # rebuild.
+      - name: Fail if this version was already released
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          if gh api "repos/${{ github.repository }}/releases/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "::error::Release v${VERSION} already exists. Bump @version in src/core/meta.js and package.json, then rebuild."
+            exit 1
+          fi
+          echo "No existing release for v${VERSION}, safe to publish."
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           tag: v${{ steps.get_version.outputs.VERSION }}
           name: Release v${{ steps.get_version.outputs.VERSION }}
           artifacts: "youtube-tools.user.js"
-          allowUpdates: true
+          allowUpdates: false
           makeLatest: true
           body: "Automatic release for version ${{ steps.get_version.outputs.VERSION }}"
           token: ${{ secrets.GITHUB_TOKEN }}
