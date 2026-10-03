@@ -2,13 +2,6 @@
 node_modules/
 .DS_Store
 *.log
-_backup_*
-replace.js
-ANALYSIS.md
-BUG_ANALYSIS.md
-HTML_ANALYSIS.md
-FOUND_BUG.md
-truncate_fix.py
 __pycache__/
 dist/
 build/
@@ -17,19 +10,33 @@ build/
 
 package-lock.json
 
-# Temp and Clone files
+# ---- File cong viec cua AI agent: CHI O MAY LOCAL, KHONG LEN GITHUB ----
+# Repo nay public. Agent doc file nay tu dia phong.
+# Muon bat buoc agent doc khi mo workspace: dung AGENTS.md o muc goc
+# (Antigravity/Claude Code tu tim), hoac them vao day neu ban thich.
+.agent/
+.agents/
+docs/
+AGENTS.md
+AUDIT_BACKLOG.md
+opencode_chat_history.md
+opencode_working_protocol.md
+BAK_README.md
+
+# ---- Phong thi nghiem ----
 scratch/
 src_clone/
-ECC.md
-NEW_FEATURE.MD
-README(clone).md
-backup.js
+src_clone.bak_*/
+src_clone.bak_*.user.js
 youtube-tools-clone.user.js
+youtube-ambilight-local/
+antigravity_export/
+scripts/build-clone.js
 scripts/build_clone.*
+scripts/verify-clone.ps1
 
-# Temp fix/patch scripts
+# ---- Rac cu ----
+replace.js
+_backup_*
 fix*.js
 patch_*.js
-old_downloader.js
-read_step.js
-refactor_fallback.js
