@@ -1,15 +1,15 @@
 const fs = require('fs-extra');
 const path = require('path');
-const UglifyJS = require('uglify-js');
 
 async function build() {
     const repoRoot = path.resolve(__dirname, '..');
     const srcDir = path.join(repoRoot, 'src');
     const outputFile = path.join(repoRoot, 'youtube-tools.user.js');
 
-    console.log('Starting clean build process based on backup structure...');
+    console.log('Building youtube-tools.user.js from src/...');
 
-    // Explicit file order based on backup.js structure to ensure functionality
+    // Explicit file order. Declaration order determines execution order, so this
+    // array must not be reordered. scripts/build-clone.js mirrors it exactly.
     const FILE_ORDER = [
         'core/meta.js',
         'core/init.js',

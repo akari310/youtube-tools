@@ -1,31 +1,32 @@
 {
-  "name": "youtube-ultimate-tools",
-  "version": "0.0.7.0",
-  "description": "Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.",
-  "main": "youtube-tools.user.js",
-  "scripts": {
-    "build": "node scripts/build.js",
-    "bump": "node scripts/bump.js",
-    "release": "node scripts/commit.js",
-    "push": "node scripts/commit.js --no-bump",
-    "dev": "node scripts/build.js --watch",
-    "lint": "eslint src/**/*.js"
-  },
-  "keywords": [
-    "youtube",
-    "userscript",
-    "download",
-    "dislikes"
-  ],
-  "author": "Akari, DeveloperMDCM, nvbangg",
-  "license": "GPL-3.0",
-  "devDependencies": {
-    "eslint": "^10.4.0",
-    "fs-extra": "^11.2.0",
-    "glob": "^13.0.6",
-    "uglify-js": "^3.17.4"
-  },
-  "dependencies": {
-    "canvas": "^3.2.3"
-  }
+    "name":  "youtube-ultimate-tools",
+    "version":  "0.0.7.0",
+    "description":  "Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.",
+    "main":  "youtube-tools.user.js",
+    "scripts":  {
+                    "build":  "node scripts/build.js",
+                    "bump":  "node scripts/bump.js",
+                    "release":  "node scripts/commit.js",
+                    "push":  "node scripts/commit.js --no-bump"
+                },
+    "keywords":  [
+                     "youtube",
+                     "userscript",
+                     "download",
+                     "dislikes"
+                 ],
+    "author":  "Akari, DeveloperMDCM, nvbangg",
+    "license":  "GPL-3.0",
+    "devDependencies":  {
+                            "eslint":  "^10.4.0",
+                            "fs-extra":  "^11.2.0",
+                            "glob":  "^13.0.6",
+                            "uglify-js":  "^3.17.4"
+                        },
+    "dependencies":  {
+                         "canvas":  "^3.2.3"
+                     },
+    "engines":  {
+                    "node":  "\u003e=18"
+                }
 }
