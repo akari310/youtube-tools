@@ -25,24 +25,31 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
-      # Without this guard, allowUpdates:true silently replaces the asset of the
-      # release that is already published. That happened before: the 0.0.7.0
-      # release kept its version number while shipping completely different code.
-      # A release is therefore only ever published from a version that has never
-      # been released. If this step fails, bump @version (src/core/meta.js) and
-      # rebuild.
-      - name: Fail if this version was already released
+      # allowUpdates:true silently replaces the asset of the release that is
+      # already published. That happened before: the 0.0.7.0 release kept its
+      # version number while shipping completely different code.
+      #
+      # When the version has already been released, this workflow has nothing to
+      # publish. That is not an error: it just means the change belongs to the
+      # next version bump. So skip, leave the published release untouched, and
+      # say so in the log.
+      - name: Skip if this version was already released
+        id: already_released
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
           if gh api "repos/${{ github.repository }}/releases/tags/v${VERSION}" >/dev/null 2>&1; then
-            echo "::error::Release v${VERSION} already exists. Bump @version in src/core/meta.js and package.json, then rebuild."
-            exit 1
+            echo "Release v${VERSION} is already published. Leaving it untouched."
+            echo "This change ships with the next version bump of @version in src/core/meta.js."
+            echo "already_released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No release for v${VERSION} yet, publishing."
+            echo "already_released=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "No existing release for v${VERSION}, safe to publish."
 
       - name: Create Release
+        if: steps.already_released.outputs.already_released == 'false'
         uses: ncipollo/release-action@v1
         with:
           tag: v${{ steps.get_version.outputs.VERSION }}
