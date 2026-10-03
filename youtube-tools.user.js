@@ -224,13 +224,6 @@
         return window.location.href.includes('youtube.com/watch');
     }
 
-    function checkDarkModeActive() {
-        const htmlElement = document.documentElement;
-        const isDarkModeYT = htmlElement.hasAttribute('dark') || htmlElement.getAttribute('style')?.includes('color-scheme: dark');
-        const isDarkModeYTM = document.querySelector('ytmusic-app')?.hasAttribute('dark');
-        return !!(isDarkModeYT || isDarkModeYTM);
-    }
-
     function FormatterNumber(num, digits) {
         const lookup = [
             { value: 1, symbol: "" },
@@ -263,6 +256,7 @@
             }, 120);
         };
     })();
+
 
 // Create a Trusted Types policy
 let policy = null;
@@ -8552,10 +8546,6 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
 
 
-    function isWatchPage() {
-        return window.location.href.includes('youtube.com/watch');
-    }
-
     function isCinematicActive() {
         const cinematicDiv = document.getElementById('cinematics');
         if (!cinematicDiv) {
@@ -8654,6 +8644,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     }
 
     // Function to apply settings
+
 
     // === Cờ & observer dùng chung giữa nhiều lần gọi applySettings() ===
 // Phải khai báo NGOÀI applySettings(). Nếu để trong hàm, mỗi lần gọi lại tạo biến mới

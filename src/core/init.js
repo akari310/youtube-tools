@@ -165,13 +165,6 @@
         return window.location.href.includes('youtube.com/watch');
     }
 
-    function checkDarkModeActive() {
-        const htmlElement = document.documentElement;
-        const isDarkModeYT = htmlElement.hasAttribute('dark') || htmlElement.getAttribute('style')?.includes('color-scheme: dark');
-        const isDarkModeYTM = document.querySelector('ytmusic-app')?.hasAttribute('dark');
-        return !!(isDarkModeYT || isDarkModeYTM);
-    }
-
     function FormatterNumber(num, digits) {
         const lookup = [
             { value: 1, symbol: "" },
@@ -204,4 +197,4 @@
             }, 120);
         };
     })();
-
+

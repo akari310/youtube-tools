@@ -1,7 +1,3 @@
-    function isWatchPage() {
-        return window.location.href.includes('youtube.com/watch');
-    }
-
     function isCinematicActive() {
         const cinematicDiv = document.getElementById('cinematics');
         if (!cinematicDiv) {
@@ -99,4 +95,4 @@
         }, 200);
     }
 
-    // Function to apply settings
+    // Function to apply settings

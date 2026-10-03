@@ -29,6 +29,7 @@ src_clone/
 src_clone.bak_*/
 src_clone.bak_*.user.js
 youtube-tools-clone.user.js
+deadcode/
 youtube-ambilight-local/
 antigravity_export/
 scripts/build-clone.js
