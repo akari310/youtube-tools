@@ -73,6 +73,26 @@ the stored value in the console and reload:
 GM_deleteValue('ytSettingsMDCM');
 ```
 
+### ⚠️ Ambilight needs hardware acceleration
+
+**Turn on hardware acceleration before using Ambilight.** Without it the browser
+falls back to software rendering (SwiftShader), the WebGL shader runs on the CPU,
+and CPU usage climbs while the effect stutters badly.
+
+On a laptop with integrated graphics this matters most.
+
+**How to check:** open a new tab and go to `chrome://gpu`, then find the **WebGL**
+row.
+
+- `Hardware accelerated` → fine
+- `SwiftShader` or `Software only` → **this is your problem**
+
+**How to enable it:** `chrome://settings/system` → enable *Use graphics
+acceleration when available* → **reload the browser** (a tab refresh is not enough).
+
+Ambilight, the wave visualiser, and the YTM ambient glow all depend on this.
+If CPU is high or effects stutter on a laptop, check this first.
+
 ---
 
 ## 🛠️ Development & Contribution
