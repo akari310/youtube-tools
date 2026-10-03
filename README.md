@@ -66,18 +66,12 @@ If you are using **uBlock Origin** or other strict adblockers, they might aggres
 > is returned by the API at runtime, so the set of possible hosts cannot be listed up front.
 
 ### Settings menu opens but nothing happens
-The settings can fail to load if a timeout fires before the preferences are ready.
-Refresh the page after installing or updating the script. If settings still do not
-apply, clear the stored value by opening the console and running:
+Settings can fail to apply if a timeout fires before the preferences finish loading.
+Refresh the page after installing or updating. If it still does not apply, clear
+the stored value in the console and reload:
 ```js
 GM_deleteValue('ytSettingsMDCM');
 ```
-then reload.
-
-### Ambilight dies after toggling it many times
-Fixed in build-15. If you are on an older release, update from the Install link above.
-The previous WebGL context was never released, so the GPU ran out of contexts after
-roughly 16 toggles.
 
 ---
 
