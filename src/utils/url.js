@@ -1,4 +1,11 @@
 
+    // === Cờ & observer dùng chung giữa nhiều lần gọi applySettings() ===
+// Phải khai báo NGOÀI applySettings(). Nếu để trong hàm, mỗi lần gọi lại tạo biến mới
+// → nhánh "disconnect bản cũ" thành code chết → rò listener/observer mỗi lần đổi setting.
+let translatorEventBound = false;
+let _commentIO = null;
+let _commentMO = null;
+
     function applySettings() {
         const formulariodescarga = $e('.formulariodescarga');
         const formulariodescargaaudio = $e('.formulariodescargaaudio');
@@ -1150,8 +1157,7 @@
 
 
 
-        // Biến cờ phải nằm ngoài hàm để không bị reset
-        let translatorEventBound = false;
+        // Cờ translatorEventBound đã nâng lên cấp IIFE (trên applySettings) để không bị reset.
 
         function traductor() {
             // Chỉ quét những comment chưa có nút dịch (dùng thuộc tính data-translated)
@@ -1219,8 +1225,7 @@
 
         // === CODE TỐI ƯU MỚI THAY THẾ CHO SCROLL EVENT === (YT only)
         if (!isYTMusic) {
-            let _commentIO = null;
-            let _commentMO = null;
+            // _commentIO / _commentMO đã nâng lên cấp IIFE để nhánh disconnect ở dưới hoạt động thật.
             function initSmartCommentObserver() {
                 const commentsContainer = document.querySelector('#comments');
                 if (!commentsContainer) return;
@@ -1720,26 +1725,39 @@
             window.removeEventListener('resize', updateCanvasSize);
             window.addEventListener('resize', updateCanvasSize);
 
+            // Dang ky 1 LAN o day thay vi ghi global trong moi khung hinh.
+            // (buttons.js:535 dung window.__ytToolsDraw de khoi dong lai vong lap)
+            window.__ytToolsDraw = draw;
             draw();
             isSetup = true;
         }
 
-        let lastDrawTime = 0;
         function draw(timestamp) {
             if (!timestamp) timestamp = performance.now();
-            window.__ytToolsDraw = draw;
+
+            // rAF chay o tan so man hinh (60-144Hz) con viec ve chi can 30fps.
+            // Kiem tra nhip TRUOC, de cac thao tac dat (doc inline style, ghi global)
+            // khong chay o tan so man hinh ma chi chay 30 lan/giay nhu mo hinh cu.
+            if (timestamp - lastDrawTime < 33) {
+                animationId = requestAnimationFrame(draw);
+                return;
+            }
+            lastDrawTime = timestamp;
+
             if (parseFloat(canvas.style.opacity) <= 0) {
                 animationId = null;
                 return;
             }
             animationId = requestAnimationFrame(draw);
-            
-            // Throttle to ~30fps but KEEP it synced with vsync!
-            if (timestamp - lastDrawTime < 33) return;
-            lastDrawTime = timestamp;
 
             analyser.getByteTimeDomainData(dataArray);
-            for (let i = 0; i < bufferLength; i++) {
+
+            // bufferLength = 2048 nhung TAT CA style deu doc o buoc >= 8
+            // (barras/picos: 8; linea/solida/dinamica/montana: 16; curva: 32).
+            // Nen chi can lam mat 256 mau thay vi 2048 - 7/8 cong viec bo dioc
+            // va ket qua hinh anh Y HET, khong sai mot pixel nao.
+            const smoothStep = bufferLength > 16 ? 8 : 1;
+            for (let i = 0; i < bufferLength; i += smoothStep) {
                 smoothedData[i] += smoothingFactor * (dataArray[i] - smoothedData[i]);
             }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1796,13 +1814,18 @@
                 case 'picos': {
                     ctx.fillStyle = 'magenta';
                     let x = 0;
+                    // Gom 256 vong tron vao MOT duong path roi fill MOT LAN.
+                    // Truoc day fill 256 lan - moi len la mot lan raster hoa rieng.
+                    // Hinh dang y het, nhanh gap nhieu.
+                    ctx.beginPath();
                     for (let i = 0; i < bufferLength; i += 8) {
                         let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
-                        ctx.beginPath();
+                        // moveTo truoc moi arc de khong noi giua cac vong tron bang duong
+                        ctx.moveTo(x + 3, amplitude);
                         ctx.arc(x, amplitude, 3, 0, Math.PI * 2);
-                        ctx.fill();
                         x += sliceWidth * 8;
                     }
+                    ctx.fill();
                     break;
                 }
                 case 'solida': {
@@ -2078,7 +2101,12 @@
                 attempts++;
                 if (attempts >= maxAttempts) {
                     clearInterval(interval);
-                    console.warn(`[Youtube Tools] Không tìm thấy element: ${selector}`);
+                    console.warn(`[YT Tools] Khong tim thay ${selector} sau ${maxAttempts * 100}ms; van load settings`);
+                    // KHONG duoc bo luon o day. Callback nay goi loadSettings(),
+                    // ma loadSettings() moi set settingsLoaded = true. Neu bo,
+                    // settingsLoaded mai false -> scheduleApplySettings() return im lang
+                    // -> script hien icon nhung KHONG setting nao chay, khong bao loi gi.
+                    callback();
                 }
             }
         }, 100);

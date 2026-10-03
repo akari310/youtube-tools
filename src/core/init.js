@@ -61,6 +61,16 @@
     let dataArray = null;
     let smoothedData = [];
     let isSetup = false;
+
+    // Nhip ve cua wave visualizer.
+    // PHAI nam o dau IIFE (day), KHONG duoc khai bao trong applySettings():
+    // applySettings() goi checkForVideo() o dong ~1091, checkForVideo() goi
+    // setupAudioAnalyzer() -> draw() -> doc bien nay. Neu khai bao sau do
+    // (du khai truoc setupAudioAnalyzer() van duoc) thi no van nam trong
+    // "vung chet" TDZ luc draw() chay -> ReferenceError:
+    // Cannot access 'lastDrawTime' before initialization.
+    // O day thi khai bao xong la co gia tri ngay tu khi IIFE chay.
+    let lastDrawTime = 0;
     const smoothingFactor = 0.12;
     const canvasHeight = 480;
     const scale = canvasHeight / 120;

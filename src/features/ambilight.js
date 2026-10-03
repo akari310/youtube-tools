@@ -2,6 +2,35 @@
 // Inspired by and credits to WesselKroos:
 // https://github.com/WesselKroos/youtube-ambilight (Ambient light for YouTube)
 
+// Be rong toi da cua anh sang duoc nap len GPU moi khung hinh (30 lan/giay).
+// Shader chi doc ~0.5% ben trong vien roi keo gian ra, va canvas con bi blur(40px),
+// nen 768px cho hinh dang hoan toan giong nhung giam ~10 lan (1080p) / ~25 lan (4K)
+// so voi luong du lieu phai copy tu CPU sang GPU.
+// TANG len = sang hon, tang xuong = it ton CPU hon. Rat an toan.
+const MAX_TEXTURE_WIDTH = 768;
+
+// So khung hinh Ambilight ve mot giay khi video DANG CHAY.
+// 24 = chuan phim. Muon tiet them: 20 (van ok), 15 (bat dau thay ro khi chuyen dong nhanh).
+// Tang len: 30 (dat la thu tien, ton CPU hon).
+// Luu y: hieu ung bi blur(40px) nen rat "cham" theo khong gian - ha fps it khi
+// bi nhin ra. Nhung khi video co chuyen dong nhanh (nhac, hieu ung) thi anh sang
+// doi theo, va do la luc can nhip cao hon.
+const AMBILIGHT_FPS = 24;
+
+// Dau ban dung - de kiem tra may ban co cai DUNG ban moi khong.
+// Moi thay doi se tang con so nay len.
+//
+// Luu y: `window` ben trong userscript Tampermonkey KHONG phai `window` cua
+// trang (no la sandbox rieng), nen gan `window.X` thi Console cua trang KHONG
+// thay. Phai gan qua `unsafeWindow`.
+// Dung console: YT_BUILD_STAMP
+// Neu khong thay, tim chu "BAN DUNG SO" trong trinh chuyen sua script.
+// ===> BAN DUNG SO : 15
+const BUILD_STAMP = 'build-15';
+try {
+    (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).YT_BUILD_STAMP = BUILD_STAMP;
+} catch (e) { /* sandbox chan gan - dung cach tim chu "BAN DUNG SO" */ }
+
 class YTAmbilightWebGL {
     constructor() {
         this.video = null;
@@ -124,6 +153,20 @@ class YTAmbilightWebGL {
             }
         }
 
+        // setup() được applySettings() gọi lại mỗi lần đổi setting và mỗi lần
+        // yt-navigate-finish. Nếu không chặn ở đây, mỗi lần gọi sẽ:
+        //   - tạo mới program + 2 buffer + 1 texture, ghi đè this.* mà không delete cái cũ
+        //   - start() mở thêm một vòng requestAnimationFrame mới, animationId bị ghi đè
+        //     nên vòng cũ không bao giờ cancel được
+        //   - tạo thêm một ResizeObserver mà không disconnect cái cũ
+        // → sau ~20 lần điều hướng là 20 vòng render 30fps chạy song song + rò GPU.
+        if (this.isActive && this.video === videoElement && this.gl) return;
+        if (this.isActive) this.stop();
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
+
         this.initWebGL();
         this.start();
         
@@ -133,9 +176,17 @@ class YTAmbilightWebGL {
     }
 
     initWebGL() {
+        // setup() được applySettings() gọi lại mỗi lần đổi setting.
+        // Nếu không chặn ở đây, mỗi lần gọi sẽ tạo mới program + 2 buffer + 1 texture
+        // rồi ghi đè this.* mà không delete cái cũ → rò GPU buffer.
+        if (this.gl) return;
+
         // Enable alpha blending to prevent black shadows
         this.gl = this.canvas.getContext('webgl', { 
-            preserveDrawingBuffer: true,
+            // Canvas nay chi duoc ve ra roi composite theo frame, khong co code nao
+            // doc nganh dem (khong toDataURL / readPixels). preserveDrawingBuffer:true
+            // buoc trinh duyet giu lai buffer sau moi frame lam cham.
+            preserveDrawingBuffer: false,
             antialias: false,
             depth: false,
             alpha: true,
@@ -244,12 +295,13 @@ class YTAmbilightWebGL {
             }
         `;
 
-        const vertexShader = this.createShader(gl.VERTEX_SHADER, vsSource);
-        const fragmentShader = this.createShader(gl.FRAGMENT_SHADER, fsSource);
+        // Giữ tham chiếu để cleanup() deleteShader() được (trước đây shader không được giữ nên rò)
+        this.vertexShader = this.createShader(gl.VERTEX_SHADER, vsSource);
+        this.fragmentShader = this.createShader(gl.FRAGMENT_SHADER, fsSource);
 
         this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
+        gl.attachShader(this.program, this.vertexShader);
+        gl.attachShader(this.program, this.fragmentShader);
         gl.linkProgram(this.program);
 
         if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
@@ -304,6 +356,36 @@ class YTAmbilightWebGL {
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
         return shader;
+    }
+
+    // NGUON TEXTURE: giu nguyen khi nguon da nho, hao cap khi lon.
+    // Shader chi lay mau ~0.5% ben trong vien video roi keo gian ra ngoai, va canvas
+    // con bi CSS blur(40px) -> chi tiet duoi ~40px deu bi pha. Nap video 4K 30 lan/giay
+    // la dang ton CPU cho noi dung ma cuoi cung khong ai nhin thay.
+    getTextureSource(textureSource) {
+        const sw = textureSource.videoWidth || textureSource.naturalWidth || 0;
+        const sh = textureSource.videoHeight || textureSource.naturalHeight || 0;
+        if (!sw || !sh || sw <= MAX_TEXTURE_WIDTH) return textureSource;
+
+        const w = MAX_TEXTURE_WIDTH;
+        const h = Math.max(1, Math.round(sh * (w / sw)));
+
+        if (!this.srcCanvas) {
+            this.srcCanvas = document.createElement('canvas');
+            this.srcCtx = this.srcCanvas.getContext('2d', { alpha: false, desynchronized: true });
+        }
+        if (this.srcCanvas.width !== w || this.srcCanvas.height !== h) {
+            this.srcCanvas.width = w;
+            this.srcCanvas.height = h;
+        }
+
+        try {
+            this.srcCtx.drawImage(textureSource, 0, 0, w, h);
+        } catch (e) {
+            // Video chua san sang hoac bi CORS -> dung luon ban goc
+            return textureSource;
+        }
+        return this.srcCanvas;
     }
 
     resizeCanvas() {
@@ -384,11 +466,11 @@ class YTAmbilightWebGL {
 
         let ambiEnabled = true;
         try {
-            if (typeof GM_getValue !== 'undefined' && typeof SETTINGS_KEY !== 'undefined') {
-                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-                if (settings.syncCinematic !== undefined) {
-                    ambiEnabled = settings.syncCinematic;
-                }
+            // Dung ban cache do updateCanvasStyles() da nap san, thay vi GM_getValue +
+            // JSON.parse moi giay (doc storage xuyen sandbox co chi phi).
+            const settings = this.cachedSettings;
+            if (settings && settings.syncCinematic !== undefined) {
+                ambiEnabled = settings.syncCinematic;
             }
         } catch (e) {}
 
@@ -422,6 +504,13 @@ class YTAmbilightWebGL {
                 if (settings.ambiEdgeFade !== undefined && isAmbiEnabled) edgeFade = settings.ambiEdgeFade;
             }
         } catch (e) {}
+
+        // Ham nay duoc goi ~1.5 lan/giay tu vong render. Ghi style.maskImage len <video>
+        // se ep trinh duyet tinh lai style va dung lai composite layer cua video -
+        // thao tac dat. Chi ghi khi gia tri THAT SU thay doi.
+        const sig = `${blur}|${opacity}|${edgeFade}`;
+        if (sig === this._lastStyleSig) return;
+        this._lastStyleSig = sig;
 
         this.canvas.style.opacity = opacity;
         this.canvas.style.filter = `blur(${blur}px) saturate(150%)`;
@@ -518,7 +607,7 @@ class YTAmbilightWebGL {
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         
         try {
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureSource);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.getTextureSource(textureSource));
             gl.uniform1i(this.textureLocation, 0);
             
             // Get settings (we'll fetch from GM_getValue, or use defaults)
@@ -607,11 +696,27 @@ class YTAmbilightWebGL {
 
     draw() {
         if (!this.isActive || !this.gl || !this.video) return;
-        
+
         const now = performance.now();
-        // 30fps for video, 10fps check rate for audio-only (saves CPU loops)
-        const delay = this.isAudioOnly ? 100 : 33;
-        
+
+        // Nhip ve CHON THEO TRANG THAI, khong dung mot nhip co dinh:
+        //
+        //  video dang chay -> AMBILIGHT_FPS (24fps)
+        //      24fps la chuan phim. Mat so khung hinh 20% so voi 30fps, nhung
+        //      chuyen dong 24 khung/giay hoan toan "chuan" voi mat nguoi - phim
+        //      cung chay 24fps. Ban se khong nhin ra khac biet gi.
+        //      KHONG xuong 15fps: 15 khung/giay nhin ro rang o chuyen dong nhanh
+        //      (nhac, hieu ung chop nhanh) va day la thu gian khong nen.
+        //
+        //  video DUNG LAI (pause / ket thuc) -> 2fps
+        //      Anh hinh dang hoa thi ve lai 30 lan/giay la ton cong vo ich.
+        //      2fps giong het, tiet 100% CPU cua vong nay luc nghe/nhin.
+        //
+        //  audio-only (YTM) -> 10fps
+        //      Anh bia doi khi doi bai, khong can nhanh hon.
+        const paused = this.video.paused || this.video.ended;
+        const delay = this.isAudioOnly ? 100 : (paused ? 500 : (1000 / AMBILIGHT_FPS));
+
         if (now - this.lastDraw < delay) {
             this.animationId = requestAnimationFrame(() => this.draw());
             return;
@@ -696,13 +801,29 @@ class YTAmbilightWebGL {
         const ytmTransparentFix = document.getElementById("ambilight-ytm-transparent-fix");
         if (ytmTransparentFix) ytmTransparentFix.remove();
         if (this.gl) {
+            // Xoá shader trước (initWebGL() tạo chúng ở createShader nhưng chưa giữ tham chiếu)
+            if (this.vertexShader) this.gl.deleteShader(this.vertexShader);
+            if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
             this.gl.deleteTexture(this.texture);
             this.gl.deleteBuffer(this.positionBuffer);
             this.gl.deleteBuffer(this.texCoordBuffer);
             this.gl.deleteProgram(this.program);
+
+            // Phải trả context về trình duyệt. deleteProgram/deleteBuffer KHÔNG giải phóng
+            // WebGLContext — chỉ loseContext() mới giải phóng. Chrome giới hạn ~16 context
+            // sống mỗi trang; vượt ngưỡng thì trình duyệt tự giết context cũ nhất và
+            // getContext('webgl') trả về null → Ambilight chết không báo lỗi.
+            const loseExt = this.gl.getExtension('WEBGL_lose_context');
+            if (loseExt) loseExt.loseContext();
         }
         this.canvas = null;
         this.gl = null;
+        this.program = null;
+        this.texture = null;
+        this.positionBuffer = null;
+        this.texCoordBuffer = null;
+        this.vertexShader = null;
+        this.fragmentShader = null;
     }
 }
 

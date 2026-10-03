@@ -120,6 +120,16 @@
     let dataArray = null;
     let smoothedData = [];
     let isSetup = false;
+
+    // Nhip ve cua wave visualizer.
+    // PHAI nam o dau IIFE (day), KHONG duoc khai bao trong applySettings():
+    // applySettings() goi checkForVideo() o dong ~1091, checkForVideo() goi
+    // setupAudioAnalyzer() -> draw() -> doc bien nay. Neu khai bao sau do
+    // (du khai truoc setupAudioAnalyzer() van duoc) thi no van nam trong
+    // "vung chet" TDZ luc draw() chay -> ReferenceError:
+    // Cannot access 'lastDrawTime' before initialization.
+    // O day thi khai bao xong la co gia tri ngay tu khi IIFE chay.
+    let lastDrawTime = 0;
     const smoothingFactor = 0.12;
     const canvasHeight = 480;
     const scale = canvasHeight / 120;
@@ -321,9 +331,27 @@ function setShortsChannelToPersistedCache(videoId, channelName) {
     } catch (e) { }
 }
 
+// Cache trong RAM cho map likes/dislikes.
+//
+// getLikesDislikesFromPersistedCache() duoc goi MOT LAN CHO TUNG THE video
+// trong khi quet lockup. readJsonGM() lai doc GM_getValue + JSON.parse TOAN BO
+// map (toi da 300 muc). 30 the x 1,8 giay = 30 lan doc storage + 30 lan parse
+// 300 phan tu, lap vo tan - day la nguon ton CPU lon nhat tren trang chu /
+// trang xem.
+//
+// Giu 1 ban da parse trong RAM cho den khi co ghi moi. Doc cache van giong
+// het, chi bo qua thao tac doc + parse lai.
+let _likesDislikesMapCache = null;
+
+function getLikesDislikesMap() {
+    if (_likesDislikesMapCache) return _likesDislikesMapCache;
+    _likesDislikesMapCache = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {}) || {};
+    return _likesDislikesMapCache;
+}
+
 function getLikesDislikesFromPersistedCache(videoId) {
     try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
+        const map = getLikesDislikesMap();
         const entry = map?.[videoId];
         if (!entry) return null;
         const age = Date.now() - (Number(entry.ts) || 0);
@@ -346,7 +374,9 @@ function getLikesDislikesFromPersistedCache(videoId) {
 function setLikesDislikesToPersistedCache(videoId, likes, dislikes, viewCount, rating) {
     if (!videoId) return;
     try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
+        // Dung ban trong RAM (xem getLikesDislikesMap) va lam moi no sau khi ghi,
+        // neu khong cac the khac se doc ban cu va hien so da het han.
+        const map = getLikesDislikesMap();
         map[videoId] = {
             likes: likes ?? null,
             dislikes: dislikes ?? null,
@@ -357,6 +387,9 @@ function setLikesDislikesToPersistedCache(videoId, likes, dislikes, viewCount, r
         const entries = Object.entries(map).sort((a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0));
         const pruned = Object.fromEntries(entries.slice(0, Math.min(PERSISTED_CACHE_MAX_ENTRIES, 300)));
         writeJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, pruned);
+        // Da ghi ban da cat -> thay ban trong RAM bang ban moi vua ghi,
+        // de lan quet sau doc dung du lieu vua luu chu khong doc ban da bi cat.
+        _likesDislikesMapCache = pruned;
     } catch (e) { }
 }
 
@@ -1489,10 +1522,30 @@ function setupShortsChannelNameFeature(enabled) {
                     for (let j = 0; j < m.addedNodes.length; j++) {
                         const node = m.addedNodes[j];
                         if (node.nodeType === 1) { // ELEMENT_NODE
+                            // YTM cuon vo han -> hang nghin node duoc them moi cuon, va
+                            // TRONG SO DO moi node deu phai trai qua mot querySelector
+                            // quet ca cay con. Day la thao tac dat nhat.
+                            // Chi chay querySelector khi node thuoc loai co kha nang
+                            // chua shorts lockup (container/grid/section) - phan lon
+                            // lon node (icon, anh thu nho, text) duoc bo qua ngay.
+                            const tag = node.tagName;
+                            const MAY_CONTAIN =
+                                tag === 'DIV' ||
+                                tag === 'YTM-BROWSE-RESPONSE' ||
+                                tag === 'YTM-RICH-GRID-RENDERER' ||
+                                tag === 'YTM-SECTION-LIST-RENDERER' ||
+                                tag === 'YTM-GRID-RENDERER' ||
+                                tag === 'YTM-ITEM-SECTION-RENDERER' ||
+                                tag === 'YTD-BROWSE-RESPONSE' ||
+                                tag === 'YTD-RICH-GRID-RENDERER' ||
+                                tag === 'YTD-SECTION-LIST-RENDERER' ||
+                                tag === 'YTD-GRID-RENDERER' ||
+                                tag === 'YTD-ITEM-SECTION-RENDERER';
                             if (
-                                node.tagName === 'YTM-SHORTS-LOCKUP-VIEW-MODEL' ||
-                                node.tagName === 'YTM-SHORTS-LOCKUP-VIEW-MODEL-V2' ||
-                                node.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')
+                                tag === 'YTM-SHORTS-LOCKUP-VIEW-MODEL' ||
+                                tag === 'YTM-SHORTS-LOCKUP-VIEW-MODEL-V2' ||
+                                (MAY_CONTAIN && node.children.length > 0 &&
+                                    node.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2'))
                             ) {
                                 shouldScan = true;
                                 break;
@@ -1714,10 +1767,28 @@ function hasUnprocessedLockups() {
     return normal || shorts;
 }
 
+// So the nao CHUA duoc quet trong mot khoang thoi gian dai.
+// injectLockupCachedStats() chi danh dau the khi inject THANH CONG. The co
+// videoId/khong -> return o som, KHONG danh dau -> hasUnprocessedLockups() luon
+// true -> vong 1,8s quet toan document ma khong bao gio dung.
+//
+// Thoi diem lan quet gan nhat. Dung de bo qua cac lan quet lien tiep trong
+// vung 4 giay - vong setInterval 1,8s se bo qua neu moi quet xong.
+// KHONG dung thuoc tinh DOM de danh dau the rong: danh dau sai se lam so
+// thong ke KHONG BAO GI xuat hien.
+let __ytToolsScannedLockupsAt = 0;
+
 function runLockupCachedStatsCatchUp() {
     if (!window.location.href.includes('youtube.com')) return;
     if (document.visibilityState !== 'visible') return;
     if (!hasUnprocessedLockups()) return;
+
+    // Da quet het ro roi trong vong gan nhat -> bo qua.
+    // MutationObserver (ben duoi) van lo phan the moi khi DOM thay doi.
+    const now = Date.now();
+    if (now - __ytToolsScannedLockupsAt < 4000) return;
+    __ytToolsScannedLockupsAt = now;
+
     injectLockupCachedStats();
     injectShortsLockupCachedStats();
 }
@@ -1798,15 +1869,24 @@ function renderBookmarksPanel(videoId) {
         return;
     }
 
+    // safeHTML() KHÔNG lọc gì — nó là hàm identity (xem policy.js:7-9).
+    // Nên mọi biến chèn vào đây đều phải tự escape.
+// Chỉ escape < và > là KHÔNG ĐỦ: label được nhét vào attribute title="${safeLabel}"
+// nên dấu " sẽ thoát ra khỏi attribute và chèn được thuộc tính tùy ý (onmouseover, ...).
+    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+
     panel.innerHTML = safeHTML(list
         .map((b) => {
             const time = formatTimeShort(b.t);
-            const safeLabel = (b.label || time).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeLabel = escapeHtml(b.label || time);
+            const safeT = escapeHtml(b.t);
             return `
           <div class="yt-bm-item">
-            <button type="button" class="yt-bm-go" data-action="go" data-t="${b.t}" title="Go to ${time}">${time}</button>
+            <button type="button" class="yt-bm-go" data-action="go" data-t="${safeT}" title="Go to ${escapeHtml(time)}">${escapeHtml(time)}</button>
             <div class="yt-bm-label" title="${safeLabel}">${safeLabel}</div>
-            <button type="button" class="yt-bm-del" data-action="del" data-t="${b.t}" title="Delete">✕</button>
+            <button type="button" class="yt-bm-del" data-action="del" data-t="${safeT}" title="Delete">✕</button>
           </div>
         `;
         })
@@ -6761,6 +6841,35 @@ window.addEventListener('yt-navigate-finish', () => {
 // Inspired by and credits to WesselKroos:
 // https://github.com/WesselKroos/youtube-ambilight (Ambient light for YouTube)
 
+// Be rong toi da cua anh sang duoc nap len GPU moi khung hinh (30 lan/giay).
+// Shader chi doc ~0.5% ben trong vien roi keo gian ra, va canvas con bi blur(40px),
+// nen 768px cho hinh dang hoan toan giong nhung giam ~10 lan (1080p) / ~25 lan (4K)
+// so voi luong du lieu phai copy tu CPU sang GPU.
+// TANG len = sang hon, tang xuong = it ton CPU hon. Rat an toan.
+const MAX_TEXTURE_WIDTH = 768;
+
+// So khung hinh Ambilight ve mot giay khi video DANG CHAY.
+// 24 = chuan phim. Muon tiet them: 20 (van ok), 15 (bat dau thay ro khi chuyen dong nhanh).
+// Tang len: 30 (dat la thu tien, ton CPU hon).
+// Luu y: hieu ung bi blur(40px) nen rat "cham" theo khong gian - ha fps it khi
+// bi nhin ra. Nhung khi video co chuyen dong nhanh (nhac, hieu ung) thi anh sang
+// doi theo, va do la luc can nhip cao hon.
+const AMBILIGHT_FPS = 24;
+
+// Dau ban dung - de kiem tra may ban co cai DUNG ban moi khong.
+// Moi thay doi se tang con so nay len.
+//
+// Luu y: `window` ben trong userscript Tampermonkey KHONG phai `window` cua
+// trang (no la sandbox rieng), nen gan `window.X` thi Console cua trang KHONG
+// thay. Phai gan qua `unsafeWindow`.
+// Dung console: YT_BUILD_STAMP
+// Neu khong thay, tim chu "BAN DUNG SO" trong trinh chuyen sua script.
+// ===> BAN DUNG SO : 15
+const BUILD_STAMP = 'build-15';
+try {
+    (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).YT_BUILD_STAMP = BUILD_STAMP;
+} catch (e) { /* sandbox chan gan - dung cach tim chu "BAN DUNG SO" */ }
+
 class YTAmbilightWebGL {
     constructor() {
         this.video = null;
@@ -6883,6 +6992,20 @@ class YTAmbilightWebGL {
             }
         }
 
+        // setup() được applySettings() gọi lại mỗi lần đổi setting và mỗi lần
+        // yt-navigate-finish. Nếu không chặn ở đây, mỗi lần gọi sẽ:
+        //   - tạo mới program + 2 buffer + 1 texture, ghi đè this.* mà không delete cái cũ
+        //   - start() mở thêm một vòng requestAnimationFrame mới, animationId bị ghi đè
+        //     nên vòng cũ không bao giờ cancel được
+        //   - tạo thêm một ResizeObserver mà không disconnect cái cũ
+        // → sau ~20 lần điều hướng là 20 vòng render 30fps chạy song song + rò GPU.
+        if (this.isActive && this.video === videoElement && this.gl) return;
+        if (this.isActive) this.stop();
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
+
         this.initWebGL();
         this.start();
         
@@ -6892,9 +7015,17 @@ class YTAmbilightWebGL {
     }
 
     initWebGL() {
+        // setup() được applySettings() gọi lại mỗi lần đổi setting.
+        // Nếu không chặn ở đây, mỗi lần gọi sẽ tạo mới program + 2 buffer + 1 texture
+        // rồi ghi đè this.* mà không delete cái cũ → rò GPU buffer.
+        if (this.gl) return;
+
         // Enable alpha blending to prevent black shadows
         this.gl = this.canvas.getContext('webgl', { 
-            preserveDrawingBuffer: true,
+            // Canvas nay chi duoc ve ra roi composite theo frame, khong co code nao
+            // doc nganh dem (khong toDataURL / readPixels). preserveDrawingBuffer:true
+            // buoc trinh duyet giu lai buffer sau moi frame lam cham.
+            preserveDrawingBuffer: false,
             antialias: false,
             depth: false,
             alpha: true,
@@ -7003,12 +7134,13 @@ class YTAmbilightWebGL {
             }
         `;
 
-        const vertexShader = this.createShader(gl.VERTEX_SHADER, vsSource);
-        const fragmentShader = this.createShader(gl.FRAGMENT_SHADER, fsSource);
+        // Giữ tham chiếu để cleanup() deleteShader() được (trước đây shader không được giữ nên rò)
+        this.vertexShader = this.createShader(gl.VERTEX_SHADER, vsSource);
+        this.fragmentShader = this.createShader(gl.FRAGMENT_SHADER, fsSource);
 
         this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
+        gl.attachShader(this.program, this.vertexShader);
+        gl.attachShader(this.program, this.fragmentShader);
         gl.linkProgram(this.program);
 
         if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
@@ -7063,6 +7195,36 @@ class YTAmbilightWebGL {
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
         return shader;
+    }
+
+    // NGUON TEXTURE: giu nguyen khi nguon da nho, hao cap khi lon.
+    // Shader chi lay mau ~0.5% ben trong vien video roi keo gian ra ngoai, va canvas
+    // con bi CSS blur(40px) -> chi tiet duoi ~40px deu bi pha. Nap video 4K 30 lan/giay
+    // la dang ton CPU cho noi dung ma cuoi cung khong ai nhin thay.
+    getTextureSource(textureSource) {
+        const sw = textureSource.videoWidth || textureSource.naturalWidth || 0;
+        const sh = textureSource.videoHeight || textureSource.naturalHeight || 0;
+        if (!sw || !sh || sw <= MAX_TEXTURE_WIDTH) return textureSource;
+
+        const w = MAX_TEXTURE_WIDTH;
+        const h = Math.max(1, Math.round(sh * (w / sw)));
+
+        if (!this.srcCanvas) {
+            this.srcCanvas = document.createElement('canvas');
+            this.srcCtx = this.srcCanvas.getContext('2d', { alpha: false, desynchronized: true });
+        }
+        if (this.srcCanvas.width !== w || this.srcCanvas.height !== h) {
+            this.srcCanvas.width = w;
+            this.srcCanvas.height = h;
+        }
+
+        try {
+            this.srcCtx.drawImage(textureSource, 0, 0, w, h);
+        } catch (e) {
+            // Video chua san sang hoac bi CORS -> dung luon ban goc
+            return textureSource;
+        }
+        return this.srcCanvas;
     }
 
     resizeCanvas() {
@@ -7143,11 +7305,11 @@ class YTAmbilightWebGL {
 
         let ambiEnabled = true;
         try {
-            if (typeof GM_getValue !== 'undefined' && typeof SETTINGS_KEY !== 'undefined') {
-                const settings = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
-                if (settings.syncCinematic !== undefined) {
-                    ambiEnabled = settings.syncCinematic;
-                }
+            // Dung ban cache do updateCanvasStyles() da nap san, thay vi GM_getValue +
+            // JSON.parse moi giay (doc storage xuyen sandbox co chi phi).
+            const settings = this.cachedSettings;
+            if (settings && settings.syncCinematic !== undefined) {
+                ambiEnabled = settings.syncCinematic;
             }
         } catch (e) {}
 
@@ -7181,6 +7343,13 @@ class YTAmbilightWebGL {
                 if (settings.ambiEdgeFade !== undefined && isAmbiEnabled) edgeFade = settings.ambiEdgeFade;
             }
         } catch (e) {}
+
+        // Ham nay duoc goi ~1.5 lan/giay tu vong render. Ghi style.maskImage len <video>
+        // se ep trinh duyet tinh lai style va dung lai composite layer cua video -
+        // thao tac dat. Chi ghi khi gia tri THAT SU thay doi.
+        const sig = `${blur}|${opacity}|${edgeFade}`;
+        if (sig === this._lastStyleSig) return;
+        this._lastStyleSig = sig;
 
         this.canvas.style.opacity = opacity;
         this.canvas.style.filter = `blur(${blur}px) saturate(150%)`;
@@ -7277,7 +7446,7 @@ class YTAmbilightWebGL {
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         
         try {
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureSource);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.getTextureSource(textureSource));
             gl.uniform1i(this.textureLocation, 0);
             
             // Get settings (we'll fetch from GM_getValue, or use defaults)
@@ -7366,11 +7535,27 @@ class YTAmbilightWebGL {
 
     draw() {
         if (!this.isActive || !this.gl || !this.video) return;
-        
+
         const now = performance.now();
-        // 30fps for video, 10fps check rate for audio-only (saves CPU loops)
-        const delay = this.isAudioOnly ? 100 : 33;
-        
+
+        // Nhip ve CHON THEO TRANG THAI, khong dung mot nhip co dinh:
+        //
+        //  video dang chay -> AMBILIGHT_FPS (24fps)
+        //      24fps la chuan phim. Mat so khung hinh 20% so voi 30fps, nhung
+        //      chuyen dong 24 khung/giay hoan toan "chuan" voi mat nguoi - phim
+        //      cung chay 24fps. Ban se khong nhin ra khac biet gi.
+        //      KHONG xuong 15fps: 15 khung/giay nhin ro rang o chuyen dong nhanh
+        //      (nhac, hieu ung chop nhanh) va day la thu gian khong nen.
+        //
+        //  video DUNG LAI (pause / ket thuc) -> 2fps
+        //      Anh hinh dang hoa thi ve lai 30 lan/giay la ton cong vo ich.
+        //      2fps giong het, tiet 100% CPU cua vong nay luc nghe/nhin.
+        //
+        //  audio-only (YTM) -> 10fps
+        //      Anh bia doi khi doi bai, khong can nhanh hon.
+        const paused = this.video.paused || this.video.ended;
+        const delay = this.isAudioOnly ? 100 : (paused ? 500 : (1000 / AMBILIGHT_FPS));
+
         if (now - this.lastDraw < delay) {
             this.animationId = requestAnimationFrame(() => this.draw());
             return;
@@ -7455,13 +7640,29 @@ class YTAmbilightWebGL {
         const ytmTransparentFix = document.getElementById("ambilight-ytm-transparent-fix");
         if (ytmTransparentFix) ytmTransparentFix.remove();
         if (this.gl) {
+            // Xoá shader trước (initWebGL() tạo chúng ở createShader nhưng chưa giữ tham chiếu)
+            if (this.vertexShader) this.gl.deleteShader(this.vertexShader);
+            if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
             this.gl.deleteTexture(this.texture);
             this.gl.deleteBuffer(this.positionBuffer);
             this.gl.deleteBuffer(this.texCoordBuffer);
             this.gl.deleteProgram(this.program);
+
+            // Phải trả context về trình duyệt. deleteProgram/deleteBuffer KHÔNG giải phóng
+            // WebGLContext — chỉ loseContext() mới giải phóng. Chrome giới hạn ~16 context
+            // sống mỗi trang; vượt ngưỡng thì trình duyệt tự giết context cũ nhất và
+            // getContext('webgl') trả về null → Ambilight chết không báo lỗi.
+            const loseExt = this.gl.getExtension('WEBGL_lose_context');
+            if (loseExt) loseExt.loseContext();
         }
         this.canvas = null;
         this.gl = null;
+        this.program = null;
+        this.texture = null;
+        this.positionBuffer = null;
+        this.texCoordBuffer = null;
+        this.vertexShader = null;
+        this.fragmentShader = null;
     }
 }
 
@@ -7941,7 +8142,12 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                 updateSliderValues();
                 // Save settings to GM_setValue first so applySettings/WebGL can read them
                 saveSettings();
-                applySettings();
+                // KHÔNG gọi applySettings() trực tiếp ở đây.
+                // Sự kiện 'input' bắn liên tục ~60 lần/giây khi kéo slider; applySettings()
+                // là hàm ~1900 dòng (CSS 15KB + querySelectorAll toàn trang + fetch)
+                // nên kéo 3 giây là đè ~180 lần → rò listener/observer.
+                // scheduleApplySettings() có sẵn debounce 120ms (core/init.js).
+                if (typeof scheduleApplySettings === 'function') scheduleApplySettings();
             });
         }
     });
@@ -8217,10 +8423,13 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             function track() {
                 if (!self.active) { self._trackerId = null; return; }
 
-                const nav = document.querySelector('ytmusic-nav-bar');
-                const player = document.querySelector('ytmusic-player-bar');
-                const drawer = document.querySelector('tp-yt-app-drawer');
-                const wrapper = document.querySelector('#guide-wrapper') || document.querySelector('#mini-guide-background');
+                // YTM la app nhieu thanh phan, nhung 4 element nay la bo khung
+                // tinh nen khong doi gi theo lan ghi. Query lai 4 lan moi 250ms
+                // la ton cong thua. Cache lai, chi hoi lai khi bi tach ra DOM.
+                const nav = self._el('nav', 'ytmusic-nav-bar');
+                const player = self._el('player', 'ytmusic-player-bar');
+                const drawer = self._el('drawer', 'tp-yt-app-drawer');
+                const wrapper = self._el('wrapper', '#guide-wrapper', '#mini-guide-background');
 
                 if (nav && player && drawer && wrapper && self.dividerEl) {
                     const navRect = nav.getBoundingClientRect();
@@ -8231,16 +8440,38 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                     // Minor correction if right bound goes missing
                     if (leftPos <= 0 || !leftPos) leftPos = drawer.hasAttribute('opened') ? 240 : 72;
 
-                    self.dividerEl.style.top = navRect.bottom + 'px';
-                    self.dividerEl.style.height = (playerRect.top - navRect.bottom) + 'px';
-                    self.dividerEl.style.left = leftPos + 'px';
-                    self.dividerEl.classList.add('active');
+                    // Chi ghi khi gia tri THAT SU doi. Ghi style.top/height/left
+                    // ep trinh duyet tinh lai style + bo cuc lai; duong phan cach
+                    // phai bo cuc sau moi tick thi ton CPU vo ich.
+                    const top = navRect.bottom;
+                    const height = playerRect.top - navRect.bottom;
+                    const sig = top + '|' + height + '|' + leftPos;
+                    if (sig !== self._dividerSig) {
+                        self._dividerSig = sig;
+                        self.dividerEl.style.top = top + 'px';
+                        self.dividerEl.style.height = height + 'px';
+                        self.dividerEl.style.left = leftPos + 'px';
+                    }
+                    if (!self.dividerEl.classList.contains('active')) {
+                        self.dividerEl.classList.add('active');
+                    }
                 }
 
                 self._trackerId = setTimeout(track, 250);
             }
 
             this._trackerId = setTimeout(track, 250);
+        },
+
+        // Tra ve element da cache, chi query lai khi bi tach khoi DOM.
+        _el(key, sel, altSel) {
+            const cache = this._elCache || (this._elCache = {});
+            let el = cache[key];
+            if (el && el.isConnected) return el;
+            el = document.querySelector(sel);
+            if (!el && altSel) el = document.querySelector(altSel);
+            cache[key] = el;
+            return el;
         },
 
         // Legacy aliases for compatibility
@@ -8423,6 +8654,13 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
     }
 
     // Function to apply settings
+
+    // === Cờ & observer dùng chung giữa nhiều lần gọi applySettings() ===
+// Phải khai báo NGOÀI applySettings(). Nếu để trong hàm, mỗi lần gọi lại tạo biến mới
+// → nhánh "disconnect bản cũ" thành code chết → rò listener/observer mỗi lần đổi setting.
+let translatorEventBound = false;
+let _commentIO = null;
+let _commentMO = null;
 
     function applySettings() {
         const formulariodescarga = $e('.formulariodescarga');
@@ -9575,8 +9813,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
 
 
-        // Biến cờ phải nằm ngoài hàm để không bị reset
-        let translatorEventBound = false;
+        // Cờ translatorEventBound đã nâng lên cấp IIFE (trên applySettings) để không bị reset.
 
         function traductor() {
             // Chỉ quét những comment chưa có nút dịch (dùng thuộc tính data-translated)
@@ -9644,8 +9881,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
         // === CODE TỐI ƯU MỚI THAY THẾ CHO SCROLL EVENT === (YT only)
         if (!isYTMusic) {
-            let _commentIO = null;
-            let _commentMO = null;
+            // _commentIO / _commentMO đã nâng lên cấp IIFE để nhánh disconnect ở dưới hoạt động thật.
             function initSmartCommentObserver() {
                 const commentsContainer = document.querySelector('#comments');
                 if (!commentsContainer) return;
@@ -10145,26 +10381,39 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             window.removeEventListener('resize', updateCanvasSize);
             window.addEventListener('resize', updateCanvasSize);
 
+            // Dang ky 1 LAN o day thay vi ghi global trong moi khung hinh.
+            // (buttons.js:535 dung window.__ytToolsDraw de khoi dong lai vong lap)
+            window.__ytToolsDraw = draw;
             draw();
             isSetup = true;
         }
 
-        let lastDrawTime = 0;
         function draw(timestamp) {
             if (!timestamp) timestamp = performance.now();
-            window.__ytToolsDraw = draw;
+
+            // rAF chay o tan so man hinh (60-144Hz) con viec ve chi can 30fps.
+            // Kiem tra nhip TRUOC, de cac thao tac dat (doc inline style, ghi global)
+            // khong chay o tan so man hinh ma chi chay 30 lan/giay nhu mo hinh cu.
+            if (timestamp - lastDrawTime < 33) {
+                animationId = requestAnimationFrame(draw);
+                return;
+            }
+            lastDrawTime = timestamp;
+
             if (parseFloat(canvas.style.opacity) <= 0) {
                 animationId = null;
                 return;
             }
             animationId = requestAnimationFrame(draw);
-            
-            // Throttle to ~30fps but KEEP it synced with vsync!
-            if (timestamp - lastDrawTime < 33) return;
-            lastDrawTime = timestamp;
 
             analyser.getByteTimeDomainData(dataArray);
-            for (let i = 0; i < bufferLength; i++) {
+
+            // bufferLength = 2048 nhung TAT CA style deu doc o buoc >= 8
+            // (barras/picos: 8; linea/solida/dinamica/montana: 16; curva: 32).
+            // Nen chi can lam mat 256 mau thay vi 2048 - 7/8 cong viec bo dioc
+            // va ket qua hinh anh Y HET, khong sai mot pixel nao.
+            const smoothStep = bufferLength > 16 ? 8 : 1;
+            for (let i = 0; i < bufferLength; i += smoothStep) {
                 smoothedData[i] += smoothingFactor * (dataArray[i] - smoothedData[i]);
             }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -10221,13 +10470,18 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                 case 'picos': {
                     ctx.fillStyle = 'magenta';
                     let x = 0;
+                    // Gom 256 vong tron vao MOT duong path roi fill MOT LAN.
+                    // Truoc day fill 256 lan - moi len la mot lan raster hoa rieng.
+                    // Hinh dang y het, nhanh gap nhieu.
+                    ctx.beginPath();
                     for (let i = 0; i < bufferLength; i += 8) {
                         let amplitude = Math.max(0, smoothedData[i] - 128) * (scale / 4);
-                        ctx.beginPath();
+                        // moveTo truoc moi arc de khong noi giua cac vong tron bang duong
+                        ctx.moveTo(x + 3, amplitude);
                         ctx.arc(x, amplitude, 3, 0, Math.PI * 2);
-                        ctx.fill();
                         x += sliceWidth * 8;
                     }
+                    ctx.fill();
                     break;
                 }
                 case 'solida': {
@@ -10503,7 +10757,12 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                 attempts++;
                 if (attempts >= maxAttempts) {
                     clearInterval(interval);
-                    console.warn(`[Youtube Tools] Không tìm thấy element: ${selector}`);
+                    console.warn(`[YT Tools] Khong tim thay ${selector} sau ${maxAttempts * 100}ms; van load settings`);
+                    // KHONG duoc bo luon o day. Callback nay goi loadSettings(),
+                    // ma loadSettings() moi set settingsLoaded = true. Neu bo,
+                    // settingsLoaded mai false -> scheduleApplySettings() return im lang
+                    // -> script hien icon nhung KHONG setting nao chay, khong bao loi gi.
+                    callback();
                 }
             }
         }, 100);

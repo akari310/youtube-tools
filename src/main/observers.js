@@ -472,7 +472,12 @@
                 updateSliderValues();
                 // Save settings to GM_setValue first so applySettings/WebGL can read them
                 saveSettings();
-                applySettings();
+                // KHÔNG gọi applySettings() trực tiếp ở đây.
+                // Sự kiện 'input' bắn liên tục ~60 lần/giây khi kéo slider; applySettings()
+                // là hàm ~1900 dòng (CSS 15KB + querySelectorAll toàn trang + fetch)
+                // nên kéo 3 giây là đè ~180 lần → rò listener/observer.
+                // scheduleApplySettings() có sẵn debounce 120ms (core/init.js).
+                if (typeof scheduleApplySettings === 'function') scheduleApplySettings();
             });
         }
     });
@@ -748,10 +753,13 @@
             function track() {
                 if (!self.active) { self._trackerId = null; return; }
 
-                const nav = document.querySelector('ytmusic-nav-bar');
-                const player = document.querySelector('ytmusic-player-bar');
-                const drawer = document.querySelector('tp-yt-app-drawer');
-                const wrapper = document.querySelector('#guide-wrapper') || document.querySelector('#mini-guide-background');
+                // YTM la app nhieu thanh phan, nhung 4 element nay la bo khung
+                // tinh nen khong doi gi theo lan ghi. Query lai 4 lan moi 250ms
+                // la ton cong thua. Cache lai, chi hoi lai khi bi tach ra DOM.
+                const nav = self._el('nav', 'ytmusic-nav-bar');
+                const player = self._el('player', 'ytmusic-player-bar');
+                const drawer = self._el('drawer', 'tp-yt-app-drawer');
+                const wrapper = self._el('wrapper', '#guide-wrapper', '#mini-guide-background');
 
                 if (nav && player && drawer && wrapper && self.dividerEl) {
                     const navRect = nav.getBoundingClientRect();
@@ -762,16 +770,38 @@
                     // Minor correction if right bound goes missing
                     if (leftPos <= 0 || !leftPos) leftPos = drawer.hasAttribute('opened') ? 240 : 72;
 
-                    self.dividerEl.style.top = navRect.bottom + 'px';
-                    self.dividerEl.style.height = (playerRect.top - navRect.bottom) + 'px';
-                    self.dividerEl.style.left = leftPos + 'px';
-                    self.dividerEl.classList.add('active');
+                    // Chi ghi khi gia tri THAT SU doi. Ghi style.top/height/left
+                    // ep trinh duyet tinh lai style + bo cuc lai; duong phan cach
+                    // phai bo cuc sau moi tick thi ton CPU vo ich.
+                    const top = navRect.bottom;
+                    const height = playerRect.top - navRect.bottom;
+                    const sig = top + '|' + height + '|' + leftPos;
+                    if (sig !== self._dividerSig) {
+                        self._dividerSig = sig;
+                        self.dividerEl.style.top = top + 'px';
+                        self.dividerEl.style.height = height + 'px';
+                        self.dividerEl.style.left = leftPos + 'px';
+                    }
+                    if (!self.dividerEl.classList.contains('active')) {
+                        self.dividerEl.classList.add('active');
+                    }
                 }
 
                 self._trackerId = setTimeout(track, 250);
             }
 
             this._trackerId = setTimeout(track, 250);
+        },
+
+        // Tra ve element da cache, chi query lai khi bi tach khoi DOM.
+        _el(key, sel, altSel) {
+            const cache = this._elCache || (this._elCache = {});
+            let el = cache[key];
+            if (el && el.isConnected) return el;
+            el = document.querySelector(sel);
+            if (!el && altSel) el = document.querySelector(altSel);
+            cache[key] = el;
+            return el;
         },
 
         // Legacy aliases for compatibility

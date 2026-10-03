@@ -65,9 +65,27 @@ function setShortsChannelToPersistedCache(videoId, channelName) {
     } catch (e) { }
 }
 
+// Cache trong RAM cho map likes/dislikes.
+//
+// getLikesDislikesFromPersistedCache() duoc goi MOT LAN CHO TUNG THE video
+// trong khi quet lockup. readJsonGM() lai doc GM_getValue + JSON.parse TOAN BO
+// map (toi da 300 muc). 30 the x 1,8 giay = 30 lan doc storage + 30 lan parse
+// 300 phan tu, lap vo tan - day la nguon ton CPU lon nhat tren trang chu /
+// trang xem.
+//
+// Giu 1 ban da parse trong RAM cho den khi co ghi moi. Doc cache van giong
+// het, chi bo qua thao tac doc + parse lai.
+let _likesDislikesMapCache = null;
+
+function getLikesDislikesMap() {
+    if (_likesDislikesMapCache) return _likesDislikesMapCache;
+    _likesDislikesMapCache = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {}) || {};
+    return _likesDislikesMapCache;
+}
+
 function getLikesDislikesFromPersistedCache(videoId) {
     try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
+        const map = getLikesDislikesMap();
         const entry = map?.[videoId];
         if (!entry) return null;
         const age = Date.now() - (Number(entry.ts) || 0);
@@ -90,7 +108,9 @@ function getLikesDislikesFromPersistedCache(videoId) {
 function setLikesDislikesToPersistedCache(videoId, likes, dislikes, viewCount, rating) {
     if (!videoId) return;
     try {
-        const map = readJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, {});
+        // Dung ban trong RAM (xem getLikesDislikesMap) va lam moi no sau khi ghi,
+        // neu khong cac the khac se doc ban cu va hien so da het han.
+        const map = getLikesDislikesMap();
         map[videoId] = {
             likes: likes ?? null,
             dislikes: dislikes ?? null,
@@ -101,6 +121,9 @@ function setLikesDislikesToPersistedCache(videoId, likes, dislikes, viewCount, r
         const entries = Object.entries(map).sort((a, b) => (Number(b[1]?.ts) || 0) - (Number(a[1]?.ts) || 0));
         const pruned = Object.fromEntries(entries.slice(0, Math.min(PERSISTED_CACHE_MAX_ENTRIES, 300)));
         writeJsonGM(STORAGE_KEYS_MDCM.LIKES_DISLIKES_CACHE, pruned);
+        // Da ghi ban da cat -> thay ban trong RAM bang ban moi vua ghi,
+        // de lan quet sau doc dung du lieu vua luu chu khong doc ban da bi cat.
+        _likesDislikesMapCache = pruned;
     } catch (e) { }
 }
 
@@ -1233,10 +1256,30 @@ function setupShortsChannelNameFeature(enabled) {
                     for (let j = 0; j < m.addedNodes.length; j++) {
                         const node = m.addedNodes[j];
                         if (node.nodeType === 1) { // ELEMENT_NODE
+                            // YTM cuon vo han -> hang nghin node duoc them moi cuon, va
+                            // TRONG SO DO moi node deu phai trai qua mot querySelector
+                            // quet ca cay con. Day la thao tac dat nhat.
+                            // Chi chay querySelector khi node thuoc loai co kha nang
+                            // chua shorts lockup (container/grid/section) - phan lon
+                            // lon node (icon, anh thu nho, text) duoc bo qua ngay.
+                            const tag = node.tagName;
+                            const MAY_CONTAIN =
+                                tag === 'DIV' ||
+                                tag === 'YTM-BROWSE-RESPONSE' ||
+                                tag === 'YTM-RICH-GRID-RENDERER' ||
+                                tag === 'YTM-SECTION-LIST-RENDERER' ||
+                                tag === 'YTM-GRID-RENDERER' ||
+                                tag === 'YTM-ITEM-SECTION-RENDERER' ||
+                                tag === 'YTD-BROWSE-RESPONSE' ||
+                                tag === 'YTD-RICH-GRID-RENDERER' ||
+                                tag === 'YTD-SECTION-LIST-RENDERER' ||
+                                tag === 'YTD-GRID-RENDERER' ||
+                                tag === 'YTD-ITEM-SECTION-RENDERER';
                             if (
-                                node.tagName === 'YTM-SHORTS-LOCKUP-VIEW-MODEL' ||
-                                node.tagName === 'YTM-SHORTS-LOCKUP-VIEW-MODEL-V2' ||
-                                node.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2')
+                                tag === 'YTM-SHORTS-LOCKUP-VIEW-MODEL' ||
+                                tag === 'YTM-SHORTS-LOCKUP-VIEW-MODEL-V2' ||
+                                (MAY_CONTAIN && node.children.length > 0 &&
+                                    node.querySelector('ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2'))
                             ) {
                                 shouldScan = true;
                                 break;
@@ -1458,10 +1501,28 @@ function hasUnprocessedLockups() {
     return normal || shorts;
 }
 
+// So the nao CHUA duoc quet trong mot khoang thoi gian dai.
+// injectLockupCachedStats() chi danh dau the khi inject THANH CONG. The co
+// videoId/khong -> return o som, KHONG danh dau -> hasUnprocessedLockups() luon
+// true -> vong 1,8s quet toan document ma khong bao gio dung.
+//
+// Thoi diem lan quet gan nhat. Dung de bo qua cac lan quet lien tiep trong
+// vung 4 giay - vong setInterval 1,8s se bo qua neu moi quet xong.
+// KHONG dung thuoc tinh DOM de danh dau the rong: danh dau sai se lam so
+// thong ke KHONG BAO GI xuat hien.
+let __ytToolsScannedLockupsAt = 0;
+
 function runLockupCachedStatsCatchUp() {
     if (!window.location.href.includes('youtube.com')) return;
     if (document.visibilityState !== 'visible') return;
     if (!hasUnprocessedLockups()) return;
+
+    // Da quet het ro roi trong vong gan nhat -> bo qua.
+    // MutationObserver (ben duoi) van lo phan the moi khi DOM thay doi.
+    const now = Date.now();
+    if (now - __ytToolsScannedLockupsAt < 4000) return;
+    __ytToolsScannedLockupsAt = now;
+
     injectLockupCachedStats();
     injectShortsLockupCachedStats();
 }
@@ -1542,15 +1603,24 @@ function renderBookmarksPanel(videoId) {
         return;
     }
 
+    // safeHTML() KHÔNG lọc gì — nó là hàm identity (xem policy.js:7-9).
+    // Nên mọi biến chèn vào đây đều phải tự escape.
+// Chỉ escape < và > là KHÔNG ĐỦ: label được nhét vào attribute title="${safeLabel}"
+// nên dấu " sẽ thoát ra khỏi attribute và chèn được thuộc tính tùy ý (onmouseover, ...).
+    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+
     panel.innerHTML = safeHTML(list
         .map((b) => {
             const time = formatTimeShort(b.t);
-            const safeLabel = (b.label || time).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeLabel = escapeHtml(b.label || time);
+            const safeT = escapeHtml(b.t);
             return `
           <div class="yt-bm-item">
-            <button type="button" class="yt-bm-go" data-action="go" data-t="${b.t}" title="Go to ${time}">${time}</button>
+            <button type="button" class="yt-bm-go" data-action="go" data-t="${safeT}" title="Go to ${escapeHtml(time)}">${escapeHtml(time)}</button>
             <div class="yt-bm-label" title="${safeLabel}">${safeLabel}</div>
-            <button type="button" class="yt-bm-del" data-action="del" data-t="${b.t}" title="Delete">✕</button>
+            <button type="button" class="yt-bm-del" data-action="del" data-t="${safeT}" title="Delete">✕</button>
           </div>
         `;
         })
