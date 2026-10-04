@@ -25,8 +25,8 @@ const AMBILIGHT_FPS = 24;
 // thay. Phai gan qua `unsafeWindow`.
 // Dung console: YT_BUILD_STAMP
 // Neu khong thay, tim chu "BAN DUNG SO" trong trinh chuyen sua script.
-// ===> BAN DUNG SO : 17
-const BUILD_STAMP = 'build-17';
+// ===> BAN DUNG SO : 18
+const BUILD_STAMP = 'build-18';
 try {
     (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).YT_BUILD_STAMP = BUILD_STAMP;
 } catch (e) { /* sandbox chan gan - dung cach tim chu "BAN DUNG SO" */ }

@@ -980,7 +980,7 @@ let _commentMO = null;
           ytmusic-app-layout #background,
           ytmusic-app-layout #guide-background,
           ytmusic-app-layout #player-bar-background,
-          ytmusic-app-layout #nav-bar-background:not(.scrolled) {
+          ytmusic-app-layout #nav-bar-background {
             background: transparent !important;
             background-color: transparent !important;
             --ytmusic-guide-background: transparent !important;
@@ -990,15 +990,26 @@ let _commentMO = null;
             background: transparent !important;
             border: none !important;
           }
-          /* High specificity rules for scrolled state - targeting both to ensure coverage */
+          /* Scrolled state: frosted glass, not a grey slab. The old rule painted
+             rgba(10,10,10,0.4) + blur(25px), which read as a grey haze. Blur
+             alone keeps the page visible while stopping thumbnails from
+             colliding with the icons; the 6% tint only buys legibility on
+             bright artwork. */
           ytmusic-nav-bar.scrolled,
           #nav-bar-background.scrolled,
           ytmusic-nav-bar[opened],
           body[player-page-open] ytmusic-nav-bar,
           body[player-page-open] #nav-bar-background {
-            background: rgba(10, 10, 10, 0.4) !important;
-            backdrop-filter: blur(25px) !important;
-            -webkit-backdrop-filter: blur(25px) !important;
+            background: rgba(0, 0, 0, 0.06) !important;
+            background-color: rgba(0, 0, 0, 0.06) !important;
+            backdrop-filter: blur(16px) saturate(140%) !important;
+            -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+            transition: background 0.25s ease, backdrop-filter 0.25s ease !important;
+          }
+          ytmusic-nav-bar.scrolled,
+          #nav-bar-background.scrolled,
+          ytmusic-nav-bar[opened] {
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) !important;
           }
           ytmusic-player-bar {
             background: rgba(0, 0, 0, 0.2) !important;
@@ -2566,13 +2577,26 @@ let _commentMO = null;
       body.ytm-ambient-active[player-page-open] ytmusic-nav-bar,
       body.ytm-style-transparent[player-page-open] #nav-bar-background,
       body.ytm-ambient-active[player-page-open] #nav-bar-background {
-        background: rgba(10, 10, 10, 0.4) !important;
-        backdrop-filter: blur(25px) !important;
-        -webkit-backdrop-filter: blur(25px) !important;
+        background: rgba(0, 0, 0, 0.06) !important;
+        background-color: rgba(0, 0, 0, 0.06) !important;
+        backdrop-filter: blur(16px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+        transition: background 0.25s ease, backdrop-filter 0.25s ease !important;
+      }
+      body.ytm-style-transparent ytmusic-nav-bar.scrolled,
+      body.ytm-ambient-active ytmusic-nav-bar.scrolled,
+      body.ytm-style-transparent #nav-bar-background.scrolled,
+      body.ytm-ambient-active #nav-bar-background.scrolled,
+      body.ytm-style-transparent ytmusic-nav-bar[opened],
+      body.ytm-ambient-active ytmusic-nav-bar[opened] {
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) !important;
       }
       body.ytm-ambient-active[player-page-open] ytmusic-nav-bar,
       body.ytm-ambient-active[player-page-open] #nav-bar-background {
         background: transparent !important;
+        background-color: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
       /* YTM Player Bar: semi-transparent with blur - respect ambient */
       body.ytm-style-transparent ytmusic-player-bar,
