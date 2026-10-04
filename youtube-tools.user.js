@@ -24,7 +24,7 @@
 // @description:ko 고품질 비디오/오디오 다운로드, 싫어요 표시, YouTube 및 YouTube Music을 위한 더 많은 VIP 기능.
 // @description:it Scarica video/audio di alta qualità, ripristina i dislike e altre funzioni VIP per YouTube e YouTube Music.
 // @homepage     https://greasyfork.org/users/1597067-nguyen-ngocanh
-// @version      0.0.7.1
+// @version      0.0.7.2
 // @author       Akari, DeveloperMDCM
 // @contributor  nvbangg, WesselKroos (youtube-ambilight / ambient-light-for-youtube)
 // @match        *://www.youtube.com/*
@@ -133,6 +133,16 @@
     const smoothingFactor = 0.12;
     const canvasHeight = 480;
     const scale = canvasHeight / 120;
+
+    // Timestamp until which the script's own cinematic click must be ignored.
+    // A boolean wrapped around click() is not enough: the #cinematics observer
+    // debounces for 400ms, so it fires long after the synchronous click() has
+    // already returned and a plain flag would be false again by then.
+    let __ytToolsIgnoreCinematicUntil = 0;
+
+    // Interval dung de thu lai viec gan observer #cinematics. #cinematics sinh ra
+    // sau khi trinh phat da tao xong, nen luc script bat dau no chua ton tai.
+    let __ytToolsCineRetry = null;
 
     const PROCESSED_FLAG = 'wave_visualizer_processed';
 
@@ -6858,8 +6868,8 @@ const AMBILIGHT_FPS = 24;
 // thay. Phai gan qua `unsafeWindow`.
 // Dung console: YT_BUILD_STAMP
 // Neu khong thay, tim chu "BAN DUNG SO" trong trinh chuyen sua script.
-// ===> BAN DUNG SO : 16
-const BUILD_STAMP = 'build-16';
+// ===> BAN DUNG SO : 17
+const BUILD_STAMP = 'build-17';
 try {
     (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).YT_BUILD_STAMP = BUILD_STAMP;
 } catch (e) { /* sandbox chan gan - dung cach tim chu "BAN DUNG SO" */ }
@@ -7332,8 +7342,11 @@ class YTAmbilightWebGL {
                 if (settings.ambiBlur !== undefined) blur = settings.ambiBlur;
 
                 if (settings.ambiOpacity !== undefined) opacity = settings.ambiOpacity / 100;
-                const isYTM = window.location.hostname.includes('music.youtube.com');
-                const isAmbiEnabled = isYTM ? settings.syncCinematic : settings.cinematicLighting;
+                // Edge fade thuoc ve Ambilight, nen phai theo syncCinematic tren ca
+                // hai domain. Doc cinematicLighting tren YouTube lam hong no:
+                // luat loai tru tat Cinematic Mode moi Ambilight, nen isAmbiEnabled
+                // luon false va fade khong bao gio ap dung tren YouTube.
+                const isAmbiEnabled = settings.syncCinematic;
                 if (settings.ambiEdgeFade !== undefined && isAmbiEnabled) edgeFade = settings.ambiEdgeFade;
             }
         } catch (e) {}
@@ -7616,6 +7629,15 @@ class YTAmbilightWebGL {
             target.style.maskImage = 'none';
             target.style.webkitMaskImage = 'none';
         });
+
+        // The mask was just cleared, so the cached signature no longer describes
+        // what is on screen. Without this reset, switching Cinematic Mode on and
+        // then back to Ambilight recomputed the same signature, hit the
+        // "nothing changed" early return in updateCanvasStyles(), and never
+        // reapplied the fade. It only came back after a reload, which builds a
+        // fresh instance with an empty cache.
+        this._lastStyleSig = null;
+        this.cachedSettings = null;
     }
 
     cleanup() {
@@ -7757,6 +7779,13 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
                 }
                 if (e.target.id === 'sync-cinematic-toggle' && cinematicToggle && cinematicToggle.checked) {
                     cinematicToggle.checked = false;
+                    // Tach checkbox ra khoi trang thai that cua YouTube. Khong goi
+                    // toggleCinematicLighting() thi YT van chieu trong khi toggle script da tat.
+                    if (typeof toggleCinematicLighting === 'function' && typeof isCinematicActive === 'function') {
+                        setTimeout(() => {
+                            if (isCinematicActive()) toggleCinematicLighting();
+                        }, 350);
+                    }
                 }
 
                 if (audioOnlyToggle && audioOnlyToggle.checked) {
@@ -8000,6 +8029,7 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
             if (!isYTMusic && window.location.href.includes('youtube.com/watch?v=')) {
                 detectInitialCinematicState();
+                watchCinematicState();
             }
         }, 500);
     }
@@ -8043,6 +8073,73 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
 
             waitForVideo();
         });
+    }
+
+    // YouTube can turn cinematic lighting on or off by itself: the user clicks it
+    // in the player's own settings menu, the setting persists across reloads, and
+    // it can turn itself off when leaving a video. Without this observer the
+    // script toggle only syncs on page load, so the two disagree and the toggle
+    // shows a state that is no longer true.
+    //
+    // Observe with childList/subtree rather than attributes because YouTube
+    // rewrites the contents of #cinematics to switch the effect on and off.
+    function watchCinematicState() {
+        const el = $id('cinematics');
+        if (!el) {
+            // #cinematics belongs to the player and does not exist yet when the
+            // script boots, so the first attempt always found nothing and gave up.
+            // Keep retrying until it appears. The interval clears itself.
+            if (!__ytToolsCineRetry) {
+                __ytToolsCineRetry = setInterval(() => {
+                    if ($id('cinematics')) {
+                        clearInterval(__ytToolsCineRetry);
+                        __ytToolsCineRetry = null;
+                        watchCinematicState();
+                    }
+                }, 1000);
+            }
+            return;
+        }
+        if (el.__ytToolsSynced) return;
+        el.__ytToolsSynced = true;
+
+        let pending = null;
+        const sync = () => {
+            pending = null;
+            // Skip while the script is the one toggling, otherwise the click we
+            // made in toggleCinematicLighting() would bounce back as a user action.
+            if (Date.now() < __ytToolsIgnoreCinematicUntil) return;
+
+            const toggle = $id('cinematic-lighting-toggle');
+            const syncToggle = $id('sync-cinematic-toggle');
+            if (!toggle) return;
+            const active = isCinematicActive();
+
+            // The user turned YouTube's cinematic lighting on while Ambilight is on.
+            // The rule is that only one of the two runs, so Ambilight loses. Without
+            // this the two run together: Ambilight glows while YouTube also dims the
+            // page around the player.
+            if (active && syncToggle && syncToggle.checked) {
+                syncToggle.checked = false;
+                if (typeof saveSettings === 'function') saveSettings();
+                // No return on purpose: YouTube really is in cinematic mode, so
+                // the toggle below still has to be brought up to date. Returning
+                // here left Ambilight off but Cinematic Mode showing off as well,
+                // while the effect was actually on.
+            }
+
+            if (toggle.checked !== active) {
+                toggle.checked = active;
+                if (typeof saveSettings === 'function') saveSettings();
+            }
+        };
+
+        new MutationObserver(() => {
+            if (pending) clearTimeout(pending);
+            // YouTube animates this effect, so the tree keeps mutating for a while.
+            // Wait until it settles before reading the state.
+            pending = setTimeout(sync, 400);
+        }).observe(el, { childList: true, subtree: true });
     }
 
     $m('.color-box').forEach(box => {
@@ -8567,6 +8664,11 @@ window.ytmAmbilightWebGL = new YTAmbilightWebGL();
             console.log('[YT Tools] Settings button not found');
             return;
         }
+
+        // Tell the #cinematics observer to ignore what happens next, otherwise it
+        // would read our own click back as a user action and write the state again.
+        // 1500ms covers the observer's 400ms debounce plus YouTube's animation.
+        __ytToolsIgnoreCinematicUntil = Date.now() + 1500;
 
         settingsButton.click();
 

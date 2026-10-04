@@ -20,6 +20,11 @@
             return;
         }
 
+        // Tell the #cinematics observer to ignore what happens next, otherwise it
+        // would read our own click back as a user action and write the state again.
+        // 1500ms covers the observer's 400ms debounce plus YouTube's animation.
+        __ytToolsIgnoreCinematicUntil = Date.now() + 1500;
+
         settingsButton.click();
 
         // Cinematic/ambient keywords in multiple languages for robust detection

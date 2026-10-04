@@ -75,6 +75,16 @@
     const canvasHeight = 480;
     const scale = canvasHeight / 120;
 
+    // Timestamp until which the script's own cinematic click must be ignored.
+    // A boolean wrapped around click() is not enough: the #cinematics observer
+    // debounces for 400ms, so it fires long after the synchronous click() has
+    // already returned and a plain flag would be false again by then.
+    let __ytToolsIgnoreCinematicUntil = 0;
+
+    // Interval dung de thu lai viec gan observer #cinematics. #cinematics sinh ra
+    // sau khi trinh phat da tao xong, nen luc script bat dau no chua ton tai.
+    let __ytToolsCineRetry = null;
+
     const PROCESSED_FLAG = 'wave_visualizer_processed';
 
 

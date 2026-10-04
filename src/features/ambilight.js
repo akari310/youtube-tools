@@ -25,8 +25,8 @@ const AMBILIGHT_FPS = 24;
 // thay. Phai gan qua `unsafeWindow`.
 // Dung console: YT_BUILD_STAMP
 // Neu khong thay, tim chu "BAN DUNG SO" trong trinh chuyen sua script.
-// ===> BAN DUNG SO : 16
-const BUILD_STAMP = 'build-16';
+// ===> BAN DUNG SO : 17
+const BUILD_STAMP = 'build-17';
 try {
     (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).YT_BUILD_STAMP = BUILD_STAMP;
 } catch (e) { /* sandbox chan gan - dung cach tim chu "BAN DUNG SO" */ }
@@ -499,8 +499,11 @@ class YTAmbilightWebGL {
                 if (settings.ambiBlur !== undefined) blur = settings.ambiBlur;
 
                 if (settings.ambiOpacity !== undefined) opacity = settings.ambiOpacity / 100;
-                const isYTM = window.location.hostname.includes('music.youtube.com');
-                const isAmbiEnabled = isYTM ? settings.syncCinematic : settings.cinematicLighting;
+                // Edge fade thuoc ve Ambilight, nen phai theo syncCinematic tren ca
+                // hai domain. Doc cinematicLighting tren YouTube lam hong no:
+                // luat loai tru tat Cinematic Mode moi Ambilight, nen isAmbiEnabled
+                // luon false va fade khong bao gio ap dung tren YouTube.
+                const isAmbiEnabled = settings.syncCinematic;
                 if (settings.ambiEdgeFade !== undefined && isAmbiEnabled) edgeFade = settings.ambiEdgeFade;
             }
         } catch (e) {}
@@ -783,6 +786,15 @@ class YTAmbilightWebGL {
             target.style.maskImage = 'none';
             target.style.webkitMaskImage = 'none';
         });
+
+        // The mask was just cleared, so the cached signature no longer describes
+        // what is on screen. Without this reset, switching Cinematic Mode on and
+        // then back to Ambilight recomputed the same signature, hit the
+        // "nothing changed" early return in updateCanvasStyles(), and never
+        // reapplied the fade. It only came back after a reload, which builds a
+        // fresh instance with an empty cache.
+        this._lastStyleSig = null;
+        this.cachedSettings = null;
     }
 
     cleanup() {

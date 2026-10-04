@@ -93,6 +93,13 @@
                 }
                 if (e.target.id === 'sync-cinematic-toggle' && cinematicToggle && cinematicToggle.checked) {
                     cinematicToggle.checked = false;
+                    // Tach checkbox ra khoi trang thai that cua YouTube. Khong goi
+                    // toggleCinematicLighting() thi YT van chieu trong khi toggle script da tat.
+                    if (typeof toggleCinematicLighting === 'function' && typeof isCinematicActive === 'function') {
+                        setTimeout(() => {
+                            if (isCinematicActive()) toggleCinematicLighting();
+                        }, 350);
+                    }
                 }
 
                 if (audioOnlyToggle && audioOnlyToggle.checked) {
@@ -336,6 +343,7 @@
 
             if (!isYTMusic && window.location.href.includes('youtube.com/watch?v=')) {
                 detectInitialCinematicState();
+                watchCinematicState();
             }
         }, 500);
     }
@@ -379,6 +387,73 @@
 
             waitForVideo();
         });
+    }
+
+    // YouTube can turn cinematic lighting on or off by itself: the user clicks it
+    // in the player's own settings menu, the setting persists across reloads, and
+    // it can turn itself off when leaving a video. Without this observer the
+    // script toggle only syncs on page load, so the two disagree and the toggle
+    // shows a state that is no longer true.
+    //
+    // Observe with childList/subtree rather than attributes because YouTube
+    // rewrites the contents of #cinematics to switch the effect on and off.
+    function watchCinematicState() {
+        const el = $id('cinematics');
+        if (!el) {
+            // #cinematics belongs to the player and does not exist yet when the
+            // script boots, so the first attempt always found nothing and gave up.
+            // Keep retrying until it appears. The interval clears itself.
+            if (!__ytToolsCineRetry) {
+                __ytToolsCineRetry = setInterval(() => {
+                    if ($id('cinematics')) {
+                        clearInterval(__ytToolsCineRetry);
+                        __ytToolsCineRetry = null;
+                        watchCinematicState();
+                    }
+                }, 1000);
+            }
+            return;
+        }
+        if (el.__ytToolsSynced) return;
+        el.__ytToolsSynced = true;
+
+        let pending = null;
+        const sync = () => {
+            pending = null;
+            // Skip while the script is the one toggling, otherwise the click we
+            // made in toggleCinematicLighting() would bounce back as a user action.
+            if (Date.now() < __ytToolsIgnoreCinematicUntil) return;
+
+            const toggle = $id('cinematic-lighting-toggle');
+            const syncToggle = $id('sync-cinematic-toggle');
+            if (!toggle) return;
+            const active = isCinematicActive();
+
+            // The user turned YouTube's cinematic lighting on while Ambilight is on.
+            // The rule is that only one of the two runs, so Ambilight loses. Without
+            // this the two run together: Ambilight glows while YouTube also dims the
+            // page around the player.
+            if (active && syncToggle && syncToggle.checked) {
+                syncToggle.checked = false;
+                if (typeof saveSettings === 'function') saveSettings();
+                // No return on purpose: YouTube really is in cinematic mode, so
+                // the toggle below still has to be brought up to date. Returning
+                // here left Ambilight off but Cinematic Mode showing off as well,
+                // while the effect was actually on.
+            }
+
+            if (toggle.checked !== active) {
+                toggle.checked = active;
+                if (typeof saveSettings === 'function') saveSettings();
+            }
+        };
+
+        new MutationObserver(() => {
+            if (pending) clearTimeout(pending);
+            // YouTube animates this effect, so the tree keeps mutating for a while.
+            // Wait until it settles before reading the state.
+            pending = setTimeout(sync, 400);
+        }).observe(el, { childList: true, subtree: true });
     }
 
     $m('.color-box').forEach(box => {
