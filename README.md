@@ -105,7 +105,7 @@ Built with a modern **Node.js** modular workflow for maximum performance and mai
 
 | Directory | Files | Contents |
 |---|---|---|
-| `src/core/` | 3 | Userscript metadata, shared `.lib` state, DOM/security policy helpers |
+| `src/core/` | 3 | Userscript metadata, shared IIFE bootstrap and DOM helpers, DOM/security policy |
 | `src/ui/` | 5 | Glassmorphic components, styles, settings menu, injected buttons |
 | `src/features/` | 2 | WebGL Ambilight, Cinema mode |
 | `src/main/` | 3 | DOM observers, feature manager, final bootstrap |
@@ -121,13 +121,10 @@ Built with a modern **Node.js** modular workflow for maximum performance and mai
 alphabetical sorting or filesystem order. Declaration order determines execution order,
 so a file added in the wrong slot can break the whole bundle.
 
-Concretely: `core/meta.js` must come first (it holds the userscript header),
-`core/init.js` next (it declares the shared `.lib`), and `main/final.js` last
-(it runs the bootstrap). Editing `FILE_ORDER` also means editing
-`scripts/build-clone.js` so the two stay identical.
-
-Because of this, the project has **no Python build script** — the old alphabetical
-Python build has been removed. Always use the Node scripts.
+`core/meta.js` comes first (it holds the userscript header), `core/init.js` next
+(it opens the shared IIFE and declares the DOM/CSS helpers), and `main/final.js`
+last (it runs the bootstrap). Keep the order in `FILE_ORDER` when you add a
+module.
 
 ### ⚙️ Workflow
 
@@ -150,7 +147,7 @@ Python build has been removed. Always use the Node scripts.
    |---|---|
    | `npm run build` | Concatenate `src/` into `youtube-tools.user.js` |
    | `npm run bump` | Bump the version across all locations |
-   | `npm run release` | Bump, commit and tag |
+   | `npm run release` | Bump, commit and **force-push** to `main` |
    | `npm run push` | Commit without bumping |
 
 ---
