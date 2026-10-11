@@ -26,6 +26,7 @@ A powerful, modular, and glassmorphic userscript designed to elevate your **YouT
 - **🎬 Cinema & Ambient Mode**: Immersive viewing with dynamic background lighting and glassmorphic panels.
 - **📱 Smart Tools**: Picture-in-Picture mode, instant screenshots, and floating controls.
 - **🌐 Comment Translator**: Translate comments instantly using integrated Google Translate.
+- **🎧 Save Mix as playlist**: A "Mix" (Danh sách nhạc kết hợp) is a recommendation list that YouTube Music refuses to play and that cannot be saved. Turn it into a normal playlist and open it in YouTube Music. Off by default — turn it on in **Settings → General → Save Mix as playlist**.
 
 ### 🎵 YouTube Music (YTM) Specialized
 - **🔮 Glassmorphic UI**: A complete visual overhaul with beautiful blur effects and sleek typography.
@@ -73,6 +74,27 @@ the stored value in the console and reload:
 GM_deleteValue('ytSettingsMDCM');
 ```
 
+### 🔧 The "Save as playlist" button does not appear
+
+The button only shows on a Mix, and only on the regular YouTube site — not on
+YouTube Music. A Mix is any page whose `list` parameter starts with `RD`, which
+covers all three shapes YouTube uses:
+
+```text
+list=RDMM                      unnamed mix
+list=RDMM<token>               named mix (Mixes tab)
+list=RD<videoId>&start_radio=1 mix seeded from a single video
+```
+
+If the setting is on but no button shows, check the browser console for a line
+starting with `[YT Tools] mixPlaylist`: it prints whether the feature is enabled
+and which `list` id was found.
+
+Creating the playlist uses an internal YouTube endpoint that requires you to be
+signed in. Signed out, the request comes back `401`, and the popover reports it.
+
+---
+
 ### ⚠️ Ambilight needs hardware acceleration
 
 **Turn on hardware acceleration before using Ambilight.** Without it the browser
@@ -101,13 +123,13 @@ Built with a modern **Node.js** modular workflow for maximum performance and mai
 
 ### 📁 Project Architecture
 
-15 source modules across 5 directories. They are **concatenated into a single IIFE**, not imported.
+16 source modules across 5 directories. They are **concatenated into a single IIFE**, not imported.
 
 | Directory | Files | Contents |
 |---|---|---|
 | `src/core/` | 3 | Userscript metadata, shared IIFE bootstrap and DOM helpers, DOM/security policy |
 | `src/ui/` | 5 | Glassmorphic components, styles, settings menu, injected buttons |
-| `src/features/` | 2 | WebGL Ambilight, Cinema mode |
+| `src/features/` | 3 | WebGL Ambilight, Cinema mode, Mix → playlist |
 | `src/main/` | 3 | DOM observers, feature manager, final bootstrap |
 | `src/utils/` | 2 | Downloader/API wrappers, the main URL-and-settings module |
 
