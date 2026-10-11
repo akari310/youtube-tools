@@ -26,7 +26,7 @@ A powerful, modular, and glassmorphic userscript designed to elevate your **YouT
 - **🎬 Cinema & Ambient Mode**: Immersive viewing with dynamic background lighting and glassmorphic panels.
 - **📱 Smart Tools**: Picture-in-Picture mode, instant screenshots, and floating controls.
 - **🌐 Comment Translator**: Translate comments instantly using integrated Google Translate.
-- **🎧 Save Mix as playlist**: A "Mix" (Danh sách nhạc kết hợp) is a recommendation list that YouTube Music refuses to play and that cannot be saved. Turn it into a normal playlist and open it in YouTube Music. Off by default — turn it on in **Settings → General → Save Mix as playlist**.
+- **🎧 Save Mix as playlist**: A Mix is a recommendation list that YouTube Music refuses to play and that cannot be saved. Turn it into a normal playlist and open it in YouTube Music. Off by default — turn it on in **Settings → General → Save Mix as playlist**.
 
 ### 🎵 YouTube Music (YTM) Specialized
 - **🔮 Glassmorphic UI**: A complete visual overhaul with beautiful blur effects and sleek typography.
