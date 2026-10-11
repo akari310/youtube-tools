@@ -1598,33 +1598,53 @@ function renderBookmarksPanel(videoId) {
     const {
         list
     } = getBookmarksForVideo(videoId);
+    // KHONG dung innerHTML. YouTube bat Trusted Types nen gan innerHTML se
+    // nem loi ("This document requires 'TrustedHTML' assignment") va lam
+    // applySettings() DUNG giua chung, lam moi tinh nang chay sau do cung
+    // chet theo. Dung DOM thuan; textContent tu giai phong moi bien tho text.
+    panel.replaceChildren();
+
     if (!list.length) {
-        panel.innerHTML = safeHTML(`<div class="yt-bm-empty">No bookmarks yet. Click ★ to save one.</div>`);
+        const empty = document.createElement('div');
+        empty.className = 'yt-bm-empty';
+        empty.textContent = 'No bookmarks yet. Click \u2605 to save one.';
+        panel.appendChild(empty);
         return;
     }
 
-    // safeHTML() KHÔNG lọc gì — nó là hàm identity (xem policy.js:7-9).
-    // Nên mọi biến chèn vào đây đều phải tự escape.
-// Chỉ escape < và > là KHÔNG ĐỦ: label được nhét vào attribute title="${safeLabel}"
-// nên dấu " sẽ thoát ra khỏi attribute và chèn được thuộc tính tùy ý (onmouseover, ...).
-    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    })[c]);
+    list.forEach((b) => {
+        const time = formatTimeShort(b.t);
+        const label = b.label || time;
 
-    panel.innerHTML = safeHTML(list
-        .map((b) => {
-            const time = formatTimeShort(b.t);
-            const safeLabel = escapeHtml(b.label || time);
-            const safeT = escapeHtml(b.t);
-            return `
-          <div class="yt-bm-item">
-            <button type="button" class="yt-bm-go" data-action="go" data-t="${safeT}" title="Go to ${escapeHtml(time)}">${escapeHtml(time)}</button>
-            <div class="yt-bm-label" title="${safeLabel}">${safeLabel}</div>
-            <button type="button" class="yt-bm-del" data-action="del" data-t="${safeT}" title="Delete">✕</button>
-          </div>
-        `;
-        })
-        .join(''));
+        const item = document.createElement('div');
+        item.className = 'yt-bm-item';
+
+        const go = document.createElement('button');
+        go.type = 'button';
+        go.className = 'yt-bm-go';
+        go.dataset.action = 'go';
+        go.dataset.t = String(b.t);
+        go.title = 'Go to ' + time;
+        go.textContent = time;
+
+        const labelEl = document.createElement('div');
+        labelEl.className = 'yt-bm-label';
+        labelEl.title = label;
+        labelEl.textContent = label;
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'yt-bm-del';
+        del.dataset.action = 'del';
+        del.dataset.t = String(b.t);
+        del.title = 'Delete';
+        del.textContent = '\u2715';
+
+        item.appendChild(go);
+        item.appendChild(labelEl);
+        item.appendChild(del);
+        panel.appendChild(item);
+    });
 }
 
 function applyBookmarksIfEnabled(settings) {

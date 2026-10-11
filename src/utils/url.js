@@ -27,6 +27,7 @@ let _commentMO = null;
             dislikes: $id('dislikes-toggle').checked,
             likeDislikeBar: $id('like-dislike-bar-toggle').checked,
             bookmarks: $id('bookmarks-toggle').checked,
+            mixPlaylist: $id('mix-playlist-toggle') ? $id('mix-playlist-toggle').checked : false,
             continueWatching: $id('continue-watching-toggle').checked,
             shortsChannelName: $id('shorts-channel-name-toggle').checked,
             nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
@@ -1092,16 +1093,24 @@ let _commentMO = null;
         setDynamicCss(dynamicCssArray.join('\n')); // Gộp tất cả CSS trong mảng và tiêm vào trang
 
         // Apply new features (safe, no heavy loops)
-        applyBookmarksIfEnabled(settings);
-        setupContinueWatchingFeature(settings.continueWatching);
+        // Each feature is isolated: applySettings() runs them in sequence, so a
+        // single throw used to abort everything below it and silently disable
+        // unrelated features. One broken feature must not take the rest down.
+        const runFeature = (name, fn) => {
+            try { fn(); } catch (err) { console.error('[YT Tools] feature failed: ' + name, err); }
+        };
+
+        runFeature('bookmarks', () => applyBookmarksIfEnabled(settings));
+        runFeature('continueWatching', () => setupContinueWatchingFeature(settings.continueWatching));
         if (!isYTMusic) {
-            scheduleLikeBarUpdate(settings, 5);
-            setupShortsChannelNameFeature(settings.shortsChannelName);
-            setupLockupCachedStats();
+            runFeature('likeBar', () => scheduleLikeBarUpdate(settings, 5));
+            runFeature('shortsChannelName', () => setupShortsChannelNameFeature(settings.shortsChannelName));
+            runFeature('lockupStats', () => setupLockupCachedStats());
+            runFeature('mixPlaylist', () => applyMixPlaylistIfEnabled(settings));
         }
-        checkForVideo();
-        downloadDescriptionVideo();
-        traductor();
+        runFeature('waveVisualizer', () => checkForVideo());
+        runFeature('description', () => downloadDescriptionVideo());
+        runFeature('translator', () => traductor());
 
         function checkForVideo() {
             if (!settings.waveVisualizer) {

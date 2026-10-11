@@ -268,6 +268,11 @@
         </label>
         <label ${isYTMusic ? 'style="display:none"' : ''}>
           <div class="option-mdcm">
+            <input type="checkbox" class="checkbox-mdcm" id="mix-playlist-toggle"> Save Mix as playlist
+          </div>
+        </label>
+        <label ${isYTMusic ? 'style="display:none"' : ''}>
+          <div class="option-mdcm">
             <input type="checkbox" class="checkbox-mdcm" id="continue-watching-toggle"> Continue watching
           </div>
         </label>

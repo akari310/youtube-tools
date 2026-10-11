@@ -190,6 +190,7 @@
             dislikes: $id('dislikes-toggle').checked,
             likeDislikeBar: $id('like-dislike-bar-toggle').checked,
             bookmarks: $id('bookmarks-toggle').checked,
+            mixPlaylist: $id('mix-playlist-toggle') ? $id('mix-playlist-toggle').checked : false,
             continueWatching: $id('continue-watching-toggle').checked,
             shortsChannelName: $id('shorts-channel-name-toggle').checked,
             nonstopPlayback: $id('nonstop-playback-toggle') ? $id('nonstop-playback-toggle').checked : true,
@@ -275,6 +276,7 @@
         $id('dislikes-toggle').checked = settings.dislikes || false;
         $id('like-dislike-bar-toggle').checked = settings.likeDislikeBar || false;
         $id('bookmarks-toggle').checked = settings.bookmarks || false;
+        if ($id('mix-playlist-toggle')) $id('mix-playlist-toggle').checked = settings.mixPlaylist || false;
         $id('continue-watching-toggle').checked = settings.continueWatching || false;
         $id('shorts-channel-name-toggle').checked = settings.shortsChannelName || false;
         if ($id('nonstop-playback-toggle')) $id('nonstop-playback-toggle').checked = settings.nonstopPlayback !== false;
