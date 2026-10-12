@@ -36,8 +36,13 @@ scripts/build-clone.js
 scripts/build_clone.*
 scripts/verify-clone.ps1
 
-# ---- Rac cu ----
-replace.js
-_backup_*
-fix*.js
-patch_*.js
+# ---- Rac cu (chi o goc repo) ----
+# PHAI CO DAU '/' O DAU. Khong co dau '/' thi git khop o BAT KY do sau,
+# ke ca trong src/ - vi du 'fix*.js' se an luon src/features/fixPlaylist.js,
+# mot file source that. Da kiem bang 'git check-ignore'.
+/replace.js
+/_backup_*
+/fix*.js
+/patch_*.js
+*.bak
+*.zip
