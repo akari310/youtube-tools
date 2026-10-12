@@ -20,24 +20,18 @@ A powerful, modular, and glassmorphic userscript designed to elevate your **YouT
 
 ## ✨ Key Features
 
-### 🎨 UI Style (the glass look is a setting, not a given)
+### 🎨 UI Style
 
-The interface finish is a dropdown: **Settings → General → UI style**. It is stored
-**separately per site**, so `youtube.com` and `music.youtube.com` no longer overwrite
-each other.
+Pick the interface finish under **Settings → General → UI style**. YouTube and YouTube
+Music remember their choice separately, so the two can use different styles at the
+same time.
 
 | Option | What you get |
 |---|---|
-| **Standard** | Nothing is overridden. The header, the search box and the panels stay exactly as YouTube / YouTube Music built them. |
-| **Blur** | Light frosted glass. The watch playlist panel and the YT Music queue panel turn semi-transparent and blur what is behind them. |
-| **Liquid Glass** | The heavier variant — more blur, more saturation, plus a soft gradient on the playlist panel. |
-| **Transparent** | No tint and no blur; the panels are see-through. **Offered on `youtube.com` only** — YouTube Music deliberately does not get this option. |
-
-> `Standard` is the one to pick when you want the original interface back. It is the
-> only mode where the script adds no styling of its own.
-
-Because the choice is per site, setting `Transparent` on YouTube and `Blur` on
-YouTube Music sticks — changing something on one site no longer resets the other.
+| **Standard** | Nothing is overridden — header, search box and panels stay as YouTube built them. |
+| **Blur** | Light frosted glass on the watch playlist panel and the YT Music queue panel. |
+| **Liquid Glass** | A heavier glass — more blur, more saturation, plus a soft gradient on the playlist panel. |
+| **Transparent** | No tint and no blur; the panels are see-through. **Available on `youtube.com` only.** |
 
 ### 📺 YouTube Enhancements
 - **🚀 High-Quality Downloads**: Download videos up to **4K/8K** (MP4) and high-fidelity audio (MP3/FLAC).
@@ -48,7 +42,7 @@ YouTube Music sticks — changing something on one site no longer resets the oth
 - **🎧 Save Mix as playlist**: A Mix is a recommendation list that YouTube Music refuses to play and that cannot be saved. Turn it into a normal playlist and open it in YouTube Music. Off by default — turn it on in **Settings → General → Save Mix as playlist**.
 
 ### 🎵 YouTube Music (YTM) Specialized
-- **🔮 Frosted queue panel**: The YT Music queue panel follows the **UI style** setting — frosted, liquid glass, or completely untouched on **Standard**.
+- **🔮 Frosted queue panel**: The queue panel follows the UI style setting — frosted, liquid glass, or untouched on **Standard**.
 - **🌈 Advanced Ambient Mode**: Dynamic aura effects that sync perfectly with album art colors.
 - **☕ Nonstop Playback**: Automatically bypasses "Continue watching?" prompts for uninterrupted listening.
 - **🎧 Audio-only Mode**: Toggle video off to save bandwidth and focus purely on the music.
