@@ -176,6 +176,16 @@
 
     // Function to save settings
     function saveSettings() {
+        // UI Style la setting DUY NHAT co danh sach gia tri khac nhau giua 2 domain
+        // (youtube.com co them 'transparent', music.youtube.com khong co).
+        // Dropdown YTM khong render option 'transparent' nen .value se ra chuoi rong
+        // va ghi de mat gia tri cua youtube.com. Vi vay luu rieng 2 truong:
+        //   sidePanelStyle    -> youtube.com
+        //   sidePanelStyleYTM -> music.youtube.com
+        // Chi ghi de truong cua domain dang chay, truong con lai giu nguyen tu storage.
+        const isYtmDomain = typeof isYTMusic !== 'undefined' && isYTMusic;
+        const storedForStyle = JSON.parse(GM_getValue(SETTINGS_KEY, '{}'));
+        const pickedStyle = ($id('side-panel-style-select') && $id('side-panel-style-select').value) || 'standard';
         const settings = {
             theme: $e('input[name="theme"]:checked').value,
             bgColorPicker: $id('bg-color-picker').value,
@@ -207,7 +217,8 @@
             disableAnnotations: $id('annotations-toggle') ? $id('annotations-toggle').checked : false,
             cinematicLighting: $id('cinematic-lighting-toggle').checked,
             syncCinematic: $id('sync-cinematic-toggle') ? $id('sync-cinematic-toggle').checked : false, // NUEVO SETTING
-            sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'normal',
+            sidePanelStyle: isYtmDomain ? (storedForStyle.sidePanelStyle || 'standard') : pickedStyle,
+            sidePanelStyleYTM: isYtmDomain ? pickedStyle : (storedForStyle.sidePanelStyleYTM || 'standard'),
             customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
             disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
             // fontSize: $id('font-size-slider').value,
@@ -293,7 +304,10 @@
         $id('autoplay-toggle').checked = settings.disableAutoplay || false;
         $id('cinematic-lighting-toggle').checked = settings.cinematicLighting || false;
         if ($id('sync-cinematic-toggle')) $id('sync-cinematic-toggle').checked = settings.syncCinematic || false;
-        if ($id('side-panel-style-select')) $id('side-panel-style-select').value = settings.sidePanelStyle || 'blur';
+        if ($id('side-panel-style-select')) {
+            const isYtmDomain = typeof isYTMusic !== 'undefined' && isYTMusic;
+            $id('side-panel-style-select').value = (isYtmDomain ? settings.sidePanelStyleYTM : settings.sidePanelStyle) || 'standard';
+        }
         if ($id('custom-timeline-color-toggle')) $id('custom-timeline-color-toggle').checked = settings.customTimelineColor || false;
         if ($id('subtitles-toggle')) $id('subtitles-toggle').checked = settings.disableSubtitles || false;
         if ($id('annotations-toggle')) $id('annotations-toggle').checked = settings.disableAnnotations || false;

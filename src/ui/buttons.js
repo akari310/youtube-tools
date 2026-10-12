@@ -32,10 +32,12 @@
                     const toolbar = buildYTMToolbar();
                     sideWrapper.appendChild(toolbar);
 
-                    // ADD A LINE SEPARATOR
-                    const line = document.createElement('div');
-                    line.className = 'ytm-side-panel-divider';
-                    sideWrapper.appendChild(line);
+                    // KHONG them duong phan cach giua toolbar va tab header.
+                    // No thuan la trang tri, va no rat loang choi khi panel
+                    // khong co nen kinh (UI style: Standard / Transparent) -
+                    // mot duong 1px trong suot lai loang o giua man hinh.
+                    // Toolbar va tab header da cach nhau bang khoang cach
+                    // cua #ytm-side-panel-wrapper.
 
                     // MOVE THE TAB HEADER INTO THE TOP BOX
                     sideWrapper.appendChild(addButton);

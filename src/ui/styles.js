@@ -1614,7 +1614,7 @@
     /* Blur Mode (Standard with subtle blur) */
     body.ytm-style-blur #ytm-side-panel-wrapper,
     body.ytm-style-blur ytmusic-player-page #side-panel ytmusic-tab-renderer {
-      background: rgba(20, 20, 20, 0.6) !important;
+      background: transparent !important;
       backdrop-filter: blur(20px) !important;
       -webkit-backdrop-filter: blur(20px) !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -1625,7 +1625,7 @@
     /* Liquid Mode (Fixed Apple Style) */
     body.ytm-style-liquid #ytm-side-panel-wrapper,
     body.ytm-style-liquid ytmusic-player-page #side-panel ytmusic-tab-renderer {
-      background: rgba(25, 25, 25, 0.45) !important;
+      background: transparent !important;
       backdrop-filter: blur(24px) saturate(180%) !important;
       -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -1722,6 +1722,52 @@
       --ytd-searchbox-background: transparent !important;
       --ytd-searchbox-legacy-button-color: transparent !important;
       --ytd-searchbox-legacy-button-border-color: transparent !important;
+    }
+
+    /* ---------------------------------------------------------------
+       Masthead (header) cua youtube.com - kieu kinh "glass" nhu nav-bar YTM.
+       Chi ap cho blur / liquid / transparent. 'standard' KHONG gan class
+       nao nen giu nguyen goc YouTube.
+       Gia tri lay nguyen van tu khoi YTM (utils/url.js cua src ban goc):
+         nen trong + blur(16px) saturate(140%) + hairline 1px.
+       Ly do can 'body.ytm-style-*' o dau: rule mac dinh cua script la
+         #masthead-container.ytd-app, #background.ytd-masthead { background: ... !important }
+       (utils/url.js:518-519, :765) - it thap hon nen rule nay thang.
+       Luu y: youtube.com KHONG gan class '.scrolled' len ytd-masthead
+       (da do tren trang thuc), khac voi YTM. Vi vay kieu kinh nay luon bat,
+       chu khong phai chi khi cuon.
+       --------------------------------------------------------------- */
+    body.ytm-style-blur #masthead-container.ytd-app,
+    body.ytm-style-liquid #masthead-container.ytd-app,
+    body.ytm-style-transparent #masthead-container.ytd-app {
+      background: rgba(0, 0, 0, 0.06) !important;
+      background-color: rgba(0, 0, 0, 0.06) !important;
+      backdrop-filter: blur(16px) saturate(140%) !important;
+      -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+      transition: background 0.25s ease, backdrop-filter 0.25s ease !important;
+    }
+    /* Lop nen ma YouTube lam mo dan khi cuon (inline opacity 0 -> 1).
+       Day chinh la thanh den hien ra khi cuon xuong. Doc duoc tren trang that:
+       opacity 0 -> 1, nen luon rgb(15,15,15) = #0f0f0f.
+       Cho no trong suot o ca 3 kieu kinh, kieu kinh do #masthead-container lo. */
+    body.ytm-style-blur #background.ytd-masthead,
+    body.ytm-style-liquid #background.ytd-masthead,
+    body.ytm-style-transparent #background.ytd-masthead {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+    body.ytm-style-blur ytd-masthead#masthead,
+    body.ytm-style-liquid ytd-masthead#masthead,
+    body.ytm-style-transparent ytd-masthead#masthead {
+      background: transparent !important;
+      background-color: transparent !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    }
+    body.ytm-style-blur #masthead-container.ytd-app > ytd-masthead,
+    body.ytm-style-liquid #masthead-container.ytd-app > ytd-masthead,
+    body.ytm-style-transparent #masthead-container.ytd-app > ytd-masthead {
+      background: transparent !important;
+      background-color: transparent !important;
     }
 
     body.ytm-style-blur ytd-watch-flexy ytd-playlist-panel-renderer#playlist > #container,

@@ -6,6 +6,58 @@ let translatorEventBound = false;
 let _commentIO = null;
 let _commentMO = null;
 
+// === Ambilight: chờ <video> thay vì đoán một lần ===
+// applySettings() chạy 120ms sau mỗi yt-navigate-finish, rồi code cũ đợi
+// đúng 800ms rồi thử setup() MỘT LẦN. Trên youtube.com 800ms là đủ. Trên
+// music.youtube.com thì KHONG: player page và thẻ <video> được mount muộn
+// hơn. Đo được trên máy thật: lúc điều hướng xong 800ms vẫn chưa có canvas
+// (`#ytm-ambilight-webgl-canvas` không tồn tại), tức setup() không bao giờ
+// chạy. Nhưng không có gì thử lại — applySettings không chạy lần nữa cho tới
+// lần điều hướng kế / đổi setting. Đó là lý do phải toggle Ambilight tắt rồi
+// bật mới thấy: chính cái toggle đó là cú gọi applySettings() đầu tiên sau khi
+// <video> đã có mặt.
+//
+// Vì vậy: thay một setTimeout bằng vòng thử lại có backoff, mỗi lần kiểm tra
+// lại toggle + đường dẫn, và tự dừng nếu người dùng đã rời trang hoặc tắt
+// Ambilight trong lúc đang chờ.
+let __ytToolsAmbiTimer = null;
+let __ytToolsAmbiAttempts = 0;
+const AMBI_RETRY_MS = 300;
+const AMBI_MAX_ATTEMPTS = 40;   // 300ms x 40 ~ 12 giây
+
+function cancelAmbilightSetup() {
+    if (__ytToolsAmbiTimer) { clearTimeout(__ytToolsAmbiTimer); __ytToolsAmbiTimer = null; }
+    __ytToolsAmbiAttempts = 0;
+}
+
+function scheduleAmbilightSetup() {
+    cancelAmbilightSetup();
+    __ytToolsAmbiAttempts = 0;
+    const attempt = () => {
+        __ytToolsAmbiTimer = null;
+        // Có thể đã điều hướng đi nơi khác, hoặc người dùng tắt Ambilight
+        // trong lúc đang chờ -> dừng, đừng bật nhầm.
+        const toggle = $id('sync-cinematic-toggle');
+        const objFound = !!window.ytmAmbilightWebGL;
+        const video = document.querySelector('video');
+        __ytToolsAmbiAttempts++;
+        if (!isWatchPage() || (toggle && !toggle.checked)) {
+            return;
+        }
+        if (objFound && video) {
+            window.ytmAmbilightWebGL.setup(video);
+            return;
+        }
+        if (__ytToolsAmbiAttempts < AMBI_MAX_ATTEMPTS) {
+            __ytToolsAmbiTimer = setTimeout(attempt, AMBI_RETRY_MS);
+        } else {
+            console.warn('[YT Tools] Ambilight: khong tim thay <video> sau ' +
+                (AMBI_MAX_ATTEMPTS * AMBI_RETRY_MS / 1000) + 's');
+        }
+    };
+    __ytToolsAmbiTimer = setTimeout(attempt, 800);
+}
+
     function applySettings() {
         const formulariodescarga = $e('.formulariodescarga');
         const formulariodescargaaudio = $e('.formulariodescargaaudio');
@@ -43,7 +95,7 @@ let _commentMO = null;
             disableAutoplay: $id('autoplay-toggle').checked,
             cinematicLighting: $id('cinematic-lighting-toggle') ? $id('cinematic-lighting-toggle').checked : false,
             syncCinematic: $id('sync-cinematic-toggle') ? $id('sync-cinematic-toggle').checked : false, // NUEVO SETTING
-            sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'blur',
+            sidePanelStyle: $id('side-panel-style-select') ? $id('side-panel-style-select').value : 'standard',
             customTimelineColor: $id('custom-timeline-color-toggle') ? $id('custom-timeline-color-toggle').checked : false,
             disableSubtitles: $id('subtitles-toggle') ? $id('subtitles-toggle').checked : false,
             disableAnnotations: $id('annotations-toggle') ? $id('annotations-toggle').checked : false,
@@ -76,14 +128,20 @@ let _commentMO = null;
         syncAudioOnlyTabCheckbox(settings);
         applyAudioOnlyMode(getEffectiveAudioOnly(settings));
 
-        // Handle Side Panel Style classes
+        // Handle UI Style classes
+        // 'standard' = KHONG gan class nao -> YouTube/YTM goc, script khong to gi.
+        // Moi kieu kinh deu chon bang class vi vay nen phai xoa het class truoc.
+        // 'transparent' chi duoc chon o youtube.com (xem features/cinema.js),
+        // nhung class CSS cu no ton tai ca 2 domain (ui/styles.js).
         document.body.classList.remove('ytm-style-blur', 'ytm-style-liquid', 'ytm-style-transparent');
         if (settings.sidePanelStyle === 'liquid') {
             document.body.classList.add('ytm-style-liquid');
+        } else if (settings.sidePanelStyle === 'blur') {
+            document.body.classList.add('ytm-style-blur');
         } else if (settings.sidePanelStyle === 'transparent') {
             document.body.classList.add('ytm-style-transparent');
         } else {
-            document.body.classList.add('ytm-style-blur');
+            settings.sidePanelStyle = 'standard';
         }
 
 
@@ -210,13 +268,9 @@ let _commentMO = null;
         }
         // Apply Ambilight Pro setting
         if (settings.syncCinematic && isWatchPage()) {
-            setTimeout(() => {
-                const video = document.querySelector('video');
-                if (window.ytmAmbilightWebGL && video) {
-                    window.ytmAmbilightWebGL.setup(video);
-                }
-            }, 800);
+            scheduleAmbilightSetup();
         } else {
+            cancelAmbilightSetup();
             if (window.ytmAmbilightWebGL) {
                 window.ytmAmbilightWebGL.cleanup();
             }
@@ -2339,7 +2393,7 @@ let _commentMO = null;
         }, 500);
     }
 
-    document.addEventListener('yt-navigate-finish', () => {
+    function onAfterNavigate() {
         // Re-inject gear icon if it was lost during navigation
         if (typeof addIcon === 'function') {
             addIcon();
@@ -2359,8 +2413,11 @@ let _commentMO = null;
         if (isYTMusic) {
             // On YTM, re-enable button injection when navigating to a new song
             if (document.location.href.includes('watch')) {
-                const existingContainer = $e('.yt-tools-container');
-                if (existingContainer) existingContainer.remove();
+                // querySelector chi tra ve node DAU TIEN. Neu co lai 2 container (vi du
+                // mot lan render chay truoc khi node cu bi giai phong) thi node
+                // thu hai con sot lai -> toolbar chong len nhau. Xoa het.
+                document.querySelectorAll('.yt-tools-container')
+                    .forEach(node => node.remove());
                 validoBotones = true;
                 setTimeout(() => renderizarButtons(), 500);
 
@@ -2390,7 +2447,37 @@ let _commentMO = null;
                 }, ms));
             }
         }
+    }
+
+    // === SPA NAVIGATION ===
+    // Do duoc tren may that: tren music.youtube.com, 'yt-navigate-finish' KHONG
+    // ban. applySettings() chi chay 1 lan luc load trang (do), nen moi lan
+    // chuyen sang trang <video> tren YTM deu khong co gi chay lai: Ambilight
+    // khong bao gio bat, toolbar khong duoc inject lai, ...
+    //
+    // Cach sua: giu nguyen duong 'yt-navigate-finish' cho youtube.com (khong
+    // doi hanh vi), them pht hien URL doi cho YTM. Co chot trung: neu
+    // 'yt-navigate-finish' vua chay thi bo qua, khong xu ly hai lan.
+    let __ytLastHref = location.href;
+    let __ytNavigateHandledAt = 0;
+
+    document.addEventListener('yt-navigate-finish', () => {
+        __ytNavigateHandledAt = Date.now();
+        __ytLastHref = location.href;
+        onAfterNavigate();
     });
+
+    // Music: phong khi URL doi ma khong co su kien nao. So sanh chuoi, moi
+    // 700ms mot lan - chi mot phep so sanh chuoi, khong duy het tai nguyen.
+    function checkUrlChanged() {
+        if (location.href === __ytLastHref) return;
+        __ytLastHref = location.href;
+        if (Date.now() - __ytNavigateHandledAt < 1500) return;
+        onAfterNavigate();
+    }
+    window.addEventListener('popstate', () => setTimeout(checkUrlChanged, 0));
+    window.addEventListener('hashchange', () => setTimeout(checkUrlChanged, 0));
+    setInterval(checkUrlChanged, 700);
     GM_registerMenuCommand('Update Script by: Akari', function () {
         window.open('https://update.greasyfork.org/scripts/576162/YouTube%20Ultimate%20Tools.user.js', '_blank');
     });
@@ -2563,28 +2650,20 @@ let _commentMO = null;
       }
       ${isYTMusic ? `
       /* YTM Nav Bar: transparent at top, dark blurred when scrolled */
-      body.ytm-style-transparent #nav-bar-background.ytmusic-app-layout,
       body.ytm-ambient-active #nav-bar-background.ytmusic-app-layout {
         background: transparent !important;
         transition: background 0.3s ease, backdrop-filter 0.3s ease !important;
       }
-      body.ytm-style-transparent ytmusic-nav-bar,
       body.ytm-ambient-active ytmusic-nav-bar,
-      body.ytm-style-transparent #nav-bar-divider,
       body.ytm-ambient-active #nav-bar-divider {
         background: transparent !important;
         border: none !important;
         transition: background 0.3s ease !important;
       }
-      body.ytm-style-transparent ytmusic-nav-bar.scrolled,
       body.ytm-ambient-active ytmusic-nav-bar.scrolled,
-      body.ytm-style-transparent #nav-bar-background.scrolled,
       body.ytm-ambient-active #nav-bar-background.scrolled,
-      body.ytm-style-transparent ytmusic-nav-bar[opened],
       body.ytm-ambient-active ytmusic-nav-bar[opened],
-      body.ytm-style-transparent[player-page-open] ytmusic-nav-bar,
       body.ytm-ambient-active[player-page-open] ytmusic-nav-bar,
-      body.ytm-style-transparent[player-page-open] #nav-bar-background,
       body.ytm-ambient-active[player-page-open] #nav-bar-background {
         background: rgba(0, 0, 0, 0.06) !important;
         background-color: rgba(0, 0, 0, 0.06) !important;
@@ -2592,11 +2671,8 @@ let _commentMO = null;
         -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
         transition: background 0.25s ease, backdrop-filter 0.25s ease !important;
       }
-      body.ytm-style-transparent ytmusic-nav-bar.scrolled,
       body.ytm-ambient-active ytmusic-nav-bar.scrolled,
-      body.ytm-style-transparent #nav-bar-background.scrolled,
       body.ytm-ambient-active #nav-bar-background.scrolled,
-      body.ytm-style-transparent ytmusic-nav-bar[opened],
       body.ytm-ambient-active ytmusic-nav-bar[opened] {
         box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) !important;
       }
@@ -2608,7 +2684,6 @@ let _commentMO = null;
         -webkit-backdrop-filter: none !important;
       }
       /* YTM Player Bar: semi-transparent with blur - respect ambient */
-      body.ytm-style-transparent ytmusic-player-bar,
       body.ytm-ambient-active ytmusic-player-bar {
         background: rgba(0, 0, 0, 0.2) !important;
         backdrop-filter: blur(30px) !important;
@@ -2620,9 +2695,6 @@ let _commentMO = null;
         border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
       }
       /* YTM Sidebar (Expanded & Collapsed): Glass with separator line - respect ambient */
-      body.ytm-style-transparent tp-yt-app-drawer #contentContainer,
-      body.ytm-style-transparent #mini-guide,
-      body.ytm-style-transparent #mini-guide-renderer,
       body.ytm-ambient-active tp-yt-app-drawer #contentContainer,
       body.ytm-ambient-active #mini-guide,
       body.ytm-ambient-active #mini-guide-renderer {
@@ -2637,9 +2709,6 @@ let _commentMO = null;
         background: transparent !important;
       }
       /* Standardized YTM Glass Buttons (Edit, Menu, Play, etc.) */
-      body.ytm-style-transparent button.ytSpecButtonShapeNextHost,
-      body.ytm-style-transparent yt-button-shape button,
-      body.ytm-style-transparent .history-button #button,
       body.ytm-ambient-active button.ytSpecButtonShapeNextHost,
       body.ytm-ambient-active yt-button-shape button,
       body.ytm-ambient-active .history-button #button {
@@ -2694,7 +2763,13 @@ let _commentMO = null;
         color: #fff !important;
         --ytmusic-play-button-icon-color: #fff !important;
         opacity: 1 !important;
-        visibility: visible !important;
+        /* KHONG duoc them 'visibility: visible !important' o day.
+           visibility co tinh ke thua, nen lenh nay PHA KE THUA: no ghi de
+           'visibility: hidden' ma YouTube Music dat tren ytmusic-browse-response
+           de an trang danh sach phat khi da chuyen sang trang phat. Ket qua la
+           nut Play cu trang danh sach phat do tran ra, xuat hien ngay giua
+           video va panel phat (do to 64x64 tai ~415,580), bam khong duoc.
+           'opacity: 1' khong gay hien tuong nay - opacity khong ke thua. */
       }
       /* Ensure SVGs inside are visible */
       ytmusic-play-button-renderer svg {

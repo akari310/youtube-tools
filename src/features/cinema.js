@@ -348,11 +348,12 @@
         </label>
         <div class="quality-selector-mdcm" style="grid-column: span 2;">
           <div class="select-wrapper-mdcm">
-            <label>Glassmorphism UI Style:
+            <label>UI style:
               <select class="tab-button-active" id="side-panel-style-select">
+                <option value="standard">Standard</option>
                 <option value="blur">Blur</option>
                 <option value="liquid">Liquid Glass</option>
-                <option value="transparent">Transparent</option>
+                ${isYTMusic ? '' : '<option value="transparent">Transparent</option>'}
               </select>
             </label>
           </div>

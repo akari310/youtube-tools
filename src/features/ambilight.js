@@ -25,8 +25,8 @@ const AMBILIGHT_FPS = 24;
 // thay. Phai gan qua `unsafeWindow`.
 // Dung console: YT_BUILD_STAMP
 // Neu khong thay, tim chu "BAN DUNG SO" trong trinh chuyen sua script.
-// ===> BAN DUNG SO : 18
-const BUILD_STAMP = 'build-18';
+// ===> BAN DUNG SO : 34
+const BUILD_STAMP = 'build-34';
 try {
     (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).YT_BUILD_STAMP = BUILD_STAMP;
 } catch (e) { /* sandbox chan gan - dung cach tim chu "BAN DUNG SO" */ }
@@ -59,8 +59,16 @@ class YTAmbilightWebGL {
 
     setup(videoElement) {
         if (!videoElement) return;
-        this.video = videoElement;
-        
+
+        // GIU video cu trong khi chua gan video moi. Neu gan this.video o
+        // dau ham thi dieu kien chong trung o duoi luon DUNG, va nhanh
+        // if (this.isActive) this.stop() thanh code chet: khi YouTube Music
+        // doi bai no THE thay the <video>, nhung setup() van chay tiep tren
+        // thay the do va khong bao gio restart -> Ambilight bam vao the
+        // <video> da bi tach khoi DOM, khong hien gi. Nguoi dung phai tat bat
+        // lai moi hien.
+        const prevVideo = this.video;
+
         if (!this.canvas) {
             this.canvas = document.createElement('canvas');
             this.canvas.id = 'ytm-ambilight-webgl-canvas';
@@ -160,12 +168,15 @@ class YTAmbilightWebGL {
         //     nên vòng cũ không bao giờ cancel được
         //   - tạo thêm một ResizeObserver mà không disconnect cái cũ
         // → sau ~20 lần điều hướng là 20 vòng render 30fps chạy song song + rò GPU.
-        if (this.isActive && this.video === videoElement && this.gl) return;
+        if (this.isActive && prevVideo === videoElement && this.gl) return;
         if (this.isActive) this.stop();
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
             this.resizeObserver = null;
         }
+
+        // Chi gan video moi SAU khi da so sanh xong.
+        this.video = videoElement;
 
         this.initWebGL();
         this.start();
