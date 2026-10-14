@@ -1559,24 +1559,46 @@ function scheduleAmbilightSetup() {
 
         const targetNode = $e('body');
 
+        // Comment panel cua Shorts chi duoc to mau khi theme THAT suoc bat.
+        // Chot chan nay sua 3 lo:
+        // 1) settings.themes + dark mode + !isThemeCustom — giong het khoi theme chinh
+        //    (dong 419-421). Truoc day khoi nay khong co chot chan nao nen mau theme
+        //    lot ra rieng o comment panel Shorts du phan con lai cua trang khong doi gi.
+        // 2) settings.theme !== '0' — '0' la palette "Default / Reload", gradient rong.
+        // 3) !backgroundImage — khi co anh nen, khoi CSS "Nuclear transparency" trong
+        //    applyPageBackground() da ep panel trong suot de loi anh nen ra. Khoi CSS do
+        //    nam trong nhanh `if (url)` nen KHONG co anh nen = khong co gi ep trong suot,
+        //    luc nay gan gradient inline se thang va comment panel doi mau o do.
+        const canTintShortsPanel = settings.themes
+            && isDarkModeActive === 'dark'
+            && !isThemeCustom
+            && settings.theme !== '0'
+            && !localStorage.getItem('backgroundImage');
+
         if (targetNode != undefined && !isYTMusic) {
             const element = $e('ytd-item-section-renderer[static-comments-header] #contents');
-            if (element != undefined && settings.theme !== 'custom') {
-                const observerElementDom = (elem) => {
-                    const observer = new IntersectionObserver(entries => {
-
+            if (element != undefined) {
+                if (!canTintShortsPanel) {
+                    // Comment panel co the da bi gan mau o lan applySettings truoc.
+                    // Phai xoa di, neu no se giu nguyen mau cu va nhin nhu "tu doi mau".
+                    element.style.background = '';
+                    element.style.backgroundColor = '';
+                } else {
+                    if (__ytToolsRuntime.shortsPanelObserver) {
+                        try { __ytToolsRuntime.shortsPanelObserver.disconnect(); } catch (e) { }
+                        __ytToolsRuntime.shortsPanelObserver = null;
+                    }
+                    // Ghi vao DUNG node dang observe. Truoc day observe mot node moi ($e)
+                    // nhung lai gan vao `element` capture o dong 1563 — lui Shorts la YouTube
+                    // doi node moi, nen mau cu nam lai tren node da bi tach ra khoi DOM.
+                    __ytToolsRuntime.shortsPanelObserver = new IntersectionObserver(entries => {
                         if (entries[0].isIntersecting) {
-
-                            element.style.background = `${selectedTheme.gradient ?? ''}`;
-                        } else {
-                            return
+                            const live = $e('ytd-item-section-renderer[static-comments-header] #contents');
+                            if (live) live.style.background = `${selectedTheme.gradient ?? ''}`;
                         }
-                    })
-
-                    return observer.observe($e(`${elem}`))
-
+                    });
+                    __ytToolsRuntime.shortsPanelObserver.observe(element);
                 }
-                observerElementDom('ytd-item-section-renderer[static-comments-header] #contents')
             }
         }
 
