@@ -1,6 +1,6 @@
 {
     "name":  "youtube-ultimate-tools",
-    "version":  "0.0.7.5",
+    "version":  "0.0.7.6",
     "description":  "Download high-quality video/audio, return dislikes, and more VIP features for YouTube and YouTube Music.",
     "main":  "youtube-tools.user.js",
     "scripts":  {
@@ -18,14 +18,8 @@
     "author":  "Akari, DeveloperMDCM, nvbangg",
     "license":  "GPL-3.0",
     "devDependencies":  {
-                            "eslint":  "^10.4.0",
-                            "fs-extra":  "^11.2.0",
-                            "glob":  "^13.0.6",
-                            "uglify-js":  "^3.17.4"
+                            "fs-extra":  "^11.2.0"
                         },
-    "dependencies":  {
-                         "canvas":  "^3.2.3"
-                     },
     "engines":  {
                     "node":  "\u003e=18"
                 }

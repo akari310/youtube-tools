@@ -3,12 +3,9 @@ node_modules/
 .DS_Store
 *.log
 __pycache__/
-dist/
-build/
+/dist/
 *.pyc
 *.min.user.js
-
-package-lock.json
 
 # ---- File cong viec cua AI agent: CHI O MAY LOCAL, KHONG LEN GITHUB ----
 # Repo nay public. Agent doc file nay tu dia phong.
@@ -24,17 +21,19 @@ opencode_working_protocol.md
 BAK_README.md
 
 # ---- Phong thi nghiem ----
-scratch/
-src_clone/
-src_clone.bak_*/
-src_clone.bak_*.user.js
-youtube-tools-clone.user.js
-deadcode/
-youtube-ambilight-local/
-antigravity_export/
-scripts/build-clone.js
-scripts/build_clone.*
-scripts/verify-clone.ps1
+# Tu thoi diem nay MOI rule duoi day deu co dau '/' o DAU. Khong co dau '/' thi
+# git khop o BAT KY cấp thư mục nào, và rule an hienh se lam an nham file
+# trong src/ - vi du 'build/' se an `scripts/build/` neu mai no la thu muc.
+/scratch/
+/src_clone/
+/src_clone.bak_*/
+/src_clone.bak_*.user.js
+/youtube-tools-clone.user.js
+/youtube-ambilight-local/
+/antigravity_export/
+/scripts/build-clone.js
+/scripts/build_clone.*
+/scripts/verify-clone.ps1
 
 # ---- Rac cu (chi o goc repo) ----
 # PHAI CO DAU '/' O DAU. Khong co dau '/' thi git khop o BAT KY do sau,
