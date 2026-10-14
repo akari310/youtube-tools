@@ -5,7 +5,6 @@
 **A modular, glassmorphic userscript that upgrades both YouTube and YouTube Music — downloads, ambient lighting, comment translation, and 20+ toggles you can actually turn off.**
 
 [![Greasy Fork](https://img.shields.io/greasyfork/v/576162?label=Version&color=red&style=for-the-badge)](https://greasyfork.org/scripts/576162)
-[![Installs](https://img.shields.io/greasyfork/total_installs/576162?label=Installs&color=brightgreen&style=for-the-badge)](https://greasyfork.org/scripts/576162)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/akari310/youtube-tools?style=for-the-badge)](https://github.com/akari310/youtube-tools)
 
