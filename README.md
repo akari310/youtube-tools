@@ -39,8 +39,8 @@ the gear button only appears once the page finishes loading.
 
 | | Where the gear button appears |
 |---|---|
-| **youtube.com** | Top-right of the page header, beside the YouTube menu button |
-| **music.youtube.com** | At the very top of the **right sidebar**, above your library |
+| **youtube.com** | Top-right of the page header, immediately left of the **Create** button |
+| **music.youtube.com** | Top-right of the page, immediately left of the **Cast** button |
 
 ## Before you start
 
