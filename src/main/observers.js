@@ -2,7 +2,76 @@
         if (window.__ytToolsHeaderPoll) return;
         window.__ytToolsHeaderPoll = setInterval(() => {
             addIcon();
+            ytmAddToPlaylistBackdrop();
         }, 1500);
+    }
+
+    // YTM only: the "Add to playlist" dialog is painted *under* its own
+    // tp-yt-iron-overlay-backdrop, so a click on a playlist row never reaches
+    // the row -- it hits the backdrop and dismisses the whole dialog instead.
+    // The same backdrop is the dimming scrim over the whole page.
+    // Nothing in this script creates or restyles that backdrop, so the fix is to
+    // make it click-through and invisible while that one dialog is open, and
+    // hand both back the moment it closes.
+    //
+    // Two things this must get right, both measured on a real YTM page:
+    //   1. the backdrop is a child of <body>, NOT of ytmusic-popup-container --
+    //      so it has to be queried from the document, not from the container
+    //   2. the dialog sits inside tp-yt-paper-dialog; there is no
+    //      tp-yt-iron-overlay anywhere, so that element must not be relied on
+    // Scope: only while ytmusic-add-to-playlist-renderer is actually on screen.
+    // Every other YTM popup keeps its normal click-outside-to-close behaviour.
+    function ytmAddToPlaylistBackdrop() {
+        if (typeof isYTMusic === 'undefined' || !isYTMusic) return;
+        const host = $e('ytmusic-popup-container');
+        if (!host || host.__ytToolsPlBackdrop) return;
+        host.__ytToolsPlBackdrop = true;
+
+        const sync = () => {
+            // Measure instead of trusting the attribute: YTM keeps the renderer
+            // in the DOM after closing it, so presence alone would make every
+            // later popup click-through too.
+            const dialog = host.querySelector('ytmusic-add-to-playlist-renderer[render-as-dialog]');
+            const dialogOpen = !!(dialog && dialog.getBoundingClientRect().height > 0);
+            document.querySelectorAll('tp-yt-iron-overlay-backdrop[opened]').forEach((b) => {
+                if (dialogOpen) {
+                    // pointer-events: the backdrop was swallowing every click
+                    // on the playlist list. visibility: it is also the dimming
+                    // scrim over the whole page, which reads as the page
+                    // going dark behind the dialog.
+                    if (b.style.pointerEvents !== 'none') b.style.pointerEvents = 'none';
+                    if (b.style.visibility !== 'hidden') b.style.visibility = 'hidden';
+                } else {
+                    if (b.style.pointerEvents === 'none') b.style.pointerEvents = '';
+                    if (b.style.visibility === 'hidden') b.style.visibility = '';
+                }
+            });
+        };
+
+        // Dialog side: it is inserted into / removed from the popup container.
+        const obsDialog = new MutationObserver(sync);
+        obsDialog.observe(host, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['render-as-dialog'],
+        });
+
+        // Backdrop side: it lives on <body> and toggles its own `opened`
+        // attribute, so watching only the container would never restore
+        // pointer events and would leave every later YTM popup click-through.
+        const obsBackdrop = new MutationObserver(sync);
+        obsBackdrop.observe(document.body, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['opened'],
+        });
+
+        host.__ytToolsPlBackdropStop = () => {
+            obsDialog.disconnect();
+            obsBackdrop.disconnect();
+        };
+        sync();
     }
 
     function addIcon() {
