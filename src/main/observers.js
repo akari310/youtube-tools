@@ -24,21 +24,33 @@
     function ytmAddToPlaylistBackdrop() {
         if (typeof isYTMusic === 'undefined' || !isYTMusic) return;
         const host = $e('ytmusic-popup-container');
-        if (!host || host.__ytToolsPlBackdrop) return;
+        if (!host) return;
+        // Re-run on every poll tick. The observers below cover the common cases
+        // instantly, but the promo case only changes our own inline styles, which
+        // no observer here is watching.
+        if (host.__ytToolsPlBackdrop) {
+            if (host.__ytToolsPlSync) host.__ytToolsPlSync();
+            return;
+        }
         host.__ytToolsPlBackdrop = true;
 
         const sync = () => {
-            // Measure instead of trusting the attribute: YTM keeps the renderer
-            // in the DOM after closing it, so presence alone would make every
-            // later popup click-through too.
-            const dialog = host.querySelector('ytmusic-add-to-playlist-renderer[render-as-dialog]');
-            const dialogOpen = !!(dialog && dialog.getBoundingClientRect().height > 0);
+            // Which dialog is open is decided by layout, not by naming one
+            // element: an earlier version matched
+            // `ytmusic-add-to-playlist-renderer[render-as-dialog]` and silently
+            // did nothing on a page where the renderer was laid out without that
+            // attribute -- leaving the backdrop on top and the panel unclickable.
+            // Anything actually laid out inside the popup container means the
+            // backdrop belongs to a popup that is on screen right now.
+            let dialogOpen = false;
+            for (const child of host.children) {
+                if (child.getBoundingClientRect().height > 0) { dialogOpen = true; break; }
+            }
             document.querySelectorAll('tp-yt-iron-overlay-backdrop[opened]').forEach((b) => {
                 if (dialogOpen) {
-                    // pointer-events: the backdrop was swallowing every click
-                    // on the playlist list. visibility: it is also the dimming
-                    // scrim over the whole page, which reads as the page
-                    // going dark behind the dialog.
+                    // pointer-events: the backdrop was swallowing every click on
+                    // the dialog. visibility: it is also the dimming scrim over
+                    // the whole page, which reads as the page going dark.
                     if (b.style.pointerEvents !== 'none') b.style.pointerEvents = 'none';
                     if (b.style.visibility !== 'hidden') b.style.visibility = 'hidden';
                 } else {
@@ -50,12 +62,7 @@
 
         // Dialog side: it is inserted into / removed from the popup container.
         const obsDialog = new MutationObserver(sync);
-        obsDialog.observe(host, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            attributeFilter: ['render-as-dialog'],
-        });
+        obsDialog.observe(host, { subtree: true, childList: true });
 
         // Backdrop side: it lives on <body> and toggles its own `opened`
         // attribute, so watching only the container would never restore
@@ -71,6 +78,7 @@
             obsDialog.disconnect();
             obsBackdrop.disconnect();
         };
+        host.__ytToolsPlSync = sync;
         sync();
     }
 
