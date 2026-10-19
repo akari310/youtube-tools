@@ -18,7 +18,7 @@
     "author":  "Akari, DeveloperMDCM, nvbangg",
     "license":  "GPL-3.0",
     "devDependencies":  {
-                            "fs-extra":  "^11.2.0"
+                            "fs-extra":  "^11.4.1"
                         },
     "engines":  {
                     "node":  "\u003e=18"
